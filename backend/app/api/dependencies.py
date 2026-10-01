@@ -73,7 +73,7 @@ def require_role(*roles: str):
             ...
 
         @router.post("/menu")
-        def add_menu(user: User = Depends(require_role("seller", "admin"))):
+        def add_menu(user: User = Depends(require_role("partner", "admin"))):
             ...
     """
 

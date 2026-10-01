@@ -1,12 +1,12 @@
 """
 Delivery routes — in-building food delivery tracking.
 
-Seller:
+Partner:
   POST  /api/v1/deliveries/orders/{order_id}       → create delivery record (must be ready/completed)
   PATCH /api/v1/deliveries/{delivery_id}/status    → update delivery status
-  GET   /api/v1/deliveries/me                      → list my deliveries as seller
+  GET   /api/v1/deliveries/me                      → list my deliveries as partner
 
-Buyer / Seller / Admin:
+Resident / Partner / Admin:
   GET   /api/v1/deliveries/orders/{order_id}       → check delivery status for an order
 
 Delivery lifecycle:
@@ -22,6 +22,7 @@ from app.api.dependencies import get_current_user, get_db, require_role
 from app.db.models import User
 from app.services import delivery_service, notification_service
 from app.services.websocket_manager import get_manager
+from app.db.models.enums import OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/api/v1/deliveries", tags=["deliveries"])
 
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 @router.post(
@@ -40,27 +41,27 @@ async def create_delivery(
     order_id: int,
     estimated_minutes: int | None = Body(
         default=None, embed=True,
-        description="Seller's estimate of delivery time in minutes (e.g. 10)",
+        description="Partner's estimate of delivery time in minutes (e.g. 10)",
         ge=1, le=120,
     ),
     notes: str | None = Body(
         default=None, embed=True,
-        description="Optional note to buyer (e.g. 'Leaving food at door')",
+        description="Optional note to resident (e.g. 'Leaving food at door')",
         max_length=300,
     ),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
-    Create a delivery record for a completed/ready order (seller only).
+    Create a delivery record for a completed/ready order (partner only).
 
-    The seller initiates this when they decide to deliver food to the buyer's door.
+    The partner initiates this when they decide to deliver food to the resident's door.
     The order must be in 'ready' or 'completed' status.
     """
     delivery = delivery_service.create_delivery(
         db,
         order_id=order_id,
-        seller_id=current_user.id,
+        partner_id=current_user.id,
         estimated_minutes=estimated_minutes,
         notes=notes,
     )
@@ -68,8 +69,8 @@ async def create_delivery(
         "id": delivery.id,
         "order_id": delivery.order_id,
         "status": delivery.status,
-        "buyer_flat": delivery.buyer_flat,
-        "seller_flat": delivery.seller_flat,
+        "resident_flat": delivery.resident_flat,
+        "partner_flat": delivery.partner_flat,
         "estimated_minutes": delivery.estimated_minutes,
         "notes": delivery.notes,
         "message": "Delivery created. Update status when you leave.",
@@ -83,28 +84,28 @@ async def update_delivery_status(
         description="New status: dispatched, delivered, or failed"),
     notes: str | None = Body(default=None, embed=True, max_length=300),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
-    Update the delivery status (seller only).
+    Update the delivery status (partner only).
 
-    On dispatched: buyer receives email notification + WebSocket push.
-    On delivered:  buyer receives delivery confirmation email + WebSocket push.
+    On dispatched: resident receives email notification + WebSocket push.
+    On delivered:  resident receives delivery confirmation email + WebSocket push.
     """
     delivery = delivery_service.update_delivery_status(
         db,
         delivery_id=delivery_id,
-        seller_id=current_user.id,
+        partner_id=current_user.id,
         new_status=new_status,
         notes=notes,
     )
 
-    # ── Notify buyer and push WS update ───────────────────────────────────
-    buyer_user = db.query(User).filter(User.id == delivery.buyer_id).first()
+    # ── Notify resident and push WS update ───────────────────────────────────
+    resident_user = db.query(User).filter(User.id == delivery.resident_id).first()
     manager = get_manager()
 
-    if buyer_user:
+    if resident_user:
         # WebSocket push to all listeners for the order
         background_tasks.add_task(
             manager.broadcast_order_update,
@@ -117,23 +118,23 @@ async def update_delivery_status(
             },
         )
 
-        if new_status == "dispatched":
+        if new_status == OrderStatus.dispatched:
             background_tasks.add_task(
                 notification_service.send_delivery_dispatched_email,
-                buyer_email=buyer_user.email,
-                buyer_name=buyer_user.name,
+                resident_email=resident_user.email,
+                resident_name=resident_user.name,
                 order_id=delivery.order_id,
-                seller_name=current_user.name,
+                partner_name=current_user.name,
                 estimated_minutes=delivery.estimated_minutes,
                 notes=delivery.notes,
             )
-        elif new_status == "delivered":
+        elif new_status == OrderStatus.delivered:
             background_tasks.add_task(
                 notification_service.send_delivery_delivered_email,
-                buyer_email=buyer_user.email,
-                buyer_name=buyer_user.name,
+                resident_email=resident_user.email,
+                resident_name=resident_user.name,
                 order_id=delivery.order_id,
-                seller_name=current_user.name,
+                partner_name=current_user.name,
             )
 
     return {
@@ -150,12 +151,12 @@ async def update_delivery_status(
 async def get_my_deliveries(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller's delivery history, newest first."""
-    return delivery_service.get_seller_deliveries(
-        db, seller_id=current_user.id, skip=skip, limit=limit
+    """Return the authenticated partner's delivery history, newest first."""
+    return delivery_service.get_partner_deliveries(
+        db, partner_id=current_user.id, skip=skip, limit=limit
     )
 
 
@@ -168,13 +169,13 @@ async def get_delivery_for_order(
     """
     Get delivery status for a specific order.
 
-    Accessible by the buyer, seller, or admin of that order.
+    Accessible by the resident, partner, or admin of that order.
     """
     delivery = delivery_service.get_delivery_by_order(db, order_id=order_id)
 
-    # Access control: only buyer, seller, or admin can view
+    # Access control: only resident, partner, or admin can view
     if current_user.role not in ("admin",) and current_user.id not in (
-        delivery.buyer_id, delivery.seller_id
+        delivery.resident_id, delivery.partner_id
     ):
         from fastapi import HTTPException
         raise HTTPException(
@@ -186,8 +187,8 @@ async def get_delivery_for_order(
         "id": delivery.id,
         "order_id": delivery.order_id,
         "status": delivery.status,
-        "seller_flat": delivery.seller_flat,
-        "buyer_flat": delivery.buyer_flat,
+        "partner_flat": delivery.partner_flat,
+        "resident_flat": delivery.resident_flat,
         "estimated_minutes": delivery.estimated_minutes,
         "notes": delivery.notes,
         "dispatched_at": delivery.dispatched_at.isoformat() if delivery.dispatched_at else None,

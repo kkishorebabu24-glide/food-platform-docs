@@ -1,8 +1,8 @@
 """
-Ledger service — manages seller virtual balance via accounting entries.
+Ledger service — manages partner virtual balance via accounting entries.
 
 After each captured payment:
-  1. Credit seller with (total_price - platform_fee)
+  1. Credit partner with (total_price - platform_fee)
   2. Record platform_fee as a separate negative entry
 
 Balance = sum of all positive credit entries - sum of negative entries.
@@ -30,29 +30,29 @@ def _get_platform_fee_rate() -> Decimal:
     return _PLATFORM_FEE_RATE
 
 
-def get_seller_balance(db: Session, seller_id: int) -> Decimal:
-    """Return the current outstanding balance for a seller."""
+def get_partner_balance(db: Session, partner_id: int) -> Decimal:
+    """Return the current outstanding balance for a partner."""
     result = (
         db.query(func.sum(LedgerEntry.amount))
-        .filter(LedgerEntry.user_id == seller_id)
+        .filter(LedgerEntry.user_id == partner_id)
         .scalar()
     )
     return Decimal(str(result or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def get_seller_ledger(
-    db: Session, seller_id: int, skip: int = 0, limit: int = 20
+def get_partner_ledger(
+    db: Session, partner_id: int, skip: int = 0, limit: int = 20
 ) -> dict:
-    """Return paginated ledger entries for a seller."""
+    """Return paginated ledger entries for a partner."""
     entries = (
         db.query(LedgerEntry)
-        .filter(LedgerEntry.user_id == seller_id)
+        .filter(LedgerEntry.user_id == partner_id)
         .order_by(LedgerEntry.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
-    total = db.query(LedgerEntry).filter(LedgerEntry.user_id == seller_id).count()
+    total = db.query(LedgerEntry).filter(LedgerEntry.user_id == partner_id).count()
 
     return {
         "entries": [
@@ -68,7 +68,7 @@ def get_seller_ledger(
             for e in entries
         ],
         "total": total,
-        "current_balance": float(get_seller_balance(db, seller_id)),
+        "current_balance": float(get_partner_balance(db, partner_id)),
     }
 
 
@@ -77,7 +77,7 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
     Create ledger entries after a successful payment capture.
 
     Two entries are created:
-      1. credit:        seller_amount = total_price - platform_fee  (positive)
+      1. credit:        partner_amount = total_price - platform_fee  (positive)
       2. platform_fee:  negative amount recording the commission    (negative)
     """
     if payment.status != PaymentStatus.captured:
@@ -90,19 +90,19 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
     platform_fee = (Decimal(str(payment.amount)) * fee_rate).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
-    seller_credit = Decimal(str(payment.amount)) - platform_fee
+    partner_credit = Decimal(str(payment.amount)) - platform_fee
 
-    seller_id = payment.seller_id
-    current_balance = get_seller_balance(db, seller_id)
+    partner_id = payment.partner_id
+    current_balance = get_partner_balance(db, partner_id)
 
-    # ── Entry 1: Credit seller ─────────────────────────────────────────────
-    balance_after_credit = current_balance + seller_credit
+    # ── Entry 1: Credit partner ─────────────────────────────────────────────
+    balance_after_credit = current_balance + partner_credit
     credit_entry = LedgerEntry(
         payment_id=payment.id,
-        user_id=seller_id,
+        user_id=partner_id,
         order_id=payment.order_id,
         entry_type=LedgerEntryType.credit,
-        amount=seller_credit,
+        amount=partner_credit,
         balance_after=balance_after_credit,
         description=(
             f"Sale credit for order #{payment.order_id} "
@@ -116,7 +116,7 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
     # already nets out the fee — this entry is for transparency only.
     fee_entry = LedgerEntry(
         payment_id=payment.id,
-        user_id=seller_id,
+        user_id=partner_id,
         order_id=payment.order_id,
         entry_type=LedgerEntryType.platform_fee,
         amount=-platform_fee,
@@ -129,23 +129,23 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
     db.add(fee_entry)
 
     logger.info(
-        "Ledger entries created: seller_id=%s credit=%.2f fee=%.2f",
-        seller_id,
-        float(seller_credit),
+        "Ledger entries created: partner_id=%s credit=%.2f fee=%.2f",
+        partner_id,
+        float(partner_credit),
         float(platform_fee),
     )
 
 
 def record_refund(db: Session, payment: Payment) -> None:
-    """Deduct a refunded amount from the seller's ledger."""
-    seller_id = payment.seller_id
-    current_balance = get_seller_balance(db, seller_id)
+    """Deduct a refunded amount from the partner's ledger."""
+    partner_id = payment.partner_id
+    current_balance = get_partner_balance(db, partner_id)
     refund_amount = Decimal(str(payment.amount))
     balance_after = current_balance - refund_amount
 
     refund_entry = LedgerEntry(
         payment_id=payment.id,
-        user_id=seller_id,
+        user_id=partner_id,
         order_id=payment.order_id,
         entry_type=LedgerEntryType.refund,
         amount=-refund_amount,
@@ -154,7 +154,7 @@ def record_refund(db: Session, payment: Payment) -> None:
     )
     db.add(refund_entry)
     logger.info(
-        "Refund ledger entry created: seller_id=%s amount=%.2f",
-        seller_id,
+        "Refund ledger entry created: partner_id=%s amount=%.2f",
+        partner_id,
         float(refund_amount),
     )

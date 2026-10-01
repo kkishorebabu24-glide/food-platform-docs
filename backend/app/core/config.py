@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     RAZORPAY_WEBHOOK_SECRET: str = ""
-    # Platform commission percentage deducted from each sale before crediting seller
+    # Platform commission percentage deducted from each sale before crediting partner
     PLATFORM_FEE_PERCENT: float = 5.0
 
     # ── Feature Flags ─────────────────────────────────────────────────────────

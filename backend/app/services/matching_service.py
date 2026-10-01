@@ -1,7 +1,7 @@
 """
 Culinary Matching Engine — Society Food Platform.
 
-Matches resident buyers' cravings with home chefs based on:
+Matches resident residents' cravings with home chefs based on:
 1. Category compatibility (Veg, Non-Veg, Snacks, Desserts, Beverages)
 2. Dish name & culinary keyword overlap (Bio, Active menus, Culinary knowledge base)
 3. Existing menu item overlaps (dishes the chef already cooks)
@@ -14,7 +14,7 @@ import logging
 from typing import Any, Optional
 from sqlalchemy.orm import Session
 
-from app.db.models import DishSuggestion, Menu, SellerProfile, User
+from app.db.models import DishSuggestion, Menu, PartnerProfile, User
 from app.db.models.enums import MenuCategory, SuggestionStatus
 from app.services.ai_service import CULINARY_KNOWLEDGE_BASE
 
@@ -35,10 +35,10 @@ def _tokenize(text: str | None) -> set[str]:
     return {w for w in words if len(w) > 2 and w not in STOP_WORDS}
 
 
-def calculate_craving_seller_match(
+def calculate_craving_partner_match(
     craving: DishSuggestion,
-    seller_profile: SellerProfile,
-    seller_menus: list[Menu],
+    partner_profile: PartnerProfile,
+    partner_menus: list[Menu],
 ) -> dict[str, Any]:
     """
     Computes a 0-100% compatibility score between a resident's craving and a home chef's kitchen.
@@ -50,12 +50,12 @@ def calculate_craving_seller_match(
     craving_cat = craving.category.value if hasattr(craving.category, "value") else str(craving.category)
 
     # Collect chef's culinary profile tokens and category footprint
-    chef_bio = seller_profile.bio or ""
+    chef_bio = partner_profile.bio or ""
     bio_tokens = _tokenize(chef_bio)
 
     chef_categories = {
         m.category.value if hasattr(m.category, "value") else str(m.category)
-        for m in seller_menus
+        for m in partner_menus
     }
 
     # 1. Pure-Veg vs Non-Veg Strict Compatibility Guard
@@ -70,7 +70,7 @@ def calculate_craving_seller_match(
     if is_non_veg_craving and not chef_has_non_veg:
         return {
             "suggestion_id": craving.id,
-            "seller_id": seller_profile.id,
+            "partner_id": partner_profile.id,
             "match_score": 0,
             "match_level": "INCOMPATIBLE",
             "match_reasons": ["Chef operates a pure-vegetarian kitchen"],
@@ -93,7 +93,7 @@ def calculate_craving_seller_match(
     keyword_points = 0.0
     direct_dish_match_found = False
 
-    for menu in seller_menus:
+    for menu in partner_menus:
         menu_tokens = _tokenize(f"{menu.name} {menu.description or ''}")
         overlap = craving_tokens.intersection(menu_tokens)
 
@@ -130,7 +130,7 @@ def calculate_craving_seller_match(
         if key in craving.title.lower() or key in (craving.description or "").lower():
             for tag in data.get("tags", []):
                 tag_tokens = _tokenize(tag)
-                if tag_tokens.intersection(bio_tokens) or any(tag_tokens.intersection(_tokenize(m.name)) for m in seller_menus):
+                if tag_tokens.intersection(bio_tokens) or any(tag_tokens.intersection(_tokenize(m.name)) for m in partner_menus):
                     keyword_points = min(45.0, keyword_points + 10.0)
                     reasons.append(f"Cuisine Tag: {tag}")
                     break
@@ -139,12 +139,12 @@ def calculate_craving_seller_match(
     score += min(45.0, keyword_points)
 
     # 4. Kitchen Activity & Chef Reputation (up to 15 pts)
-    if seller_profile.is_open:
+    if partner_profile.is_open:
         score += 10.0
         reasons.append("Kitchen Ready: Accepting orders right now")
-    if seller_profile.rating >= 4.0:
+    if partner_profile.rating >= 4.0:
         score += 5.0
-        reasons.append(f"Top Rated Chef: {seller_profile.rating:.1f}★ rating")
+        reasons.append(f"Top Rated Chef: {partner_profile.rating:.1f}★ rating")
 
     # 5. Community Demand Momentum (up to 10 pts)
     upvote_points = min(10.0, float(craving.upvotes_count) * 2.0)
@@ -162,7 +162,7 @@ def calculate_craving_seller_match(
 
     return {
         "suggestion_id": craving.id,
-        "seller_id": seller_profile.id,
+        "partner_id": partner_profile.id,
         "match_score": final_score,
         "match_level": match_level,
         "match_reasons": reasons[:3],  # Top 3 concise reasons
@@ -170,22 +170,22 @@ def calculate_craving_seller_match(
     }
 
 
-def get_matched_cravings_for_seller(
+def get_matched_cravings_for_partner(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     min_score: int = 35,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
     """
-    Returns open community cravings matching the specified seller's kitchen,
+    Returns open community cravings matching the specified partner's kitchen,
     sorted by match_score desc and upvotes_count desc.
     """
-    seller_profile = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller_profile:
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner_profile:
         return []
 
-    seller_user = db.query(User).filter(User.id == seller_id).first()
-    seller_menus = db.query(Menu).filter(Menu.seller_id == seller_id).all()
+    partner_user = db.query(User).filter(User.id == partner_id).first()
+    partner_menus = db.query(Menu).filter(Menu.partner_id == partner_id).all()
 
     open_cravings = (
         db.query(DishSuggestion)
@@ -197,11 +197,11 @@ def get_matched_cravings_for_seller(
 
     matched_results = []
     for craving in open_cravings:
-        # Don't match seller to their own suggestions
-        if craving.user_id == seller_id:
+        # Don't match partner to their own suggestions
+        if craving.user_id == partner_id:
             continue
 
-        match_data = calculate_craving_seller_match(craving, seller_profile, seller_menus)
+        match_data = calculate_craving_partner_match(craving, partner_profile, partner_menus)
         if match_data["match_score"] >= min_score:
             craving_user = db.query(User).filter(User.id == craving.user_id).first()
             matched_results.append({

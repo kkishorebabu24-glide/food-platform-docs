@@ -1,3 +1,4 @@
+from app.db.models.enums import OrderStatus
 """Order request/response schemas."""
 
 from datetime import date, datetime
@@ -5,7 +6,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
-VALID_STATUSES = {"pending", "accepted", "ready", "completed", "cancelled"}
+# Valid order statuses are enforced via OrderStatus enum
 VALID_DELIVERY_TYPES = {"doorstep", "self_pickup"}
 
 
@@ -21,7 +22,7 @@ class OrderItem(BaseModel):
 class OrderCreateRequest(BaseModel):
     """Request body for placing a new order."""
 
-    seller_id: int
+    partner_id: int
     items: list[OrderItem]
     notes: str | None = None
     is_preorder: bool = False
@@ -45,7 +46,7 @@ class OrderCreateRequest(BaseModel):
 
 
 class OrderStatusUpdate(BaseModel):
-    """Request body for a seller updating order status."""
+    """Request body for a partner updating order status."""
 
     status: str
 
@@ -63,8 +64,8 @@ class OrderResponse(BaseModel):
     """Response schema for a single order."""
 
     id: int
-    buyer_id: int
-    seller_id: int
+    resident_id: int
+    partner_id: int
     status: str
     items: Any  # Parsed from JSON text
     total_price: float

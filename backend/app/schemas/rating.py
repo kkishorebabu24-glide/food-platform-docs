@@ -24,7 +24,7 @@ class RatingResponse(BaseModel):
 
     id: int
     order_id: int
-    seller_id: int
+    partner_id: int
     rater_id: int
     score: int
     review_text: str | None = None

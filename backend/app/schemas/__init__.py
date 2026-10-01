@@ -13,7 +13,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserInfo,
 )
-from app.schemas.buyer import BuyerProfileResponse, BuyerProfileUpdate
+from app.schemas.resident import ResidentProfileResponse, ResidentProfileUpdate
 from app.schemas.menu import (
     AvailabilityRequest,
     MenuCreateRequest,
@@ -31,7 +31,7 @@ from app.schemas.payment import (
     PaymentCaptureRequest,
     PaymentInitiateResponse,
     PaymentResponse,
-    SellerBalanceResponse,
+    PartnerBalanceResponse,
 )
 from app.schemas.payout import (
     PayoutConfirmRequest,
@@ -40,11 +40,11 @@ from app.schemas.payout import (
     PayoutResponse,
 )
 from app.schemas.rating import RatingCreateRequest, RatingResponse
-from app.schemas.seller import (
-    SellerDetailResponse,
-    SellerRegisterRequest,
-    SellerResponse,
-    SellerUpdateRequest,
+from app.schemas.partner import (
+    PartnerDetailResponse,
+    PartnerRegisterRequest,
+    PartnerResponse,
+    PartnerUpdateRequest,
 )
 from app.schemas.suggestion import (
     SuggestionClaimRequest,
@@ -55,9 +55,9 @@ from app.schemas.suggestion import (
 
 __all__ = [
     "AvailabilityRequest",
-    # Buyer
-    "BuyerProfileResponse",
-    "BuyerProfileUpdate",
+    # Resident
+    "ResidentProfileResponse",
+    "ResidentProfileUpdate",
     "LedgerEntryResponse",
     "LoginRequest",
     # Menu
@@ -85,12 +85,12 @@ __all__ = [
     "RefreshResponse",
     # Auth
     "RegisterRequest",
-    "SellerBalanceResponse",
-    "SellerDetailResponse",
-    # Seller
-    "SellerRegisterRequest",
-    "SellerResponse",
-    "SellerUpdateRequest",
+    "PartnerBalanceResponse",
+    "PartnerDetailResponse",
+    # Partner
+    "PartnerRegisterRequest",
+    "PartnerResponse",
+    "PartnerUpdateRequest",
     # Suggestion
     "SuggestionClaimRequest",
     "SuggestionCreateRequest",

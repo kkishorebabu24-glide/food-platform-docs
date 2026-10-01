@@ -5,7 +5,7 @@ Public / Authenticated:
   GET  /api/v1/suggestions/                 → list trending dish suggestions
   POST /api/v1/suggestions/                 → propose a new dish craving (auth)
   POST /api/v1/suggestions/{id}/upvote      → toggle upvote on a craving (auth)
-  POST /api/v1/suggestions/{id}/claim       → chef accepts dish & launches pre-order (seller)
+  POST /api/v1/suggestions/{id}/claim       → chef accepts dish & launches pre-order (partner)
 """
 
 import logging
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/api/v1/suggestions", tags=["suggestions"])
 
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 @router.get("/")
@@ -70,17 +70,17 @@ async def list_suggestions(
 async def list_matched_suggestions(
     min_score: int = Query(default=35, ge=0, le=100),
     limit: int = Query(default=30, ge=1, le=100),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
     List open cravings matched specifically to the authenticated chef's kitchen,
     ranked by compatibility score.
     """
-    from app.services.matching_service import get_matched_cravings_for_seller
+    from app.services.matching_service import get_matched_cravings_for_partner
 
-    matched = get_matched_cravings_for_seller(
-        db, seller_id=current_user.id, min_score=min_score, limit=limit
+    matched = get_matched_cravings_for_partner(
+        db, partner_id=current_user.id, min_score=min_score, limit=limit
     )
     return {"suggestions": matched, "total": len(matched)}
 
@@ -122,7 +122,7 @@ async def toggle_upvote(
 async def claim_suggestion(
     suggestion_id: int,
     request: SuggestionClaimRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
@@ -130,7 +130,7 @@ async def claim_suggestion(
     """
     return suggestion_service.claim_suggestion(
         db,
-        seller_id=current_user.id,
+        partner_id=current_user.id,
         suggestion_id=suggestion_id,
         request=request,
     )

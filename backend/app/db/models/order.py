@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class Order(TimestampMixin, Base):
     """
-    Represents an order placed by a buyer.
+    Represents an order placed by a resident.
 
     `items` is a JSON column containing an array of order line items:
       [{"menu_id": 1, "name": "Dal", "quantity": 2, "price": 80.0}, ...]
@@ -25,18 +25,18 @@ class Order(TimestampMixin, Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    buyer_id: Mapped[int] = mapped_column(
+    resident_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
-    seller_id: Mapped[int] = mapped_column(
+    partner_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
 
-    # Lifecycle: pending → accepted → ready → completed | cancelled
+    # Lifecycle: placed → accepted → preparing → ready → dispatched → in_transit → delivered | cancelled
     status: Mapped[OrderStatus] = mapped_column(
         SAEnum(OrderStatus, name="orderstatus", create_constraint=True),
         nullable=False,
-        default=OrderStatus.pending,
+        default=OrderStatus.placed,
     )
 
     # JSON array of order line items (stored natively in PostgreSQL)
@@ -45,7 +45,7 @@ class Order(TimestampMixin, Base):
     # Exact decimal total (2dp precision)
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    # Optional buyer note to the seller
+    # Optional resident note to the partner
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Pre-Order & Fulfillment Fields ─────────────────────────────────────────
@@ -65,18 +65,18 @@ class Order(TimestampMixin, Base):
         default=DeliveryType.doorstep,
     )
 
-    # Set when status transitions to 'completed'
+    # Set when status transitions to 'delivered'
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    buyer: Mapped["User"] = relationship(
-        "User", back_populates="orders_as_buyer", foreign_keys=[buyer_id]
+    resident: Mapped["User"] = relationship(
+        "User", back_populates="orders_as_resident", foreign_keys=[resident_id]
     )
-    seller: Mapped["User"] = relationship(
-        "User", back_populates="orders_as_seller", foreign_keys=[seller_id]
+    partner: Mapped["User"] = relationship(
+        "User", back_populates="orders_as_partner", foreign_keys=[partner_id]
     )
     payment: Mapped[Optional["Payment"]] = relationship(
         "Payment", back_populates="order", uselist=False

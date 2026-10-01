@@ -1,4 +1,4 @@
-"""LedgerEntry model — double-entry accounting for seller balances."""
+"""LedgerEntry model — double-entry accounting for partner balances."""
 
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -18,14 +18,14 @@ if TYPE_CHECKING:
 
 class LedgerEntry(TimestampMixin, Base):
     """
-    Single accounting entry in the seller's virtual ledger.
+    Single accounting entry in the partner's virtual ledger.
 
     Each captured payment creates two entries:
-      - credit:        amount credited to seller (total_price - platform_fee)
+      - credit:        amount credited to partner (total_price - platform_fee)
       - platform_fee:  fee deducted for the platform (negative amount)
 
     Each refund creates:
-      - refund:        amount deducted from seller balance (negative amount)
+      - refund:        amount deducted from partner balance (negative amount)
     """
 
     __tablename__ = "ledger_entries"
@@ -37,7 +37,7 @@ class LedgerEntry(TimestampMixin, Base):
         ForeignKey("payments.id"), index=True, nullable=True
     )
 
-    # The user (seller) whose balance this entry affects
+    # The user (partner) whose balance this entry affects
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
@@ -56,7 +56,7 @@ class LedgerEntry(TimestampMixin, Base):
     # Positive for credits; negative for debits / fees / refunds
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    # Running balance of the seller after this entry
+    # Running balance of the partner after this entry
     balance_after: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
     # Human-readable description

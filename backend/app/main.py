@@ -36,8 +36,8 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 app = FastAPI(
     title="Society Food Platform API",
     description=(
-        "Home food seller marketplace for residential societies.\n\n"
-        "**Phase 1 MVP** — OTP auth, seller menus, order placement, ratings, "
+        "Home food partner marketplace for residential societies.\n\n"
+        "**Phase 1 MVP** — OTP auth, partner menus, order placement, ratings, "
         "real-time order tracking via WebSocket, and in-building delivery."
     ),
     version="1.1.0-alpha.1",
@@ -92,7 +92,7 @@ async def websocket_order_status(websocket: WebSocket, order_id: int):
         // data.status / data.delivery_status: new status value
       };
 
-    Multiple clients can subscribe to the same order_id (buyer + seller).
+    Multiple clients can subscribe to the same order_id (resident + partner).
     """
     manager = get_manager()
     await manager.connect(order_id, websocket)

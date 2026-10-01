@@ -1,4 +1,4 @@
-"""User model — buyers, sellers, and admins share this table (role-based)."""
+"""User model -- residents, partners, and admins share this table (role-based)."""
 
 import re
 from datetime import datetime
@@ -9,19 +9,19 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
-from app.db.models.enums import UserRole, VerificationStatus
+from app.db.models.enums import UserRole, UserStatus
 
 if TYPE_CHECKING:
     from app.db.models.order import Order
-    from app.db.models.seller import SellerProfile
+    from app.db.models.partner_profile import PartnerProfile
 
 
 class User(TimestampMixin, Base):
     """
-    Represents any platform participant: buyer, seller, or admin.
+    Represents any platform participant: resident, partner, or admin.
 
-    A user can hold both buyer and seller roles simultaneously — a buyer
-    registers a SellerProfile to begin selling, while still placing orders.
+    Every society member starts as a resident. A resident can apply to become
+    a partner (home chef), while still placing orders as a resident.
     """
 
     __tablename__ = "users"
@@ -41,61 +41,68 @@ class User(TimestampMixin, Base):
     # 10-digit Indian mobile — optional, validated
     phone: Mapped[str | None] = mapped_column(String(15), nullable=True)
 
-    # Society flat number e.g. "A-101", "M2005-B03" — optional
+    # Society flat number e.g. "A-101", "TowerA-101" -- optional
     flat_number: Mapped[str | None] = mapped_column(
         String(50), nullable=True, index=True
     )
 
-    # ── Role & Status ─────────────────────────────────────────────────────────
-    # Roles: buyer | seller | admin | tester | developer | maintainer
-    # Constraint: UI shows only buyer and seller to end-users
+    # -- Role & Status ---------------------------------------------------------
+    # Roles: resident | partner | admin | super_admin
     role: Mapped[UserRole] = mapped_column(
         SAEnum(UserRole, name="userrole", create_constraint=True),
         nullable=False,
-        default=UserRole.buyer,
+        default=UserRole.resident,
     )
 
-    # 3-state verification — pending | verified | rejected
-    verification_status: Mapped[VerificationStatus] = mapped_column(
-        SAEnum(VerificationStatus, name="verificationstatus", create_constraint=True),
+    # 5-state user lifecycle
+    status: Mapped[UserStatus] = mapped_column(
+        SAEnum(UserStatus, name="userstatus", create_constraint=True),
         nullable=False,
-        default=VerificationStatus.pending,
+        default=UserStatus.pending_verification,
     )
 
-    # Account active / inactive flag
+    # Account active / inactive flag (mirrors status == active for quick queries)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # ── Authentication ────────────────────────────────────────────────────────
     # Bcrypt-hashed password for JWT login
     hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    # ── OTP Fields (nullable — reserved for future email / phone OTP flow) ────
-    # Retained so a future OTP implementation requires no schema migration.
-    # When OTP is implemented, store a bcrypt hash of the OTP (not the raw code).
+    # -- OTP Fields (nullable -- reserved for future email / phone OTP flow) ---
     otp_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     otp_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     otp_attempts: Mapped[int] = mapped_column(default=0, nullable=False)
 
-    # ── Relationships ─────────────────────────────────────────────────────────
-    seller_profile: Mapped[Optional["SellerProfile"]] = relationship(
-        "SellerProfile", back_populates="user", uselist=False
+    # -- Relationships ---------------------------------------------------------
+    partner_profile: Mapped[Optional["PartnerProfile"]] = relationship(
+        "PartnerProfile", back_populates="user", uselist=False
     )
-    orders_as_buyer: Mapped[list["Order"]] = relationship(
-        "Order", back_populates="buyer", foreign_keys="Order.buyer_id"
+    orders_as_resident: Mapped[list["Order"]] = relationship(
+        "Order", back_populates="resident", foreign_keys="Order.resident_id"
     )
-    orders_as_seller: Mapped[list["Order"]] = relationship(
-        "Order", back_populates="seller", foreign_keys="Order.seller_id"
+    orders_as_partner: Mapped[list["Order"]] = relationship(
+        "Order", back_populates="partner", foreign_keys="Order.partner_id"
     )
 
-    # ── Convenience Property (backward compatibility) ─────────────────────────
+    # -- Convenience Properties ------------------------------------------------
     @property
     def is_verified(self) -> bool:
-        """True when verification_status is 'verified'. Read-only shortcut."""
-        return self.verification_status == VerificationStatus.verified
+        """True when status is 'active'."""
+        return self.status == UserStatus.active
 
-    # ── Validators ────────────────────────────────────────────────────────────
+    @property
+    def is_partner(self) -> bool:
+        """True when the user holds the partner role."""
+        return self.role == UserRole.partner
+
+    @property
+    def is_admin(self) -> bool:
+        """True when the user holds the admin or super_admin role."""
+        return self.role in (UserRole.admin, UserRole.super_admin)
+
+    # -- Validators ------------------------------------------------------------
 
     @validates("phone")
     def validate_phone(self, key: str, value: str | None) -> str | None:

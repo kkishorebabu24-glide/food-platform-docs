@@ -2,7 +2,7 @@
 
 Calculates objective delivery punctuality metrics based on order and delivery timestamps:
 - Compares actual completed_at timestamp against scheduled delivery slot deadlines or estimated prep+delivery times.
-- Updates rolling on_time_delivery_rate, avg_delivery_minutes, and punctuality_rating on the SellerProfile.
+- Updates rolling on_time_delivery_rate, avg_delivery_minutes, and punctuality_rating on the PartnerProfile.
 """
 
 from datetime import datetime, time, timezone, timedelta
@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.db.models.order import Order
-from app.db.models.seller import SellerProfile
+from app.db.models.partner_profile import PartnerProfile
 from app.db.models.delivery import Delivery
 from app.db.models.enums import OrderStatus
 
@@ -69,26 +69,26 @@ def calculate_order_is_on_time(order: Order, delivery: Delivery | None = None) -
     return is_on_time, duration_minutes
 
 
-def update_seller_punctuality_on_order_completed(db: Session, seller_id: int, completed_order: Order) -> SellerProfile | None:
+def update_partner_punctuality_on_order_completed(db: Session, partner_id: int, completed_order: Order) -> PartnerProfile | None:
     """
-    Recalculates and updates the seller's punctuality stats upon order completion.
+    Recalculates and updates the partner's punctuality stats upon order completion.
     """
-    seller_profile = db.scalar(
-        select(SellerProfile).where(SellerProfile.id == seller_id)
+    partner_profile = db.scalar(
+        select(PartnerProfile).where(PartnerProfile.id == partner_id)
     )
-    if not seller_profile:
+    if not partner_profile:
         return None
 
-    # Fetch all completed orders for this seller
+    # Fetch all completed orders for this partner
     completed_orders = db.scalars(
         select(Order).where(
-            Order.seller_id == seller_id,
-            Order.status == OrderStatus.completed
+            Order.partner_id == partner_id,
+            Order.status == OrderStatus.delivered
         )
     ).all()
 
     if not completed_orders:
-        return seller_profile
+        return partner_profile
 
     # Fetch associated deliveries
     order_ids = [o.id for o in completed_orders]
@@ -115,15 +115,15 @@ def update_seller_punctuality_on_order_completed(db: Session, seller_id: int, co
     # 100% on time -> 5.0, 50% on time -> 3.0, 0% on time -> 1.0
     punctuality_rating = round(1.0 + (on_time_rate / 100.0) * 4.0, 1)
 
-    seller_profile.on_time_delivery_rate = on_time_rate
-    seller_profile.punctuality_rating = punctuality_rating
-    seller_profile.avg_delivery_minutes = avg_minutes
-    seller_profile.total_orders_completed = total_count
+    partner_profile.on_time_delivery_rate = on_time_rate
+    partner_profile.punctuality_rating = punctuality_rating
+    partner_profile.avg_delivery_minutes = avg_minutes
+    partner_profile.total_orders_completed = total_count
 
     db.flush()
     logger.info(
-        "Updated punctuality for seller %d: on_time=%.1f%%, punctuality=%.1f, avg_mins=%d, total_completed=%d",
-        seller_id, on_time_rate, punctuality_rating, avg_minutes, total_count
+        "Updated punctuality for partner %d: on_time=%.1f%%, punctuality=%.1f, avg_mins=%d, total_completed=%d",
+        partner_id, on_time_rate, punctuality_rating, avg_minutes, total_count
     )
-    return seller_profile
+    return partner_profile
 

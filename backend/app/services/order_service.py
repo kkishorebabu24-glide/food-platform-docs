@@ -5,38 +5,38 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Menu, Order, SellerProfile
-from app.db.models.enums import OrderStatus
+from app.db.models import Menu, Order, PartnerProfile
+from app.db.models.enums import OrderStatus, UserRole
 from app.schemas.order import OrderCreateRequest
 
 VALID_TRANSITIONS = {
-    OrderStatus.pending: {OrderStatus.accepted, OrderStatus.cancelled},
+    OrderStatus.placed: {OrderStatus.accepted, OrderStatus.cancelled},
     OrderStatus.accepted: {OrderStatus.ready, OrderStatus.cancelled},
-    OrderStatus.ready: {OrderStatus.completed},
-    OrderStatus.completed: set(),
+    OrderStatus.ready: {OrderStatus.delivered},
+    OrderStatus.delivered: set(),
     OrderStatus.cancelled: set(),
 }
 
 
-def create_order(db: Session, buyer_id: int, request: OrderCreateRequest) -> Order:
+def create_order(db: Session, resident_id: int, request: OrderCreateRequest) -> Order:
     """
-    Place a new order for a buyer.
+    Place a new order for a resident.
 
     Validates:
-    - Buyer cannot place an order from their own kitchen (self-ordering prevention).
-    - Seller must have configured their UPI ID.
-    - All menu items belong to the specified seller and are available.
+    - Resident cannot place an order from their own kitchen (self-ordering prevention).
+    - Partner must have configured their UPI ID.
+    - All menu items belong to the specified partner and are available.
     - Decrements Menu.quantity for items with finite stock and auto-marks items
       unavailable when stock reaches zero.
     """
-    if buyer_id == request.seller_id:
+    if resident_id == request.partner_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Chefs cannot place orders from their own kitchen.",
         )
 
-    seller_prof = db.query(SellerProfile).filter(SellerProfile.id == request.seller_id).first()
-    if seller_prof and not seller_prof.upi_id:
+    partner_prof = db.query(PartnerProfile).filter(PartnerProfile.id == request.partner_id).first()
+    if partner_prof and not partner_prof.upi_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The home chef has not configured their UPI payment address yet. Please order from an active kitchen.",
@@ -48,7 +48,7 @@ def create_order(db: Session, buyer_id: int, request: OrderCreateRequest) -> Ord
         db.query(Menu)
         .filter(
             Menu.id.in_(menu_ids),
-            Menu.seller_id == request.seller_id,
+            Menu.partner_id == request.partner_id,
             Menu.is_available == True,
         )
         .all()
@@ -57,7 +57,7 @@ def create_order(db: Session, buyer_id: int, request: OrderCreateRequest) -> Ord
     if len(db_items) != len(menu_ids):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="One or more menu items are unavailable or do not belong to the seller.",
+            detail="One or more menu items are unavailable or do not belong to the partner.",
         )
 
     # Index menu items by id for quick lookup
@@ -104,9 +104,9 @@ def create_order(db: Session, buyer_id: int, request: OrderCreateRequest) -> Ord
             target_date = request.target_delivery_date
 
     order = Order(
-        buyer_id=buyer_id,
-        seller_id=request.seller_id,
-        status=OrderStatus.pending,
+        resident_id=resident_id,
+        partner_id=request.partner_id,
+        status=OrderStatus.placed,
         items=items_data,
         total_price=round(total_price, 2),
         notes=request.notes,
@@ -141,15 +141,15 @@ def get_order_by_id(db: Session, order_id: int) -> Order:
     return order
 
 
-def get_buyer_orders(
+def get_resident_orders(
     db: Session,
-    buyer_id: int,
+    resident_id: int,
     skip: int = 0,
     limit: int = 20,
     status_filter: str | None = None,
 ) -> dict:
-    """Return paginated orders for a buyer, with optional status filter."""
-    query = db.query(Order).filter(Order.buyer_id == buyer_id)
+    """Return paginated orders for a resident, with optional status filter."""
+    query = db.query(Order).filter(Order.resident_id == resident_id)
     if status_filter:
         try:
             query = query.filter(Order.status == OrderStatus(status_filter))
@@ -159,19 +159,19 @@ def get_buyer_orders(
                 detail=f"Invalid status filter: '{status_filter}'.",
             )
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-    total = db.query(Order).filter(Order.buyer_id == buyer_id).count()
+    total = db.query(Order).filter(Order.resident_id == resident_id).count()
     return {"orders": _serialize_orders(orders), "total": total}
 
 
-def get_seller_orders(
+def get_partner_orders(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     skip: int = 0,
     limit: int = 20,
     status_filter: str | None = None,
 ) -> dict:
-    """Return paginated orders for a seller, with optional status filter."""
-    query = db.query(Order).filter(Order.seller_id == seller_id)
+    """Return paginated orders for a partner, with optional status filter."""
+    query = db.query(Order).filter(Order.partner_id == partner_id)
     if status_filter:
         try:
             query = query.filter(Order.status == OrderStatus(status_filter))
@@ -181,7 +181,7 @@ def get_seller_orders(
                 detail=f"Invalid status filter: '{status_filter}'.",
             )
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-    total = db.query(Order).filter(Order.seller_id == seller_id).count()
+    total = db.query(Order).filter(Order.partner_id == partner_id).count()
     return {"orders": _serialize_orders(orders), "total": total}
 
 
@@ -196,18 +196,18 @@ def update_order_status(
     Update an order's status with lifecycle validation.
 
     Rules:
-      - Sellers: pending → accepted, accepted → ready, any → cancelled
-      - Buyers:  pending → cancelled
+      - Partners: pending → accepted, accepted → ready, any → cancelled
+      - Residents:  pending → cancelled
       - Admins:  any transition allowed
     """
     order = get_order_by_id(db, order_id)
 
     # Role-based access check
-    if actor_role == "seller" and order.seller_id != actor_id:
+    if actor_role == UserRole.partner.value and order.partner_id != actor_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
         )
-    if actor_role == "buyer" and order.buyer_id != actor_id:
+    if actor_role == UserRole.resident.value and order.resident_id != actor_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
         )
@@ -221,7 +221,7 @@ def update_order_status(
             detail=f"Invalid status value: '{new_status}'.",
         )
 
-    if actor_role != "admin":
+    if actor_role != UserRole.admin.value:
         allowed = VALID_TRANSITIONS.get(order.status, set())
         if new_status_enum not in allowed:
             raise HTTPException(
@@ -230,11 +230,11 @@ def update_order_status(
             )
 
     order.status = new_status_enum
-    if new_status_enum == OrderStatus.completed:
+    if new_status_enum == OrderStatus.delivered:
         order.completed_at = datetime.now(UTC)
         try:
-            from app.services.punctuality_service import update_seller_punctuality_on_order_completed
-            update_seller_punctuality_on_order_completed(db, order.seller_id, order)
+            from app.services.punctuality_service import update_partner_punctuality_on_order_completed
+            update_partner_punctuality_on_order_completed(db, order.partner_id, order)
         except Exception as e:
             # Punctuality calculation should not block order status update
             pass
@@ -245,17 +245,17 @@ def update_order_status(
 
 
 
-def cancel_order(db: Session, order_id: int, buyer_id: int) -> Order:
-    """Allow a buyer to cancel their own order (only when pending)."""
-    return update_order_status(db, order_id, OrderStatus.cancelled, buyer_id, "buyer")
+def cancel_order(db: Session, order_id: int, resident_id: int) -> Order:
+    """Allow a resident to cancel their own order (only when pending)."""
+    return update_order_status(db, order_id, OrderStatus.cancelled, resident_id, "resident")
 
 
 def _serialize_orders(orders: list[Order]) -> list[dict]:
     return [
         {
             "id": o.id,
-            "buyer_id": o.buyer_id,
-            "seller_id": o.seller_id,
+            "resident_id": o.resident_id,
+            "partner_id": o.partner_id,
             "status": o.status,
             "items": o.items,
             "total_price": float(o.total_price),

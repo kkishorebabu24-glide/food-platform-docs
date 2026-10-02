@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 
 
 class PayoutInitiateRequest(BaseModel):
-    """Admin request to initiate a seller payout."""
+    """Admin request to initiate a partner payout."""
 
     amount: Decimal
 
@@ -35,7 +35,7 @@ class PayoutResponse(BaseModel):
     """Full payout detail response."""
 
     id: int
-    seller_id: int
+    partner_id: int
     amount: Decimal
     status: str
     upi_id: str | None = None

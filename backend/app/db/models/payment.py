@@ -22,8 +22,8 @@ class Payment(TimestampMixin, Base):
     Records a payment transaction for an Order via Razorpay.
 
     Flow:
-      1. Buyer initiates  → status=created, provider_order_id populated
-      2. Buyer pays via Razorpay widget → webhook fires / frontend confirms
+      1. Resident initiates  → status=created, provider_order_id populated
+      2. Resident pays via Razorpay widget → webhook fires / frontend confirms
       3. Signature verified → status=captured, ledger entries created
       4. On refund → status=refunded
     """
@@ -36,14 +36,14 @@ class Payment(TimestampMixin, Base):
     order_id: Mapped[int] = mapped_column(
         ForeignKey("orders.id"), unique=True, index=True, nullable=False
     )
-    buyer_id: Mapped[int] = mapped_column(
+    resident_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
-    seller_id: Mapped[int] = mapped_column(
+    partner_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
 
-    # Amount charged to the buyer (exact decimal, INR rupees)
+    # Amount charged to the resident (exact decimal, INR rupees)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="INR", nullable=False)
 
@@ -51,7 +51,7 @@ class Payment(TimestampMixin, Base):
     status: Mapped[PaymentStatus] = mapped_column(
         SAEnum(PaymentStatus, name="paymentstatus", create_constraint=True),
         nullable=False,
-        default=PaymentStatus.created,
+        default=PaymentStatus.initiated,
     )
 
     # Payment gateway / rail identifier (direct_upi, razorpay)
@@ -72,7 +72,7 @@ class Payment(TimestampMixin, Base):
     utr_number: Mapped[str | None] = mapped_column(
         String(50), nullable=True, index=True
     )
-    seller_confirmed_at: Mapped[datetime | None] = mapped_column(
+    partner_confirmed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -86,8 +86,8 @@ class Payment(TimestampMixin, Base):
 
     # ── Relationships ─────────────────────────────────────────────────────────
     order: Mapped["Order"] = relationship("Order", back_populates="payment")
-    buyer: Mapped["User"] = relationship("User", foreign_keys=[buyer_id])
-    seller: Mapped["User"] = relationship("User", foreign_keys=[seller_id])
+    resident: Mapped["User"] = relationship("User", foreign_keys=[resident_id])
+    partner: Mapped["User"] = relationship("User", foreign_keys=[partner_id])
     ledger_entries: Mapped[list["LedgerEntry"]] = relationship(
         "LedgerEntry", back_populates="payment"
     )

@@ -1,9 +1,9 @@
 """
 Admin routes — platform management (admin role required for all endpoints).
 
-  GET   /api/v1/admin/sellers/pending         → list sellers awaiting approval
-  POST  /api/v1/admin/sellers/{id}/approve    → approve a seller
-  POST  /api/v1/admin/sellers/{id}/reject     → reject a seller
+  GET   /api/v1/admin/partners/pending         → list partners awaiting approval
+  POST  /api/v1/admin/partners/{id}/approve    → approve a partner
+  POST  /api/v1/admin/partners/{id}/reject     → reject a partner
   GET   /api/v1/admin/residents               → list all users
   PATCH /api/v1/admin/users/{id}/status       → activate / deactivate a user
   GET   /api/v1/admin/analytics               → platform summary stats + revenue
@@ -17,9 +17,14 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db, require_role
-from app.db.models import Order, Payment, SellerProfile, User
-from app.db.models.enums import ApprovalStatus, PaymentStatus, UserRole
-from app.services import payment_service, seller_service
+from app.db.models import Order, Payment, PartnerProfile, User
+from app.db.models.enums import (
+    OrderStatus,
+    PartnerApplicationStatus,
+    PaymentStatus,
+    UserRole,
+)
+from app.services import payment_service, partner_service
 
 logger = logging.getLogger(__name__)
 
@@ -29,37 +34,37 @@ DB_DEPENDENCY = Depends(get_db)
 ADMIN_DEPENDENCY = Depends(require_role("admin"))
 
 
-@router.get("/sellers/pending")
-async def get_pending_sellers(
+@router.get("/partners/pending")
+async def get_pending_partners(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """List all sellers awaiting admin approval."""
-    return seller_service.get_pending_sellers(db, skip=skip, limit=limit)
+    """List all partners awaiting admin approval."""
+    return partner_service.get_pending_partners(db, skip=skip, limit=limit)
 
 
-@router.post("/sellers/{seller_id}/approve")
-async def approve_seller(
-    seller_id: int,
+@router.post("/partners/{partner_id}/approve")
+async def approve_partner(
+    partner_id: int,
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Approve a pending seller registration."""
-    seller_service.approve_seller(db, seller_id)
-    return {"message": f"Seller {seller_id} approved.", "seller_id": seller_id}
+    """Approve a pending partner registration."""
+    partner_service.approve_partner(db, partner_id)
+    return {"message": f"Partner {partner_id} approved.", "partner_id": partner_id}
 
 
-@router.post("/sellers/{seller_id}/reject")
-async def reject_seller(
-    seller_id: int,
+@router.post("/partners/{partner_id}/reject")
+async def reject_partner(
+    partner_id: int,
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Reject a pending seller (deactivates their account)."""
-    seller_service.reject_seller(db, seller_id)
-    return {"message": f"Seller {seller_id} rejected.", "seller_id": seller_id}
+    """Reject a pending partner (deactivates their account)."""
+    partner_service.reject_partner(db, partner_id)
+    return {"message": f"Partner {partner_id} rejected.", "partner_id": partner_id}
 
 
 @router.get("/residents")
@@ -69,7 +74,7 @@ async def get_residents(
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """List all registered residents (buyers and sellers)."""
+    """List all registered residents (residents and partners)."""
     users = (
         db.query(User).filter(User.is_active == True).offset(skip).limit(limit).all()
     )
@@ -82,7 +87,7 @@ async def get_residents(
                 "email": u.email,
                 "flat_number": u.flat_number,
                 "role": u.role,
-                "verification_status": u.verification_status,
+                "status": u.status,
                 "is_verified": u.is_verified,
                 "is_active": u.is_active,
             }
@@ -95,7 +100,9 @@ async def get_residents(
 @router.patch("/users/{user_id}/status")
 async def set_user_status(
     user_id: int,
-    is_active: bool = Body(..., embed=True, description="true to activate, false to deactivate"),
+    is_active: bool = Body(
+        ..., embed=True, description="true to activate, false to deactivate"
+    ),
     admin_user: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
@@ -107,6 +114,7 @@ async def set_user_status(
     """
     if user_id == admin_user.id:
         from fastapi import HTTPException, status
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admins cannot deactivate their own account.",
@@ -115,7 +123,10 @@ async def set_user_status(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         from fastapi import HTTPException, status
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
 
     user.is_active = is_active
     db.commit()
@@ -135,21 +146,23 @@ async def get_analytics(
     db: Session = DB_DEPENDENCY,
 ):
     """Return platform-wide summary statistics including revenue."""
-    total_sellers = (
-        db.query(SellerProfile)
-        .filter(SellerProfile.approval_status == ApprovalStatus.approved)
+    total_partners = (
+        db.query(PartnerProfile)
+        .filter(PartnerProfile.application_status == PartnerApplicationStatus.approved)
         .count()
     )
-    total_buyers = (
+    total_residents = (
         db.query(User)
-        .filter(User.role == UserRole.buyer, User.is_active == True)
+        .filter(User.role == UserRole.resident, User.is_active == True)
         .count()
     )
     total_orders = db.query(Order).count()
-    completed_orders = db.query(Order).filter(Order.status == "completed").count()
+    completed_orders = (
+        db.query(Order).filter(Order.status == OrderStatus.delivered).count()
+    )
     pending_approvals = (
-        db.query(SellerProfile)
-        .filter(SellerProfile.approval_status == ApprovalStatus.pending)
+        db.query(PartnerProfile)
+        .filter(PartnerProfile.application_status == PartnerApplicationStatus.pending)
         .count()
     )
 
@@ -168,11 +181,11 @@ async def get_analytics(
     )
 
     return {
-        "total_sellers": total_sellers,
-        "total_buyers": total_buyers,
+        "total_partners": total_partners,
+        "total_residents": total_residents,
         "total_orders": total_orders,
         "completed_orders": completed_orders,
-        "pending_seller_approvals": pending_approvals,
+        "pending_partner_approvals": pending_approvals,
         "revenue": {
             "total_gross_inr": float(total_revenue),
             "total_refunded_inr": float(refunded_amount),
@@ -191,9 +204,11 @@ async def refund_order_payment(
     Initiate a full refund for a captured payment (admin only).
 
     Marks the payment as refunded, calls Razorpay refund API,
-    and records a debit ledger entry for the seller.
+    and records a debit ledger entry for the partner.
     """
-    payment = payment_service.refund_payment(db, order_id=order_id, admin_id=admin_user.id)
+    payment = payment_service.refund_payment(
+        db, order_id=order_id, admin_id=admin_user.id
+    )
     return {
         "message": f"Refund initiated for order #{order_id}.",
         "order_id": order_id,

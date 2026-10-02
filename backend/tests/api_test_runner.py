@@ -154,8 +154,8 @@ def run_full_regression_suite():
     client = SocietyApiClient(BASE_URL, reporter)
     
     unique_id = uuid.uuid4().hex[:6]
-    seller_email = f"chef_{unique_id}@society.com"
-    buyer_email = f"resident_{unique_id}@society.com"
+    partner_email = f"chef_{unique_id}@society.com"
+    resident_email = f"resident_{unique_id}@society.com"
     admin_email = "admin@society.com"
     default_password = "SecurePassword@123"
 
@@ -170,38 +170,38 @@ def run_full_regression_suite():
     client.request("HLTH-01", "Health Endpoint", "GET", "/health", expected_status=200)
 
     # ----------------------------------------------------------------------
-    # MODULE 2: Seller Registration & Onboarding
+    # MODULE 2: Partner Registration & Onboarding
     # ----------------------------------------------------------------------
-    reg_seller_res = client.request(
-        "AUTH-01", "Register Seller User", "POST", "/api/v1/auth/register", 
+    reg_partner_res = client.request(
+        "AUTH-01", "Register Partner User", "POST", "/api/v1/auth/register", 
         expected_status=201,
-        json={"email": seller_email, "password": default_password, "role": "seller", "name": f"Chef {unique_id}", "phone": "9876543210"}
+        json={"email": partner_email, "password": default_password, "role": "partner", "name": f"Chef {unique_id}", "phone": "9876543210"}
     )
 
     # Login to obtain JWT
     login_res = client.request(
-        "AUTH-02", "Login Seller", "POST", "/api/v1/auth/login",
+        "AUTH-02", "Login Partner", "POST", "/api/v1/auth/login",
         expected_status=200,
-        json={"email": seller_email, "password": default_password}
+        json={"email": partner_email, "password": default_password}
     )
     if login_res.status_code == 200:
-        context["seller_token"] = login_res.json().get("access_token")
+        context["partner_token"] = login_res.json().get("access_token")
 
-    # Seller profile registration
-    seller_prof_res = client.request(
-        "SELL-01", "Create Seller Profile", "POST", "/api/v1/sellers/register",
+    # Partner profile registration
+    partner_prof_res = client.request(
+        "SELL-01", "Create Partner Profile", "POST", "/api/v1/partners/register",
         expected_status=201,
-        token=context.get("seller_token"),
+        token=context.get("partner_token"),
         json={"bio": "Home-cooked meals and regional specials"}
     )
-    if seller_prof_res.status_code == 201:
-        context["seller_id"] = seller_prof_res.json().get("seller_id")
+    if partner_prof_res.status_code == 201:
+        context["partner_id"] = partner_prof_res.json().get("partner_id")
 
     # Toggle store status to Open
     client.request(
-        "SELL-02", "Toggle Store Open Status", "PATCH", "/api/v1/sellers/me/open",
+        "SELL-02", "Toggle Store Open Status", "PATCH", "/api/v1/partners/me/open",
         expected_status=200,
-        token=context.get("seller_token"),
+        token=context.get("partner_token"),
         json={"is_open": True}
     )
 
@@ -211,7 +211,7 @@ def run_full_regression_suite():
     menu_res = client.request(
         "MENU-01", "Create Menu Item", "POST", "/api/v1/menus/",
         expected_status=201,
-        token=context.get("seller_token"),
+        token=context.get("partner_token"),
         json={"name": "Paneer Butter Masala", "price": 180.0, "category": "veg"}
     )
     if menu_res.status_code == 201:
@@ -221,36 +221,36 @@ def run_full_regression_suite():
         client.request(
             "MENU-02", "Toggle Menu Availability", "PATCH", f"/api/v1/menus/{context['menu_id']}/availability",
             expected_status=200,
-            token=context.get("seller_token"),
+            token=context.get("partner_token"),
             json={"is_available": True}
         )
 
     # ----------------------------------------------------------------------
-    # MODULE 4: Buyer Registration & Order Placement
+    # MODULE 4: Resident Registration & Order Placement
     # ----------------------------------------------------------------------
-    reg_buyer_res = client.request(
-        "AUTH-03", "Register Buyer User", "POST", "/api/v1/auth/register",
+    reg_resident_res = client.request(
+        "AUTH-03", "Register Resident User", "POST", "/api/v1/auth/register",
         expected_status=201,
-        json={"email": buyer_email, "password": default_password, "role": "buyer", "name": f"Resident {unique_id}", "phone": "9123456780"}
+        json={"email": resident_email, "password": default_password, "role": "resident", "name": f"Resident {unique_id}", "phone": "9123456780"}
     )
 
-    # Login Buyer
-    login_buyer_res = client.request(
-        "AUTH-04", "Login Buyer", "POST", "/api/v1/auth/login",
+    # Login Resident
+    login_resident_res = client.request(
+        "AUTH-04", "Login Resident", "POST", "/api/v1/auth/login",
         expected_status=200,
-        json={"email": buyer_email, "password": default_password}
+        json={"email": resident_email, "password": default_password}
     )
-    if login_buyer_res.status_code == 200:
-        context["buyer_token"] = login_buyer_res.json().get("access_token")
+    if login_resident_res.status_code == 200:
+        context["resident_token"] = login_resident_res.json().get("access_token")
 
-    # Buyer Places Order
-    if "menu_id" in context and context.get("seller_id"):
+    # Resident Places Order
+    if "menu_id" in context and context.get("partner_id"):
         order_res = client.request(
             "ORD-01", "Create Order", "POST", "/api/v1/orders/",
             expected_status=201,
-            token=context.get("buyer_token"),
+            token=context.get("resident_token"),
             json={
-                "seller_id": context.get("seller_id"),
+                "partner_id": context.get("partner_id"),
                 "items": [{"menu_id": context["menu_id"], "name": "Paneer Butter Masala", "quantity": 2, "price": 180.0}],
                 "delivery_type": "doorstep",
                 "notes": "Tower B, Flat 1004"
@@ -267,53 +267,53 @@ def run_full_regression_suite():
         client.request(
             "PAY-01", "Initiate Payment", "POST", f"/api/v1/payments/orders/{context['order_id']}/initiate",
             expected_status=502,
-            token=context.get("buyer_token")
+            token=context.get("resident_token")
         )
 
         # Payment Capture (Returns 404 if payment was not successfully initiated)
         client.request(
             "PAY-02", "Capture Payment", "POST", f"/api/v1/payments/orders/{context['order_id']}/capture",
             expected_status=404,
-            token=context.get("buyer_token"),
+            token=context.get("resident_token"),
             json={"provider_payment_id": f"pay_{unique_id}", "provider_signature": "mock_signature_hash"}
         )
 
-        # Seller Updates Order Status (Pending -> Accepted -> Ready -> Completed)
+        # Partner Updates Order Status (Pending -> Accepted -> Ready -> Completed)
         client.request(
-            "ORD-02a", "Accept Order (Seller)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
+            "ORD-02a", "Accept Order (Partner)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
             expected_status=200,
-            token=context.get("seller_token"),
+            token=context.get("partner_token"),
             json={"status": "accepted"}
         )
         client.request(
-            "ORD-02b", "Mark Order Ready (Seller)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
+            "ORD-02b", "Mark Order Ready (Partner)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
             expected_status=200,
-            token=context.get("seller_token"),
+            token=context.get("partner_token"),
             json={"status": "ready"}
         )
         client.request(
-            "ORD-02c", "Complete Order (Seller)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
+            "ORD-02c", "Complete Order (Partner)", "PUT", f"/api/v1/orders/{context['order_id']}/status",
             expected_status=200,
-            token=context.get("seller_token"),
+            token=context.get("partner_token"),
             json={"status": "completed"}
         )
 
         # Rate Order
         client.request(
-            "RAT-01", "Rate Order (Buyer)", "POST", f"/api/v1/ratings/orders/{context['order_id']}",
+            "RAT-01", "Rate Order (Resident)", "POST", f"/api/v1/ratings/orders/{context['order_id']}",
             expected_status=201,
-            token=context.get("buyer_token"),
+            token=context.get("resident_token"),
             json={"score": 5, "review_text": "Delicious food, arrived warm!"}
         )
 
     # ----------------------------------------------------------------------
     # MODULE 6: Security, RBAC & Negative Assertions
     # ----------------------------------------------------------------------
-    # Buyer attempts to access admin analytics (Should be 403 Forbidden)
+    # Resident attempts to access admin analytics (Should be 403 Forbidden)
     client.request(
-        "SEC-01", "RBAC Buyer Accessing Admin Analytics", "GET", "/api/v1/admin/analytics",
+        "SEC-01", "RBAC Resident Accessing Admin Analytics", "GET", "/api/v1/admin/analytics",
         expected_status=403,
-        token=context.get("buyer_token")
+        token=context.get("resident_token")
     )
 
     # Unauthenticated request to protected endpoint (Should be 401 Unauthorized)
@@ -326,7 +326,7 @@ def run_full_regression_suite():
     client.request(
         "NEG-01", "Invalid Schema / Negative Price", "POST", "/api/v1/menus/",
         expected_status=422,
-        token=context.get("seller_token"),
+        token=context.get("partner_token"),
         json={"name": "Faulty Dish", "price": -50.0, "quantity_available": 5}
     )
 
@@ -334,19 +334,19 @@ def run_full_regression_suite():
     # MODULE 7: Financial Settlement
     # ----------------------------------------------------------------------
     client.request(
-        "FIN-01", "Verify Seller Balance", "GET", "/api/v1/payments/balance/me",
+        "FIN-01", "Verify Partner Balance", "GET", "/api/v1/payments/balance/me",
         expected_status=200,
-        token=context.get("seller_token")
+        token=context.get("partner_token")
     )
 
     # ----------------------------------------------------------------------
     # MODULE 8: Community Dish Suggestions & Pre-Order Marketplace
     # ----------------------------------------------------------------------
-    # 1. Buyer creates a dish craving suggestion
+    # 1. Resident creates a dish craving suggestion
     sug_res = client.request(
         "SUGG-01", "Create Community Dish Suggestion", "POST", "/api/v1/suggestions/",
         expected_status=201,
-        token=context.get("buyer_token"),
+        token=context.get("resident_token"),
         json={
             "title": f"Hyderabadi Dum Biryani {unique_id}",
             "description": "Authentic fragrant spicy dum biryani for weekend lunch",
@@ -356,19 +356,19 @@ def run_full_regression_suite():
     if sug_res.status_code == 201:
         context["suggestion_id"] = sug_res.json().get("id")
 
-    # 2. Buyer upvotes the suggestion
+    # 2. Resident upvotes the suggestion
     if "suggestion_id" in context:
         client.request(
             "SUGG-02", "Toggle Upvote on Suggestion", "POST", f"/api/v1/suggestions/{context['suggestion_id']}/upvote",
             expected_status=200,
-            token=context.get("buyer_token")
+            token=context.get("resident_token")
         )
 
         # 3. Chef claims suggestion and launches pre-order batch
         claim_res = client.request(
             "SUGG-03", "Chef Claim Suggestion & Launch Pre-order", "POST", f"/api/v1/suggestions/{context['suggestion_id']}/claim",
             expected_status=200,
-            token=context.get("seller_token"),
+            token=context.get("partner_token"),
             json={
                 "price": 220.0,
                 "max_batch_quantity": 25,
@@ -379,14 +379,14 @@ def run_full_regression_suite():
         if claim_res.status_code == 200:
             context["preorder_menu_id"] = claim_res.json().get("menu_id")
 
-    # 4. Buyer places scheduled Pre-Order with delivery slot
+    # 4. Resident places scheduled Pre-Order with delivery slot
     if "preorder_menu_id" in context:
         client.request(
             "PREORD-01", "Place Scheduled Pre-Order", "POST", "/api/v1/orders/",
             expected_status=201,
-            token=context.get("buyer_token"),
+            token=context.get("resident_token"),
             json={
-                "seller_id": context.get("seller_id"),
+                "partner_id": context.get("partner_id"),
                 "items": [{"menu_id": context["preorder_menu_id"], "name": "Special: Hyderabadi Dum Biryani", "quantity": 2, "price": 220.0}],
                 "notes": "Please deliver hot at 1:00 PM",
                 "is_preorder": True,

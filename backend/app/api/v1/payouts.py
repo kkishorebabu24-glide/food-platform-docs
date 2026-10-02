@@ -1,12 +1,12 @@
 """
-Payout routes — seller payout history and admin payout management.
+Payout routes — partner payout history and admin payout management.
 
-Seller:
+Partner:
   GET  /api/v1/payouts/me                     → own payout history
 
 Admin:
   GET  /api/v1/payouts/                       → all payouts (filterable by status)
-  POST /api/v1/payouts/{seller_id}/initiate   → initiate a seller payout
+  POST /api/v1/payouts/{partner_id}/initiate   → initiate a partner payout
   PUT  /api/v1/payouts/{payout_id}/confirm    → mark payout as paid
   PUT  /api/v1/payouts/{payout_id}/fail       → mark payout as failed
 """
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/payouts", tags=["payouts"])
 
 DB_DEPENDENCY = Depends(get_db)
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 ADMIN_DEPENDENCY = Depends(require_role("admin"))
 
 
@@ -39,12 +39,12 @@ ADMIN_DEPENDENCY = Depends(require_role("admin"))
 async def get_my_payouts(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller's payout history."""
-    return payout_service.list_seller_payouts(
-        db, seller_id=current_user.id, skip=skip, limit=limit
+    """Return the authenticated partner's payout history."""
+    return payout_service.list_partner_payouts(
+        db, partner_id=current_user.id, skip=skip, limit=limit
     )
 
 
@@ -56,26 +56,26 @@ async def list_all_payouts(
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """List all payouts across all sellers (admin only)."""
+    """List all payouts across all partners (admin only)."""
     return payout_service.list_all_payouts(
         db, status_filter=status_filter, skip=skip, limit=limit
     )
 
 
 @router.post(
-    "/{seller_id}/initiate",
+    "/{partner_id}/initiate",
     response_model=PayoutResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def initiate_payout(
-    seller_id: int,
+    partner_id: int,
     request: PayoutInitiateRequest,
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Initiate a payout for a seller (admin only)."""
+    """Initiate a payout for a partner (admin only)."""
     payout = payout_service.initiate_payout(
-        db, seller_id=seller_id, amount=request.amount
+        db, partner_id=partner_id, amount=request.amount
     )
     return PayoutResponse.model_validate(payout)
 

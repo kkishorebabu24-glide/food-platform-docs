@@ -2,7 +2,7 @@
 WebSocket connection manager — manages real-time order status push connections.
 
 Single-server, in-memory manager. Each order can have multiple listeners
-(buyer and seller can both watch the same order simultaneously).
+(resident and partner can both watch the same order simultaneously).
 
 Usage in routes:
     manager = get_manager()
@@ -26,7 +26,7 @@ class ConnectionManager:
     """
     Manages active WebSocket connections grouped by order_id.
 
-    Multiple clients can subscribe to the same order_id (e.g., buyer and seller
+    Multiple clients can subscribe to the same order_id (e.g., resident and partner
     both tracking the same order). All are notified on any status change.
     """
 

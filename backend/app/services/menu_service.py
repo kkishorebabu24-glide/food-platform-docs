@@ -1,4 +1,4 @@
-"""Menu service — CRUD for a seller's menu items."""
+"""Menu service — CRUD for a partner's menu items."""
 
 import logging
 import os
@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Menu, SellerProfile
+from app.db.models import Menu, PartnerProfile
 from app.schemas.menu import MenuCreateRequest, MenuUpdateRequest
 
 logger = logging.getLogger(__name__)
@@ -19,29 +19,29 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_IMAGE_SIZE_MB = 5
 
 
-def get_seller_menus(
+def get_partner_menus(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     available_only: bool = True,
     category: str | None = None,
     search: str | None = None,
 ) -> dict:
     """
-    Return menu items for a seller.
+    Return menu items for a partner.
 
     Supports filtering by:
       - available_only: only items with is_available=True (default)
       - category:       filter by MenuCategory value (e.g. 'veg', 'non-veg')
       - search:         case-insensitive substring match on item name
     """
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller:
+    partner = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Seller {seller_id} not found.",
+            detail=f"Partner {partner_id} not found.",
         )
 
-    query = db.query(Menu).filter(Menu.seller_id == seller_id)
+    query = db.query(Menu).filter(Menu.partner_id == partner_id)
 
     if available_only:
         query = query.filter(Menu.is_available == True)
@@ -79,19 +79,19 @@ def get_seller_menus(
 
 def create_menu_item(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     request: MenuCreateRequest,
 ) -> Menu:
-    """Create a new menu item for the given seller."""
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller:
+    """Create a new menu item for the given partner."""
+    partner = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Seller {seller_id} not found.",
+            detail=f"Partner {partner_id} not found.",
         )
 
     item = Menu(
-        seller_id=seller_id,
+        partner_id=partner_id,
         name=request.name,
         description=request.description,
         category=request.category,
@@ -120,7 +120,7 @@ def update_menu_item(
 ) -> Menu:
     """
     Update a menu item's fields.
-    If owner_id is provided, ensures the item belongs to that seller.
+    If owner_id is provided, ensures the item belongs to that partner.
     """
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
@@ -128,7 +128,7 @@ def update_menu_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -179,7 +179,7 @@ def delete_menu_item(db: Session, menu_id: int, owner_id: int | None = None) -> 
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -202,7 +202,7 @@ def toggle_availability(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -240,7 +240,7 @@ async def upload_menu_image(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )

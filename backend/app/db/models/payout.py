@@ -1,4 +1,4 @@
-"""Payout model — seller payout transfers via Razorpay Payouts API."""
+"""Payout model — partner payout transfers via Razorpay Payouts API."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class Payout(TimestampMixin, Base):
     """
-    A payout transfer from the platform's ledger to a seller's bank / UPI.
+    A payout transfer from the platform's ledger to a partner's bank / UPI.
 
     Payouts are admin-triggered for MVP. Flow:
       Admin initiates   → status=pending
@@ -29,8 +29,8 @@ class Payout(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # The seller receiving the payout
-    seller_id: Mapped[int] = mapped_column(
+    # The partner receiving the payout
+    partner_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=False
     )
 
@@ -44,7 +44,7 @@ class Payout(TimestampMixin, Base):
         default=PayoutStatus.pending,
     )
 
-    # UPI handle at the time of payout (snapshot — seller may update UPI later)
+    # UPI handle at the time of payout (snapshot — partner may update UPI later)
     upi_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Payment gateway used for this payout
@@ -71,4 +71,4 @@ class Payout(TimestampMixin, Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    seller: Mapped["User"] = relationship("User", foreign_keys=[seller_id])
+    partner: Mapped["User"] = relationship("User", foreign_keys=[partner_id])

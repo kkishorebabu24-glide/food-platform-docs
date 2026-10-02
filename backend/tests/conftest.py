@@ -54,12 +54,12 @@ def client(db: Session) -> Generator[TestClient, None, None]:
     app.dependency_overrides.clear()
 
 @pytest.fixture
-def test_buyer(db: Session) -> User:
+def test_resident(db: Session) -> User:
     user = User(
-        name="Test Buyer",
-        email="buyer@test.com",
+        name="Test Resident",
+        email="resident@test.com",
         hashed_password=hash_password("password123"),
-        role=UserRole.buyer,
+        role=UserRole.resident,
         is_active=True,
     )
     db.add(user)
@@ -68,20 +68,20 @@ def test_buyer(db: Session) -> User:
     return user
 
 @pytest.fixture
-def buyer_token(test_buyer: User) -> str:
-    return create_access_token(test_buyer.id, str(test_buyer.role))
+def resident_token(test_resident: User) -> str:
+    return create_access_token(test_resident.id, str(test_resident.role))
 
 @pytest.fixture
-def buyer_headers(buyer_token: str) -> dict:
-    return {"Authorization": f"Bearer {buyer_token}"}
+def resident_headers(resident_token: str) -> dict:
+    return {"Authorization": f"Bearer {resident_token}"}
 
 @pytest.fixture
-def test_seller(db: Session) -> User:
+def test_partner(db: Session) -> User:
     user = User(
-        name="Test Seller",
-        email="seller_fixture@test.com",
+        name="Test Partner",
+        email="partner_fixture@test.com",
         hashed_password=hash_password("password123"),
-        role=UserRole.seller,
+        role=UserRole.partner,
         is_active=True,
     )
     db.add(user)
@@ -90,10 +90,10 @@ def test_seller(db: Session) -> User:
     return user
 
 @pytest.fixture
-def seller_token(test_seller: User) -> str:
-    return create_access_token(test_seller.id, str(test_seller.role))
+def partner_token(test_partner: User) -> str:
+    return create_access_token(test_partner.id, str(test_partner.role))
 
 @pytest.fixture
-def seller_headers(seller_token: str) -> dict:
-    return {"Authorization": f"Bearer {seller_token}"}
+def partner_headers(partner_token: str) -> dict:
+    return {"Authorization": f"Bearer {partner_token}"}
 

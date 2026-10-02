@@ -1,12 +1,12 @@
-"""Buyer request/response schemas."""
+"""Resident request/response schemas."""
 
 from datetime import datetime
 
 from pydantic import BaseModel
 
 
-class BuyerProfileResponse(BaseModel):
-    """Response schema for a buyer's own profile."""
+class ResidentProfileResponse(BaseModel):
+    """Response schema for a resident's own profile."""
 
     id: int
     name: str
@@ -19,8 +19,8 @@ class BuyerProfileResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class BuyerProfileUpdate(BaseModel):
-    """Request body for updating a buyer's own profile."""
+class ResidentProfileUpdate(BaseModel):
+    """Request body for updating a resident's own profile."""
 
     name: str | None = None
     phone: str | None = None

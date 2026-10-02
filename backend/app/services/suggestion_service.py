@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import DishSuggestion, DishUpvote, Menu, SellerProfile, User
+from app.db.models import DishSuggestion, DishUpvote, Menu, PartnerProfile, User
 from app.db.models.enums import MenuCategory, SuggestionStatus
 from app.schemas.suggestion import SuggestionClaimRequest, SuggestionCreateRequest
 
@@ -80,8 +80,8 @@ def list_suggestions(
 
     # Fetch set of suggestion IDs upvoted by current user
     user_upvoted_ids = set()
-    seller_profile = None
-    seller_menus = []
+    partner_profile = None
+    partner_menus = []
     if current_user_id:
         upvotes = (
             db.query(DishUpvote.suggestion_id)
@@ -93,19 +93,19 @@ def list_suggestions(
         )
         user_upvoted_ids = {u[0] for u in upvotes}
 
-        # Check if current user is a seller to calculate real-time match scores
-        seller_profile = db.query(SellerProfile).filter(SellerProfile.id == current_user_id).first()
-        if seller_profile:
-            seller_menus = db.query(Menu).filter(Menu.seller_id == current_user_id).all()
+        # Check if current user is a partner to calculate real-time match scores
+        partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == current_user_id).first()
+        if partner_profile:
+            partner_menus = db.query(Menu).filter(Menu.partner_id == current_user_id).all()
 
-    from app.services.matching_service import calculate_craving_seller_match
+    from app.services.matching_service import calculate_craving_partner_match
 
     results = []
     for s in suggestions:
         user = db.query(User).filter(User.id == s.user_id).first()
-        seller = (
-            db.query(User).filter(User.id == s.accepted_by_seller_id).first()
-            if s.accepted_by_seller_id
+        partner = (
+            db.query(User).filter(User.id == s.accepted_by_partner_id).first()
+            if s.accepted_by_partner_id
             else None
         )
         menu = (
@@ -117,8 +117,8 @@ def list_suggestions(
         match_score = None
         match_reasons = None
         matching_menu_items = None
-        if seller_profile and s.status == SuggestionStatus.open and s.user_id != current_user_id:
-            match_data = calculate_craving_seller_match(s, seller_profile, seller_menus)
+        if partner_profile and s.status == SuggestionStatus.open and s.user_id != current_user_id:
+            match_data = calculate_craving_partner_match(s, partner_profile, partner_menus)
             match_score = match_data["match_score"]
             match_reasons = match_data["match_reasons"]
             matching_menu_items = match_data["matching_menu_items"]
@@ -134,9 +134,9 @@ def list_suggestions(
             "target_date": s.target_date.isoformat() if s.target_date else None,
             "upvotes_count": s.upvotes_count,
             "status": s.status.value if hasattr(s.status, "value") else str(s.status),
-            "accepted_by_seller_id": s.accepted_by_seller_id,
-            "seller_name": seller.name if seller else None,
-            "seller_flat": seller.flat_number if seller else None,
+            "accepted_by_partner_id": s.accepted_by_partner_id,
+            "partner_name": partner.name if partner else None,
+            "partner_flat": partner.flat_number if partner else None,
             "created_menu_id": s.created_menu_id,
             "menu_name": menu.name if menu else None,
             "menu_price": float(menu.price) if menu else None,
@@ -190,7 +190,7 @@ def toggle_upvote(db: Session, user_id: int, suggestion_id: int) -> dict:
 
 def claim_suggestion(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     suggestion_id: int,
     request: SuggestionClaimRequest,
 ) -> dict:
@@ -198,10 +198,10 @@ def claim_suggestion(
     Home chef accepts a community dish suggestion either by launching a new pre-order batch
     or by linking an existing menu item.
     """
-    seller_profile = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller_profile:
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner_profile:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Seller profile not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Partner profile not found."
         )
 
     suggestion = db.query(DishSuggestion).filter(DishSuggestion.id == suggestion_id).first()
@@ -217,18 +217,18 @@ def claim_suggestion(
         )
 
     if request.existing_menu_id:
-        # Link existing menu item from seller
+        # Link existing menu item from partner
         menu_item = db.query(Menu).filter(
             Menu.id == request.existing_menu_id,
-            Menu.seller_id == seller_id,
+            Menu.partner_id == partner_id,
         ).first()
         if not menu_item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Selected menu item not found in your kitchen.",
             )
-        logger.info("Chef seller_id=%s linked existing menu_id=%s for suggestion id=%s",
-                    seller_id, menu_item.id, suggestion_id)
+        logger.info("Chef partner_id=%s linked existing menu_id=%s for suggestion id=%s",
+                    partner_id, menu_item.id, suggestion_id)
     else:
         if request.price is None:
             raise HTTPException(
@@ -238,7 +238,7 @@ def claim_suggestion(
 
         # Automatically create a Pre-Order Menu Item for the chef
         menu_item = Menu(
-            seller_id=seller_id,
+            partner_id=partner_id,
             name=f"Special: {suggestion.title}",
             description=suggestion.description or f"Community requested dish by Flat {suggestion.user_id}",
             category=suggestion.category,
@@ -252,12 +252,12 @@ def claim_suggestion(
         )
         db.add(menu_item)
         db.flush()
-        logger.info("Chef seller_id=%s created new menu_id=%s for suggestion id=%s",
-                    seller_id, menu_item.id, suggestion_id)
+        logger.info("Chef partner_id=%s created new menu_id=%s for suggestion id=%s",
+                    partner_id, menu_item.id, suggestion_id)
 
     # Update suggestion record
     suggestion.status = SuggestionStatus.claimed_by_chef
-    suggestion.accepted_by_seller_id = seller_id
+    suggestion.accepted_by_partner_id = partner_id
     suggestion.created_menu_id = menu_item.id
 
     db.commit()

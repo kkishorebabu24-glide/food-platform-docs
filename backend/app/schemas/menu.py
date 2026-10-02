@@ -93,7 +93,7 @@ class MenuItemResponse(BaseModel):
     """Response schema for a single menu item."""
 
     id: int
-    seller_id: int
+    partner_id: int
     name: str
     description: str | None = None
     category: str

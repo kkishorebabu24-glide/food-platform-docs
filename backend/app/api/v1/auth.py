@@ -16,6 +16,8 @@ import logging
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from app.db.models.enums import UserRole, PartnerApplicationStatus, UserStatus
+from app.db.models.partner_profile import PartnerProfile
 
 from app.api.dependencies import get_current_user, get_db
 from app.core.config import settings
@@ -57,7 +59,7 @@ async def register(request: RegisterRequest, db: Session = DB_DEPENDENCY):
 
     - Hashes the password with bcrypt before storing
     - Returns 409 if the email is already registered
-    - Account starts with 'pending' verification_status
+    - Account starts with 'pending' status
     """
     user = auth_service.register_user(
         db,
@@ -72,7 +74,7 @@ async def register(request: RegisterRequest, db: Session = DB_DEPENDENCY):
         "user_id": user.id,
         "email": user.email,
         "role": user.role,
-        "verification_status": user.verification_status,
+        "status": user.status,
     }
 
 
@@ -88,17 +90,15 @@ async def login(request: LoginRequest, db: Session = DB_DEPENDENCY):
     user = auth_service.authenticate_user(db, str(request.email), request.password)
 
     # If the user explicitly selects a role upon login, update active role
-    if request.role and request.role in ("buyer", "seller") and user.role != request.role:
-        from app.db.models.enums import ApprovalStatus, UserRole
-        from app.db.models.seller import SellerProfile
+    if request.role and request.role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != request.role:
         user.role = UserRole(request.role)
-        if user.role == UserRole.seller:
-            existing_profile = db.query(SellerProfile).filter(SellerProfile.id == user.id).first()
+        if user.role == UserRole.partner:
+            existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
             if not existing_profile:
-                new_profile = SellerProfile(
+                new_profile = PartnerProfile(
                     id=user.id,
                     is_open=True,
-                    approval_status=ApprovalStatus.approved,
+                    application_status=PartnerApplicationStatus.approved,
                     rating=0.0,
                     review_count=0,
                     on_time_delivery_rate=100.0,
@@ -125,7 +125,7 @@ async def login(request: LoginRequest, db: Session = DB_DEPENDENCY):
             name=user.name,
             role=user.role,
             flat_number=user.flat_number,
-            verification_status=user.verification_status,
+            status=user.status,
             is_verified=user.is_verified,
         ),
     )
@@ -170,7 +170,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "flat_number": current_user.flat_number,
         "phone": current_user.phone,
-        "verification_status": current_user.verification_status,
+        "status": current_user.status,
         "is_verified": current_user.is_verified,
         "is_active": current_user.is_active,
     }
@@ -183,26 +183,23 @@ async def switch_role(
     db: Session = DB_DEPENDENCY,
 ):
     """
-    Switch active role between buyer and seller for the current authenticated user.
-    Auto-provisions a SellerProfile if switching to seller for the first time.
+    Switch active role between resident and partner for the current authenticated user.
+    Auto-provisions a PartnerProfile if switching to partner for the first time.
     Re-issues access & refresh tokens with the new role.
     """
-    from app.db.models.enums import UserRole
-    from app.db.models.seller import SellerProfile
 
-    desired_role = target_role if target_role in ("buyer", "seller") else (
-        "buyer" if current_user.role == "seller" else "seller"
+    desired_role = target_role if target_role in (UserRole.resident.value, UserRole.partner.value) else (
+        "resident" if current_user.role == UserRole.partner else "partner"
     )
 
     current_user.role = UserRole(desired_role)
-    if current_user.role == UserRole.seller:
-        from app.db.models.enums import ApprovalStatus
-        existing_profile = db.query(SellerProfile).filter(SellerProfile.id == current_user.id).first()
+    if current_user.role == UserRole.partner:
+        existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == current_user.id).first()
         if not existing_profile:
-            new_profile = SellerProfile(
+            new_profile = PartnerProfile(
                 id=current_user.id,
                 is_open=True,
-                approval_status=ApprovalStatus.approved,
+                application_status=PartnerApplicationStatus.approved,
                 rating=0.0,
                 review_count=0,
                 on_time_delivery_rate=100.0,
@@ -229,7 +226,7 @@ async def switch_role(
             name=current_user.name,
             role=current_user.role,
             flat_number=current_user.flat_number,
-            verification_status=current_user.verification_status,
+            status=current_user.status,
             is_verified=current_user.is_verified,
         ),
     )
@@ -346,18 +343,16 @@ async def verify_otp_route(
         role=request.role,
     )
 
-    # If the resident selected a role (e.g. buyer or seller) upon OTP verification, adopt active role
-    if request.role and request.role in ("buyer", "seller") and user.role != request.role:
-        from app.db.models.enums import ApprovalStatus, UserRole
-        from app.db.models.seller import SellerProfile
+    # If the resident selected a role (e.g. resident or partner) upon OTP verification, adopt active role
+    if request.role and request.role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != request.role:
         user.role = UserRole(request.role)
-        if user.role == UserRole.seller:
-            existing_profile = db.query(SellerProfile).filter(SellerProfile.id == user.id).first()
+        if user.role == UserRole.partner:
+            existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
             if not existing_profile:
-                new_profile = SellerProfile(
+                new_profile = PartnerProfile(
                     id=user.id,
                     is_open=True,
-                    approval_status=ApprovalStatus.approved,
+                    application_status=PartnerApplicationStatus.approved,
                     rating=0.0,
                     review_count=0,
                     on_time_delivery_rate=100.0,
@@ -392,7 +387,7 @@ async def verify_otp_route(
             name=user.name,
             role=user.role,
             flat_number=user.flat_number,
-            verification_status=user.verification_status,
+            status=user.status,
             is_verified=user.is_verified,
         ),
     )

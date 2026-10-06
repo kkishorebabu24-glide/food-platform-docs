@@ -50,14 +50,42 @@ def upgrade() -> None:
     safe_rename_column("ratings", "buyer_id", "resident_id")
     safe_rename_column("daily_ledgers", "seller_id", "partner_id")
     safe_rename_column("payments", "buyer_id", "resident_id")
+    safe_rename_column("partner_profiles", "approval_status", "application_status")
+    safe_rename_column("users", "verification_status", "status")
 
-    # 3. Update existing user roles
+    # Add partner_status column if missing
+    if "partner_profiles" in tables:
+        cols = [c["name"] for c in inspector.get_columns("partner_profiles")]
+        if "partner_status" not in cols:
+            with op.batch_alter_table("partner_profiles") as batch_op:
+                batch_op.add_column(sa.Column("partner_status", sa.String(50), nullable=True, server_default="active"))
+
+    # 3. Update existing user roles & statuses
     if "users" in tables:
         dialect = conn.dialect.name
         if dialect == "postgresql":
             try:
+                op.execute("COMMIT")
                 op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'resident';")
                 op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'partner';")
+                op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'super_admin';")
+                op.execute("""
+                    DO $$ BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userstatus') THEN
+                            CREATE TYPE userstatus AS ENUM ('pending_verification', 'active', 'suspended', 'blocked', 'deactivated');
+                        END IF;
+                    END $$;
+                """)
+                op.execute("""
+                    ALTER TABLE users ALTER COLUMN status TYPE userstatus USING (
+                        CASE
+                            WHEN status::text = 'verified' THEN 'active'::userstatus
+                            WHEN status::text = 'pending' THEN 'pending_verification'::userstatus
+                            ELSE 'active'::userstatus
+                        END
+                    );
+                """)
+                op.execute("BEGIN")
                 op.execute("UPDATE users SET role = 'partner' WHERE role::text = 'seller';")
                 op.execute("UPDATE users SET role = 'resident' WHERE role::text = 'buyer';")
             except Exception:
@@ -66,6 +94,8 @@ def upgrade() -> None:
             try:
                 op.execute("UPDATE users SET role = 'partner' WHERE role = 'seller';")
                 op.execute("UPDATE users SET role = 'resident' WHERE role = 'buyer';")
+                op.execute("UPDATE users SET status = 'active' WHERE status = 'verified';")
+                op.execute("UPDATE users SET status = 'pending_verification' WHERE status = 'pending';")
             except Exception:
                 pass
 

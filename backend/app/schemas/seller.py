@@ -14,6 +14,8 @@ class SellerUpdateRequest(BaseModel):
 
     bio: str | None = None
     photo_url: str | None = None
+    banner_url: str | None = None
+    photos: list[str] | None = None
     upi_id: str | None = None
     upi_account_name: str | None = None
 
@@ -25,6 +27,8 @@ class SellerResponse(BaseModel):
     name: str
     bio: str | None = None
     photo_url: str | None = None
+    banner_url: str | None = None
+    photos: list[str] = []
     rating: float
     review_count: int
     on_time_delivery_rate: float = 100.0

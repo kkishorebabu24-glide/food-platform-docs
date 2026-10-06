@@ -8,8 +8,8 @@ python-multipart>=0.0.18
 
 # ── Database ─────────────────────────────────────────────────────────────────
 sqlalchemy>=2.0.32
-# psycopg2-binary is fine for dev; for prod, consider compiling 'psycopg2' or 'psycopg' (v3)
 psycopg2-binary>=2.9.9
+psycopg[binary]>=3.1.18
 alembic>=1.13.2
 sqlalchemy-utils>=0.41.2
 

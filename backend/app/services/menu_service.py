@@ -6,9 +6,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.models import Menu, SellerProfile
+from app.db.models import Menu, SellerProfile, User
+from app.db.models.enums import ApprovalStatus
 from app.schemas.menu import MenuCreateRequest, MenuUpdateRequest
 
 logger = logging.getLogger(__name__)
@@ -74,6 +77,108 @@ def get_seller_menus(
             for item in items
         ],
         "total": len(items),
+    }
+
+
+def search_public_dishes(
+    db: Session,
+    query: str | None = None,
+    category: str | None = None,
+    veg_only: bool = False,
+    available_only: bool = True,
+    skip: int = 0,
+    limit: int = 50,
+) -> dict:
+    """
+    Search dishes across all approved active sellers in the society.
+    Returns matched dish items joined with seller & user metadata, plus matched sellers summary.
+    """
+    q = (
+        db.query(Menu, SellerProfile, User)
+        .join(SellerProfile, Menu.seller_id == SellerProfile.id)
+        .join(User, SellerProfile.id == User.id)
+        .filter(
+            SellerProfile.approval_status == ApprovalStatus.approved,
+            User.is_active == True,
+        )
+    )
+
+    if available_only:
+        q = q.filter(Menu.is_available == True, SellerProfile.is_open == True)
+
+    if veg_only:
+        q = q.filter(Menu.category == "veg")
+    elif category and category != "all":
+        if category in ("non_veg", "non-veg"):
+            q = q.filter(Menu.category.in_(["non-veg", "non_veg"]))
+        else:
+            q = q.filter(Menu.category == category)
+
+    if query and query.strip():
+        term = f"%{query.strip()}%"
+        q = q.filter(
+            or_(
+                Menu.name.ilike(term),
+                Menu.description.ilike(term),
+                User.name.ilike(term),
+                User.flat_number.ilike(term),
+            )
+        )
+
+    results = q.offset(skip).limit(limit).all()
+
+    items = []
+    matched_sellers_map = {}
+
+    for menu_item, seller, user in results:
+        items.append({
+            "id": menu_item.id,
+            "name": menu_item.name,
+            "description": menu_item.description,
+            "category": menu_item.category,
+            "price": float(menu_item.price),
+            "is_available": menu_item.is_available,
+            "quantity": menu_item.quantity,
+            "image_url": menu_item.image_url,
+            "is_preorder_only": menu_item.is_preorder_only,
+            "preorder_cutoff_time": menu_item.preorder_cutoff_time,
+            "available_slots": menu_item.available_slots or [],
+            "spice_level": menu_item.spice_level or "medium",
+            "seller_id": seller.id,
+            "seller_name": user.name,
+            "seller_flat": user.flat_number,
+            "seller_photo_url": seller.photo_url,
+            "seller_banner_url": getattr(seller, "banner_url", None),
+            "seller_photos": getattr(seller, "photos", []) or [],
+            "seller_rating": seller.rating,
+            "seller_punctuality": getattr(seller, "on_time_delivery_rate", 100.0),
+        })
+
+        if seller.id not in matched_sellers_map:
+            matched_sellers_map[seller.id] = {
+                "id": seller.id,
+                "name": user.name,
+                "flat_number": user.flat_number,
+                "photo_url": seller.photo_url,
+                "banner_url": getattr(seller, "banner_url", None),
+                "photos": getattr(seller, "photos", []) or [],
+                "rating": seller.rating,
+                "matching_dishes_count": 0,
+                "sample_dishes": [],
+            }
+        matched_sellers_map[seller.id]["matching_dishes_count"] += 1
+        if len(matched_sellers_map[seller.id]["sample_dishes"]) < 4:
+            matched_sellers_map[seller.id]["sample_dishes"].append({
+                "id": menu_item.id,
+                "name": menu_item.name,
+                "price": float(menu_item.price),
+                "image_url": menu_item.image_url,
+            })
+
+    return {
+        "items": items,
+        "total": len(items),
+        "matched_sellers": list(matched_sellers_map.values()),
     }
 
 

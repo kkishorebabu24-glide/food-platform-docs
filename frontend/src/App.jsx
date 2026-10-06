@@ -47,8 +47,14 @@ import ClearIcon from '@mui/icons-material/Clear';
 import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import { authAPI, sellersAPI, getErrorMessage } from './services/api';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import StarIcon from '@mui/icons-material/Star';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import { authAPI, sellersAPI, menusAPI, getErrorMessage } from './services/api';
 
+import DishImageModal, { getDishImageUrl } from './components/DishImageModal';
 import MenuPage from './pages/Menu';
 import OrdersPage from './pages/Orders';
 import ProfilePage from './pages/Profile';
@@ -717,11 +723,327 @@ function LoginPage() {
     </Box>
   );
 }
+// ── Interactive Multi-Photo Chef Card Component ─────────────────────────────
+export function ChefCard({ seller, matchingDishes = [] }) {
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const touchStartX = React.useRef(null);
 
+  // Compute photos list: custom photos -> banner -> matching dishes -> avatar -> fallback
+  const photos = (seller.photos && seller.photos.length > 0)
+    ? seller.photos
+    : (seller.banner_url
+      ? [seller.banner_url]
+      : (matchingDishes && matchingDishes.length > 0
+        ? matchingDishes.map((d) => d.image_url).filter(Boolean)
+        : (seller.photo_url ? [seller.photo_url] : ['https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80'])));
 
+  const safePhotoIdx = photoIdx % (photos.length || 1);
+  const currentPhoto = photos[safePhotoIdx] || photos[0];
+  const photoUrl = currentPhoto?.startsWith('/')
+    ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${currentPhoto}`
+    : currentPhoto;
+
+  const handlePrev = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPhotoIdx((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPhotoIdx((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 35) handleNext(e);
+    else if (diff < -35) handlePrev(e);
+    touchStartX.current = null;
+  };
+
+  return (
+    <Card
+      sx={{
+        bgcolor: '#191928',
+        borderRadius: 3,
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: '#fff',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 28px rgba(0,0,0,0.5)' },
+        '&:hover .carousel-arrow': { opacity: 1 },
+      }}
+    >
+      {/* Top Multi-Photo Carousel */}
+      <Box
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        sx={{
+          position: 'relative',
+          height: 190,
+          width: '100%',
+          bgcolor: '#141422',
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          component="img"
+          key={photoUrl}
+          src={photoUrl}
+          alt={seller.name}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transition: 'transform 0.4s ease',
+            '&:hover': { transform: 'scale(1.04)' },
+          }}
+        />
+
+        {/* Gradient Overlay for Text Readability */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, rgba(25, 25, 40, 0.95) 0%, transparent 60%)',
+          }}
+        />
+
+        {/* Open/Closed Badge in Top Right */}
+        <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }}>
+          <Chip
+            size="small"
+            label={seller.is_open ? '🟢 OPEN' : '🔴 CLOSED'}
+            sx={{
+              bgcolor: seller.is_open ? 'rgba(46, 196, 182, 0.9)' : 'rgba(230, 57, 70, 0.9)',
+              color: '#fff',
+              fontWeight: 'bold',
+              backdropFilter: 'blur(6px)',
+              fontSize: 11,
+            }}
+          />
+        </Box>
+
+        {/* Previous / Next Arrow Controls */}
+        {photos.length > 1 && (
+          <>
+            <IconButton
+              size="small"
+              aria-label="Previous photo"
+              className="carousel-arrow"
+              onClick={handlePrev}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: 8,
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(0,0,0,0.65)',
+                color: '#fff',
+                opacity: { xs: 0.85, md: 0 },
+                transition: 'opacity 0.2s',
+                zIndex: 3,
+                '&:hover': { bgcolor: '#E05A2B' },
+              }}
+            >
+              <ChevronLeftIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              aria-label="Next photo"
+              className="carousel-arrow"
+              onClick={handleNext}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                right: 8,
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(0,0,0,0.65)',
+                color: '#fff',
+                opacity: { xs: 0.85, md: 0 },
+                transition: 'opacity 0.2s',
+                zIndex: 3,
+                '&:hover': { bgcolor: '#E05A2B' },
+              }}
+            >
+              <ChevronRightIcon fontSize="small" />
+            </IconButton>
+          </>
+        )}
+
+        {/* Bottom Dot Indicators */}
+        {photos.length > 1 && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 0.8,
+              zIndex: 2,
+            }}
+          >
+            {photos.map((_, i) => (
+              <Box
+                key={i}
+                role="button"
+                aria-label={`View photo ${i + 1}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPhotoIdx(i);
+                }}
+                sx={{
+                  width: i === safePhotoIdx ? 16 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: i === safePhotoIdx ? '#E05A2B' : 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
+        {/* Overlapping Chef Avatar */}
+        <Avatar
+          src={seller.photo_url ? (seller.photo_url.startsWith('/') ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${seller.photo_url}` : seller.photo_url) : undefined}
+          sx={{
+            position: 'absolute',
+            bottom: 12,
+            left: 16,
+            width: 52,
+            height: 52,
+            bgcolor: '#E05A2B',
+            fontWeight: 'bold',
+            fontSize: '1.25rem',
+            border: '2px solid #191928',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
+            zIndex: 3,
+          }}
+        >
+          {seller.name?.[0] || 'C'}
+        </Avatar>
+      </Box>
+
+      <CardContent sx={{ flexGrow: 1, pt: 2, pb: 1 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+          <Typography variant="h6" fontWeight="bold">
+            {seller.name}
+          </Typography>
+          <Chip
+            icon={<StarIcon sx={{ color: '#F6BD60 !important', fontSize: '14px !important' }} />}
+            label={seller.rating ? seller.rating.toFixed(1) : 'New'}
+            size="small"
+            sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 'bold' }}
+          />
+        </Box>
+
+        {seller.flat_number && (
+          <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+            Resident at Flat #{seller.flat_number}
+          </Typography>
+        )}
+
+        <Typography variant="body2" color="rgba(255,255,255,0.75)" sx={{ mb: 2, minHeight: 38, lineHeight: 1.4 }}>
+          {seller.bio || 'Authentic home cook preparing fresh food for neighbors.'}
+        </Typography>
+
+        {/* Punctuality and Delivery Badges */}
+        <Box display="flex" gap={1} flexWrap="wrap" mb={1.5}>
+          <Chip
+            size="small"
+            label={`⚡ ${seller.on_time_delivery_rate ?? 100}% on-time`}
+            sx={{ bgcolor: 'rgba(46, 196, 182, 0.15)', color: '#2EC4B6', fontWeight: 'bold', fontSize: 11 }}
+          />
+          <Chip
+            size="small"
+            icon={<DeliveryDiningIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />}
+            label="Doorstep Delivery"
+            sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: '#ddd', fontSize: 11 }}
+          />
+        </Box>
+
+        {/* Matching Dishes Snippets when Search is Active */}
+        {matchingDishes && matchingDishes.length > 0 && (
+          <Box sx={{ mt: 1.5, p: 1.2, bgcolor: 'rgba(224, 90, 43, 0.08)', borderRadius: 2, border: '1px solid rgba(224, 90, 43, 0.2)' }}>
+            <Typography variant="caption" fontWeight="bold" color="#E05A2B" display="block" mb={0.5}>
+              🔥 Special Dishes Matching Search:
+            </Typography>
+            <Box display="flex" gap={0.8} flexWrap="wrap">
+              {matchingDishes.slice(0, 3).map((dish) => (
+                <Chip
+                  key={dish.id}
+                  size="small"
+                  label={`🍽️ ${dish.name} • ₹${dish.price}`}
+                  component={Link}
+                  to={`/menu/${seller.id}?dishId=${dish.id}`}
+                  clickable
+                  sx={{
+                    bgcolor: 'rgba(224, 90, 43, 0.2)',
+                    color: '#fff',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    '&:hover': { bgcolor: '#E05A2B' },
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+      </CardContent>
+
+      <CardActions sx={{ px: 2, pb: 2, gap: 1 }}>
+        <Button
+          size="small"
+          variant="outlined"
+          component={Link}
+          to={`/menu/${seller.id}`}
+          sx={{
+            flex: 1,
+            color: '#fff',
+            borderColor: 'rgba(255,255,255,0.2)',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: 2,
+            '&:hover': { borderColor: '#E05A2B', bgcolor: 'rgba(224, 90, 43, 0.08)' },
+          }}
+        >
+          View Menu
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
+          component={Link}
+          to={`/menu/${seller.id}`}
+          sx={{
+            flex: 1,
+            bgcolor: '#E05A2B',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: 2,
+            '&:hover': { bgcolor: '#c9481c' },
+          }}
+        >
+          Order Now
+        </Button>
+      </CardActions>
+    </Card>
+  );
+}
 
 // ── Sellers Listing Page ─────────────────────────────────────────────────────
-function SellersPage() {
+export function SellersPage({ onAddToCart }) {
   const location = useLocation();
   const initialSearch = new URLSearchParams(location.search).get('search') || '';
   const [sellers, setSellers] = useState([]);
@@ -729,7 +1051,33 @@ function SellersPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const { user } = useAuth();
+
+  // Multi-Select Filters
+  const [filters, setFilters] = useState({
+    pureVeg: false,
+    nonVeg: false,
+    openNow: false,
+    punctual: false,
+    topRated: false,
+  });
+
+  // Dedicated Sort Selection: 'recommended' | 'rating' | 'punctual' | 'speed'
+  const [sortBy, setSortBy] = useState('recommended');
+
+  // Discovery View Mode: 'chefs' | 'dishes'
+  const [viewMode, setViewMode] = useState('chefs');
+
+  // Global Dish Search Results
+  const [matchedDishes, setMatchedDishes] = useState([]);
+  const [matchedSellersMap, setMatchedSellersMap] = useState({});
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+
+  // Maximized Dish Modal for Direct Dish Browsing
+  const [carouselDishIndex, setCarouselDishIndex] = useState(null);
+  const [isCarouselOpen, setIsCarouselOpen] = useState(false);
+
+  const authContext = useAuth();
+  const user = authContext ? authContext.user : null;
 
   // Fallback: some flows may not have context hydrated yet — read localStorage
   const currentUser = user || (() => {
@@ -741,7 +1089,8 @@ function SellersPage() {
     }
   })();
 
-  useEffect(() => {
+  const loadSellers = () => {
+    setLoading(true);
     sellersAPI.list()
       .then((res) => {
         setSellers(res.data?.sellers || []);
@@ -750,95 +1099,393 @@ function SellersPage() {
         setError(err.response?.data?.detail || 'Failed to load sellers.');
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadSellers();
   }, []);
 
-  const filteredSellers = sellers.filter((seller) => {
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      seller.name?.toLowerCase().includes(q) ||
-      seller.bio?.toLowerCase().includes(q) ||
-      (seller.flat_number && String(seller.flat_number).toLowerCase().includes(q));
-
-    let matchesFilter = true;
-    if (selectedFilter === 'top_rated') {
-      matchesFilter = (seller.rating || 0) >= 4.0;
-    } else if (selectedFilter === 'punctual') {
-      matchesFilter = (seller.on_time_delivery_rate ?? 100) >= 90;
-    } else if (selectedFilter === 'open_now') {
-      matchesFilter = seller.is_open !== false;
+  // Global Special Dish Search with debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setMatchedDishes([]);
+      setMatchedSellersMap({});
+      setAutocompleteOpen(false);
+      return;
     }
 
-    return matchesSearch && matchesFilter;
-  });
+    const timer = setTimeout(() => {
+      menusAPI.search(searchQuery.trim())
+        .then((res) => {
+          const items = res.data?.items || [];
+          setMatchedDishes(items);
+          const map = {};
+          items.forEach((item) => {
+            if (!map[item.seller_id]) map[item.seller_id] = [];
+            map[item.seller_id].push(item);
+          });
+          setMatchedSellersMap(map);
+          setAutocompleteOpen(true);
+        })
+        .catch(() => {});
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const toggleFilter = (filterKey) => {
+    setFilters((prev) => ({ ...prev, [filterKey]: !prev[filterKey] }));
+  };
+
+  const hasActiveFilters = Object.values(filters).some(Boolean);
+
+  const clearAllFilters = () => {
+    setFilters({
+      pureVeg: false,
+      nonVeg: false,
+      openNow: false,
+      punctual: false,
+      topRated: false,
+    });
+    setSortBy('recommended');
+  };
+
+  // Filter and Sort Sellers
+  const filteredSellers = sellers
+    .filter((seller) => {
+      const q = searchQuery.toLowerCase().trim();
+      const hasMatchingDish = Boolean(matchedSellersMap[seller.id]?.length);
+      const matchesSearch =
+        !q ||
+        seller.name?.toLowerCase().includes(q) ||
+        seller.bio?.toLowerCase().includes(q) ||
+        (seller.flat_number && String(seller.flat_number).toLowerCase().includes(q)) ||
+        hasMatchingDish;
+
+      if (!matchesSearch) return false;
+
+      if (filters.openNow && !seller.is_open) return false;
+      if (filters.topRated && (seller.rating || 0) < 4.5) return false;
+      if (filters.punctual && (seller.on_time_delivery_rate ?? 100) < 90) return false;
+
+      // Dietary filter on chef level
+      if (filters.pureVeg) {
+        const dishes = matchedSellersMap[seller.id] || [];
+        if (dishes.length > 0 && !dishes.some((d) => d.category === 'veg')) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sortBy === 'punctual') return (b.on_time_delivery_rate ?? 100) - (a.on_time_delivery_rate ?? 100);
+      if (sortBy === 'speed') return (a.avg_delivery_minutes ?? 25) - (b.avg_delivery_minutes ?? 25);
+      // 'recommended'
+      const scoreA = (a.rating || 4.0) * ((a.on_time_delivery_rate ?? 100) / 100);
+      const scoreB = (b.rating || 4.0) * ((b.on_time_delivery_rate ?? 100) / 100);
+      return scoreB - scoreA;
+    });
+
+  // Matching chefs for autocomplete
+  const matchingChefs = searchQuery.trim()
+    ? sellers.filter((s) =>
+        s.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+        (s.flat_number && String(s.flat_number).toLowerCase().includes(searchQuery.toLowerCase().trim()))
+      )
+    : [];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          🍽️ Society Home Chefs
+          🍽️ Society Home Chefs & Kitchens
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Discover verified home cooks, daily kitchens, and special weekend bakers in your community.
         </Typography>
       </Box>
 
-      {/* Chef Search & Filter Toolbar */}
-      <Box sx={{ mb: 4 }}>
+      {/* Global Search Box with Live Autocomplete */}
+      <Box sx={{ mb: 3, position: 'relative' }}>
+        <TextField
+          fullWidth
+          placeholder="Search chef name, flat number, or special dishes (e.g. Biryani, Paneer, Dosa)..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => {
+            if (searchQuery.trim()) setAutocompleteOpen(true);
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)' }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => { setSearchQuery(''); setAutocompleteOpen(false); }} sx={{ color: '#aaa' }}>
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+          sx={{
+            bgcolor: '#191928',
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              color: '#fff',
+              fontSize: '1.05rem',
+              '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+              '&:hover fieldset': { borderColor: '#E05A2B' },
+              '&.Mui-focused fieldset': { borderColor: '#E05A2B' },
+            },
+          }}
+        />
+
+        {/* Live Search Autocomplete Dropdown */}
+        {autocompleteOpen && (matchingChefs.length > 0 || matchedDishes.length > 0) && (
+          <Paper
+            sx={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              mt: 1,
+              bgcolor: '#1c1c2e',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 3,
+              boxShadow: '0 16px 36px rgba(0,0,0,0.7)',
+              zIndex: 10,
+              maxHeight: 380,
+              overflowY: 'auto',
+              p: 2,
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="caption" fontWeight="bold" color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                Instant Search Suggestions
+              </Typography>
+              <IconButton size="small" onClick={() => setAutocompleteOpen(false)} sx={{ color: '#aaa' }}>
+                <ClearIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
+            {/* Chefs Group */}
+            {matchingChefs.length > 0 && (
+              <Box mb={2}>
+                <Typography variant="subtitle2" fontWeight="bold" color="#F6BD60" mb={1} display="flex" alignItems="center" gap={1}>
+                  👨‍🍳 Home Chefs & Kitchens ({matchingChefs.length})
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={0.8}>
+                  {matchingChefs.slice(0, 4).map((chef) => (
+                    <Box
+                      key={chef.id}
+                      component={Link}
+                      to={`/menu/${chef.id}`}
+                      onClick={() => setAutocompleteOpen(false)}
+                      sx={{
+                        p: 1.2,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(255,255,255,0.04)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        textDecoration: 'none',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'rgba(224, 90, 43, 0.15)' },
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <Avatar sx={{ width: 34, height: 34, bgcolor: '#E05A2B', fontSize: 14 }}>
+                          {chef.name?.[0] || 'C'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            {chef.name}
+                          </Typography>
+                          {chef.flat_number && (
+                            <Typography variant="caption" color="text.secondary">
+                              Flat #{chef.flat_number}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                      <Chip label={`⭐ ${chef.rating?.toFixed(1) || 'New'}`} size="small" sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 'bold' }} />
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Special Dishes Group */}
+            {matchedDishes.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold" color="#E05A2B" mb={1} display="flex" alignItems="center" gap={1}>
+                  🍽️ Special Dishes Matching &ldquo;{searchQuery}&rdquo; ({matchedDishes.length})
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={0.8}>
+                  {matchedDishes.slice(0, 6).map((dish) => (
+                    <Box
+                      key={dish.id}
+                      component={Link}
+                      to={`/menu/${dish.seller_id}?dishId=${dish.id}`}
+                      onClick={() => setAutocompleteOpen(false)}
+                      sx={{
+                        p: 1.2,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(255,255,255,0.04)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        textDecoration: 'none',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'rgba(224, 90, 43, 0.15)' },
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <Box
+                          component="img"
+                          src={getDishImageUrl(dish)}
+                          alt={dish.name}
+                          sx={{ width: 40, height: 40, borderRadius: 1.5, objectFit: 'cover' }}
+                        />
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            {dish.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            by <strong>{dish.seller_name}</strong> {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Typography variant="subtitle2" fontWeight="bold" color="#E05A2B">
+                        ₹{dish.price} →
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </Paper>
+        )}
+      </Box>
+
+      {/* Modern Two-Tier Filter & Sort Toolbar */}
+      <Box sx={{ mb: 4, p: 2, bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              placeholder="Search chef name, flat number, or special dishes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'rgba(255,255,255,0.5)' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery ? (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ color: '#aaa' }}>
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-              sx={{
-                bgcolor: '#191928',
-                borderRadius: 2,
-                '& .MuiOutlinedInput-root': {
+          {/* Tier 1: Multi-Select Filter Chips */}
+          <Grid item xs={12} md={7}>
+            <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+              <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mr: 0.5, textTransform: 'uppercase' }}>
+                Filter:
+              </Typography>
+              <Chip
+                label="🟢 Pure Veg"
+                clickable
+                onClick={() => toggleFilter('pureVeg')}
+                sx={{
+                  bgcolor: filters.pureVeg ? '#2EC4B6' : 'rgba(255,255,255,0.05)',
                   color: '#fff',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-                  '&:hover fieldset': { borderColor: '#E05A2B' },
-                  '&.Mui-focused fieldset': { borderColor: '#E05A2B' },
-                },
-              }}
-            />
+                  fontWeight: filters.pureVeg ? 'bold' : 'normal',
+                  border: '1px solid',
+                  borderColor: filters.pureVeg ? '#2EC4B6' : 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: filters.pureVeg ? '#25a094' : 'rgba(255,255,255,0.1)' },
+                }}
+              />
+              <Chip
+                label="🔴 Non-Veg"
+                clickable
+                onClick={() => toggleFilter('nonVeg')}
+                sx={{
+                  bgcolor: filters.nonVeg ? '#E05A2B' : 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  fontWeight: filters.nonVeg ? 'bold' : 'normal',
+                  border: '1px solid',
+                  borderColor: filters.nonVeg ? '#E05A2B' : 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: filters.nonVeg ? '#c9481c' : 'rgba(255,255,255,0.1)' },
+                }}
+              />
+              <Chip
+                label="🟢 Open Now"
+                clickable
+                onClick={() => toggleFilter('openNow')}
+                sx={{
+                  bgcolor: filters.openNow ? '#4caf50' : 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  fontWeight: filters.openNow ? 'bold' : 'normal',
+                  border: '1px solid',
+                  borderColor: filters.openNow ? '#4caf50' : 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: filters.openNow ? '#388e3c' : 'rgba(255,255,255,0.1)' },
+                }}
+              />
+              <Chip
+                label="⚡ High Punctuality"
+                clickable
+                onClick={() => toggleFilter('punctual')}
+                sx={{
+                  bgcolor: filters.punctual ? '#E05A2B' : 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  fontWeight: filters.punctual ? 'bold' : 'normal',
+                  border: '1px solid',
+                  borderColor: filters.punctual ? '#E05A2B' : 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: filters.punctual ? '#c9481c' : 'rgba(255,255,255,0.1)' },
+                }}
+              />
+              <Chip
+                label="⭐ Top Rated (4.5+)"
+                clickable
+                onClick={() => toggleFilter('topRated')}
+                sx={{
+                  bgcolor: filters.topRated ? '#F6BD60' : 'rgba(255,255,255,0.05)',
+                  color: filters.topRated ? '#191928' : '#fff',
+                  fontWeight: filters.topRated ? 'bold' : 'normal',
+                  border: '1px solid',
+                  borderColor: filters.topRated ? '#F6BD60' : 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: filters.topRated ? '#e5ad50' : 'rgba(255,255,255,0.1)' },
+                }}
+              />
+              {hasActiveFilters && (
+                <Chip
+                  label="✕ Reset Filters"
+                  clickable
+                  onClick={clearAllFilters}
+                  sx={{
+                    bgcolor: 'rgba(255, 107, 107, 0.15)',
+                    color: '#ff6b6b',
+                    fontWeight: 'bold',
+                    border: '1px solid rgba(255, 107, 107, 0.3)',
+                    '&:hover': { bgcolor: 'rgba(255, 107, 107, 0.3)' },
+                  }}
+                />
+              )}
+            </Box>
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Box display="flex" gap={1} flexWrap="wrap" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+          {/* Tier 2: Dedicated Sort By Selector */}
+          <Grid item xs={12} md={5}>
+            <Box display="flex" gap={1} flexWrap="wrap" alignItems="center" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+              <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mr: 0.5, textTransform: 'uppercase' }}>
+                Sort By:
+              </Typography>
               {[
-                { id: 'all', label: 'All Chefs' },
-                { id: 'top_rated', label: '⭐ Top Rated' },
-                { id: 'punctual', label: '⚡ High Punctuality' },
-                { id: 'open_now', label: '🟢 Open Now' },
-              ].map((f) => (
+                { id: 'recommended', label: '✨ Recommended' },
+                { id: 'rating', label: '⭐ Rating' },
+                { id: 'punctual', label: '⚡ Punctual' },
+                { id: 'speed', label: '⏱️ Speed' },
+              ].map((s) => (
                 <Chip
-                  key={f.id}
-                  label={f.label}
+                  key={s.id}
+                  label={s.label}
                   clickable
-                  onClick={() => setSelectedFilter(f.id)}
+                  onClick={() => setSortBy(s.id)}
                   sx={{
-                    bgcolor: selectedFilter === f.id ? '#E05A2B' : '#191928',
+                    bgcolor: sortBy === s.id ? '#E05A2B' : 'rgba(255,255,255,0.04)',
                     color: '#fff',
-                    fontWeight: selectedFilter === f.id ? 'bold' : 'normal',
+                    fontWeight: sortBy === s.id ? 'bold' : 'normal',
                     border: '1px solid',
-                    borderColor: selectedFilter === f.id ? '#E05A2B' : 'rgba(255,255,255,0.1)',
-                    '&:hover': { bgcolor: selectedFilter === f.id ? '#c9481c' : '#252538' },
+                    borderColor: sortBy === s.id ? '#E05A2B' : 'rgba(255,255,255,0.08)',
+                    '&:hover': { bgcolor: sortBy === s.id ? '#c9481c' : 'rgba(255,255,255,0.1)' },
                   }}
                 />
               ))}
@@ -846,6 +1493,29 @@ function SellersPage() {
           </Grid>
         </Grid>
       </Box>
+
+      {/* When Dish Search is Active: Dual Tabs to Browse Chefs vs Browse Dishes */}
+      {searchQuery.trim() && matchedDishes.length > 0 && (
+        <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.1)', mb: 3 }}>
+          <Tabs
+            value={viewMode}
+            onChange={(e, val) => setViewMode(val)}
+            textColor="inherit"
+            indicatorColor="primary"
+          >
+            <Tab
+              value="chefs"
+              label={`👨‍🍳 Kitchens & Chefs (${filteredSellers.length})`}
+              sx={{ fontWeight: 'bold', textTransform: 'none', color: '#fff' }}
+            />
+            <Tab
+              value="dishes"
+              label={`🍽️ All Matching Dishes (${matchedDishes.length})`}
+              sx={{ fontWeight: 'bold', textTransform: 'none', color: '#fff' }}
+            />
+          </Tabs>
+        </Box>
+      )}
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -855,30 +1525,31 @@ function SellersPage() {
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {!loading && !error && filteredSellers.length === 0 && (
+      {/* Empty State */}
+      {!loading && !error && filteredSellers.length === 0 && matchedDishes.length === 0 && (
         <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, bgcolor: '#191928', color: '#fff' }}>
           <StoreIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
-            {searchQuery || selectedFilter !== 'all'
-              ? `No chefs found matching your search filter.`
+            {searchQuery || hasActiveFilters
+              ? 'No chefs or dishes found matching your criteria.'
               : 'No sellers yet in your society.'}
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 3 }}>
-            {searchQuery || selectedFilter !== 'all' ? (
+            {searchQuery || hasActiveFilters ? (
               <Button
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedFilter('all');
+                  clearAllFilters();
                 }}
                 sx={{ color: '#E05A2B', fontWeight: 'bold' }}
               >
-                Clear Filters
+                Clear Search & Filters
               </Button>
             ) : (
               'Be the first to register as a chef in your residential building!'
             )}
           </Typography>
-          {!searchQuery && selectedFilter === 'all' && (
+          {!searchQuery && !hasActiveFilters && (
             currentUser && currentUser.role === 'seller' ? (
               <Button variant="contained" component={Link} to="/seller/dashboard">
                 Your Seller Dashboard
@@ -892,92 +1563,141 @@ function SellersPage() {
         </Paper>
       )}
 
-      <Grid container spacing={3}>
-        {filteredSellers.map((seller) => (
-          <Grid item xs={12} sm={6} md={4} key={seller.id}>
-            <Card
-              sx={{
-                bgcolor: '#191928',
-                borderRadius: 3,
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#fff',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' },
-              }}
-            >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ bgcolor: '#E05A2B', width: 50, height: 50, mr: 2, fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    {seller.name?.[0] || 'C'}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold">{seller.name}</Typography>
-                    <Box display="flex" gap={0.8} mt={0.5} flexWrap="wrap">
-                      <Chip
-                        label={`⭐ ${seller.rating?.toFixed(1) || 'New'}`}
-                        size="small"
-                        sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 'bold' }}
-                      />
-                      {seller.flat_number && (
-                        <Chip
-                          label={`Flat ${seller.flat_number}`}
-                          size="small"
-                          sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff' }}
-                        />
-                      )}
-                    </Box>
+      {/* View 1: Chef Cards Grid with Multi-Photo Carousels */}
+      {viewMode === 'chefs' && !loading && (
+        <Grid container spacing={3}>
+          {filteredSellers.map((seller) => (
+            <Grid item xs={12} sm={6} md={4} key={seller.id}>
+              <ChefCard
+                seller={seller}
+                matchingDishes={matchedSellersMap[seller.id] || []}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* View 2: Dishes Marketplace Grid (Side-by-side dish cards) */}
+      {viewMode === 'dishes' && !loading && (
+        <Grid container spacing={3}>
+          {matchedDishes.map((dish, idx) => (
+            <Grid item xs={12} sm={6} md={4} key={dish.id}>
+              <Card
+                sx={{
+                  bgcolor: '#191928',
+                  borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#fff',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  overflow: 'hidden',
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'translateY(-4px)' },
+                }}
+              >
+                <Box
+                  onClick={() => {
+                    setCarouselDishIndex(idx);
+                    setIsCarouselOpen(true);
+                  }}
+                  sx={{
+                    position: 'relative',
+                    height: 180,
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={getDishImageUrl(dish)}
+                    alt={dish.name}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 10,
+                      left: 10,
+                      display: 'flex',
+                      gap: 0.8,
+                    }}
+                  >
+                    <Chip
+                      size="small"
+                      label={dish.category === 'veg' ? '🟢 Veg' : '🔴 Non-Veg'}
+                      sx={{ bgcolor: dish.category === 'veg' ? 'rgba(46, 196, 182, 0.9)' : 'rgba(224, 90, 43, 0.9)', color: '#fff', fontWeight: 'bold' }}
+                    />
                   </Box>
                 </Box>
 
-                <Typography variant="body2" color="text.secondary" mb={2}>
-                  {seller.bio || 'Authentic home cook preparing homemade fresh food for neighbors.'}
-                </Typography>
+                <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {dish.name}
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" color="#E05A2B">
+                      ₹{dish.price}
+                    </Typography>
+                  </Box>
 
-                {/* Badges: Punctuality & Fulfillment */}
-                <Box display="flex" gap={1} flexWrap="wrap">
-                  <Chip
-                    size="small"
-                    label={`⚡ ${seller.on_time_delivery_rate ?? 100}% on-time`}
-                    sx={{ bgcolor: 'rgba(46, 196, 182, 0.15)', color: '#2EC4B6', fontWeight: 'bold', fontSize: 11 }}
-                  />
-                  <Chip
-                    size="small"
-                    icon={<DeliveryDiningIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />}
-                    label="Doorstep & Pickup"
-                    sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: '#ddd', fontSize: 11 }}
-                  />
-                </Box>
-              </CardContent>
+                  <Typography variant="body2" color="text.secondary" mb={1.5}>
+                    by <strong>{dish.seller_name}</strong> {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
+                  </Typography>
 
-              <CardActions sx={{ px: 2, pb: 2, gap: 1 }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                  component={Link}
-                  to={`/menu/${seller.id}`}
-                  sx={{ textTransform: 'none', fontWeight: 'bold', flex: 1 }}
-                >
-                  View Menu
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  to={`/menu/${seller.id}`}
-                  sx={{ bgcolor: '#E05A2B', textTransform: 'none', fontWeight: 'bold', flex: 1, '&:hover': { bgcolor: '#c9481c' } }}
-                >
-                  Order Now
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                  {dish.description && (
+                    <Typography variant="body2" color="rgba(255,255,255,0.7)" sx={{ lineHeight: 1.4, mb: 1 }}>
+                      {dish.description}
+                    </Typography>
+                  )}
+                </CardContent>
+
+                <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      setCarouselDishIndex(idx);
+                      setIsCarouselOpen(true);
+                    }}
+                    sx={{ color: '#2EC4B6', fontWeight: 'bold', textTransform: 'none' }}
+                  >
+                    Photo & Details →
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddShoppingCartIcon />}
+                    onClick={() => {
+                      if (onAddToCart) {
+                        onAddToCart(dish, dish.seller_id, dish.seller_name, dish.seller_flat);
+                      }
+                    }}
+                    sx={{ bgcolor: '#E05A2B', fontWeight: 'bold', textTransform: 'none', '&:hover': { bgcolor: '#c9481c' } }}
+                  >
+                    Add to Basket
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* Maximized Sliding Lightbox Carousel for Dishes Tab */}
+      <DishImageModal
+        open={isCarouselOpen && carouselDishIndex !== null && matchedDishes.length > 0}
+        onClose={() => {
+          setIsCarouselOpen(false);
+          setCarouselDishIndex(null);
+        }}
+        items={matchedDishes}
+        currentIndex={carouselDishIndex ?? 0}
+        onIndexChange={(newIdx) => setCarouselDishIndex(newIdx)}
+        onAddToCart={(dish) => {
+          if (onAddToCart) {
+            onAddToCart(dish, dish.seller_id, dish.seller_name, dish.seller_flat);
+          }
+        }}
+      />
     </Container>
   );
 }
@@ -1115,6 +1835,7 @@ function AppContent() {
           element={
             <PrivateRoute>
               <SellersPage />
+              <SellersPage onAddToCart={handleAddToCart} />
             </PrivateRoute>
           }
         />

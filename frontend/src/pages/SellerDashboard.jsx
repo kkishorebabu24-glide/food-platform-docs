@@ -24,6 +24,7 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  Avatar,
 } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -55,6 +56,16 @@ const SLOT_LABELS = {
   dinner_tomorrow: '🌙 Dinner Tomorrow',
   weekend_special: '🎉 Weekend Special',
 };
+
+const BACKGROUND_PRESETS = [
+  { id: 'bakery', name: '🥖 Bakery & Sweets', url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'south_indian', name: '🥘 South Indian Kitchen', url: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'north_spices', name: '🍛 North Indian Spices', url: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'healthy', name: '🥗 Fresh & Healthy Bowls', url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'street_tiffins', name: '🥟 Street Food & Tiffins', url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'pure_veg', name: '🌿 Pure Veg Sattvic', url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'cafe', name: '☕ Cafe & Beverages', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop&q=80' },
+];
 
 export default function SellerDashboardPage({ currentUser }) {
   const [sellerProfile, setSellerProfile] = useState(null);
@@ -89,6 +100,71 @@ export default function SellerDashboardPage({ currentUser }) {
   const [maxBatch, setMaxBatch] = useState(15);
   const [submittingMenu, setSubmittingMenu] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // Chef Profile, Multi-Photo Gallery & Background Presets
+  const avatarInputRef = React.useRef(null);
+  const bannerInputRef = React.useRef(null);
+  const galleryInputRef = React.useRef(null);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await sellersAPI.uploadPhoto(file);
+      setSellerProfile((prev) => (prev ? { ...prev, photo_url: res.data.photo_url } : null));
+      setActionSuccess('Chef avatar photo updated successfully! 📸');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to upload avatar photo.'));
+    }
+  };
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await sellersAPI.uploadBanner(file);
+      setSellerProfile((prev) => (prev ? { ...prev, banner_url: res.data.banner_url } : null));
+      setActionSuccess('Kitchen banner updated successfully! 🖼️');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to upload kitchen banner.'));
+    }
+  };
+
+  const handleSelectPresetBanner = async (presetUrl) => {
+    try {
+      await sellersAPI.updateProfile({ banner_url: presetUrl });
+      setSellerProfile((prev) => (prev ? { ...prev, banner_url: presetUrl } : null));
+      setActionSuccess('Kitchen background preset applied! ✨');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to update kitchen background.'));
+    }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingGallery(true);
+      const res = await sellersAPI.uploadPhotos(files);
+      setSellerProfile((prev) => (prev ? { ...prev, photos: res.data.photos } : null));
+      setActionSuccess(`${files.length} photo(s) added to kitchen gallery! 📸`);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to upload gallery photos.'));
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleDeleteGalleryPhoto = async (photoUrl) => {
+    try {
+      const res = await sellersAPI.deletePhoto(photoUrl);
+      setSellerProfile((prev) => (prev ? { ...prev, photos: res.data.photos } : null));
+      setActionSuccess('Photo removed from kitchen gallery.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to delete photo.'));
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -566,6 +642,197 @@ export default function SellerDashboardPage({ currentUser }) {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Chef Profile, Multi-Photo Gallery & Background Presets Section */}
+      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 4 }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2} mb={3}>
+            <Box>
+              <Typography variant="h6" fontWeight="bold" display="flex" alignItems="center" gap={1}>
+                📸 Kitchen Branding & Multi-Photo Gallery
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Upload your chef photo, showcase multiple kitchen photos, and pick an aesthetic background for your cards.
+              </Typography>
+            </Box>
+            <Box display="flex" gap={1.5} flexWrap="wrap">
+              <input
+                type="file"
+                ref={avatarInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleAvatarUpload}
+              />
+              <input
+                type="file"
+                ref={bannerInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleBannerUpload}
+              />
+              <input
+                type="file"
+                ref={galleryInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                multiple
+                onChange={handleGalleryUpload}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PhotoCameraIcon />}
+                onClick={() => avatarInputRef.current?.click()}
+                sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
+              >
+                Change Avatar
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PhotoCameraIcon />}
+                onClick={() => bannerInputRef.current?.click()}
+                sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
+              >
+                Custom Banner
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddCircleOutlineIcon />}
+                onClick={() => galleryInputRef.current?.click()}
+                disabled={uploadingGallery}
+                sx={{ bgcolor: '#E05A2B', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: '#c9481c' } }}
+              >
+                {uploadingGallery ? 'Uploading...' : '+ Add Gallery Photos'}
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Current Avatar & Banner Preview */}
+          <Grid container spacing={3} alignItems="center" mb={3}>
+            <Grid item xs={12} sm={4} md={3} display="flex" flexDirection="column" alignItems="center" textAlign="center">
+              <Avatar
+                src={sellerProfile?.photo_url || undefined}
+                sx={{
+                  width: 90,
+                  height: 90,
+                  bgcolor: '#E05A2B',
+                  fontSize: '2.2rem',
+                  fontWeight: 'bold',
+                  border: '3px solid rgba(255,255,255,0.15)',
+                  mb: 1,
+                }}
+              >
+                {sellerProfile?.name?.[0] || 'C'}
+              </Avatar>
+              <Typography variant="subtitle2" fontWeight="bold">
+                Chef Avatar / Logo
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Visible on chef cards and dish modals
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={8} md={9}>
+              <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+                Kitchen Background Suggestions (1-Click Presets)
+              </Typography>
+              <Box display="flex" gap={1} flexWrap="wrap">
+                {BACKGROUND_PRESETS.map((preset) => {
+                  const isSelected = sellerProfile?.banner_url === preset.url;
+                  return (
+                    <Chip
+                      key={preset.id}
+                      label={preset.name}
+                      clickable
+                      onClick={() => handleSelectPresetBanner(preset.url)}
+                      sx={{
+                        bgcolor: isSelected ? '#E05A2B' : 'rgba(255,255,255,0.06)',
+                        color: '#fff',
+                        fontWeight: isSelected ? 'bold' : 'normal',
+                        border: '1px solid',
+                        borderColor: isSelected ? '#E05A2B' : 'rgba(255,255,255,0.12)',
+                        '&:hover': { bgcolor: isSelected ? '#c9481c' : 'rgba(255,255,255,0.12)' },
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 2 }} />
+
+          {/* Multi-Photo Kitchen Gallery */}
+          <Box>
+            <Typography variant="subtitle2" fontWeight="bold" mb={1.5} display="flex" alignItems="center" gap={1}>
+              🖼️ Multi-Photo Kitchen Gallery ({sellerProfile?.photos?.length || 0} Photos)
+            </Typography>
+
+            {(!sellerProfile?.photos || sellerProfile.photos.length === 0) ? (
+              <Box
+                sx={{
+                  p: 3,
+                  border: '1px dashed rgba(255,255,255,0.15)',
+                  borderRadius: 2,
+                  textAlign: 'center',
+                  bgcolor: 'rgba(255,255,255,0.02)',
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  No gallery photos uploaded yet. Upload multiple photos of your kitchen, hygiene setup, ingredients, or cooking action to make your chef card shine!
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
+                {sellerProfile.photos.map((photoUrl, idx) => (
+                  <Grid item xs={6} sm={4} md={2.4} key={idx}>
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        height: 120,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        '&:hover .delete-overlay': { opacity: 1 },
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={photoUrl.startsWith('/') ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${photoUrl}` : photoUrl}
+                        alt={`Kitchen Photo ${idx + 1}`}
+                        sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <Box
+                        className="delete-overlay"
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          bgcolor: 'rgba(0,0,0,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0,
+                          transition: 'opacity 0.2s',
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteGalleryPhoto(photoUrl)}
+                          sx={{ bgcolor: 'rgba(224, 90, 43, 0.85)', color: '#fff', '&:hover': { bgcolor: '#c9481c' } }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Live Kitchen Menu & Dishes Management Section */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} mt={5}>

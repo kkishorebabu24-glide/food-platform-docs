@@ -27,6 +27,28 @@ DB_DEPENDENCY = Depends(get_db)
 SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
 
 
+@router.get("/search")
+async def search_menus(
+    q: str | None = Query(default=None, description="Search query across dishes and descriptions"),
+    category: str | None = Query(default=None, description="Filter by category"),
+    veg_only: bool = Query(default=False, description="Filter pure veg only"),
+    available_only: bool = Query(default=True, description="Only return available items from open kitchens"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = DB_DEPENDENCY,
+):
+    """Public global search for dishes across all approved sellers in the community."""
+    return menu_service.search_public_dishes(
+        db,
+        query=q,
+        category=category,
+        veg_only=veg_only,
+        available_only=available_only,
+        skip=skip,
+        limit=limit,
+    )
+
+
 @router.get("/sellers/{seller_id}")
 async def get_seller_menus(
     seller_id: int,

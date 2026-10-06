@@ -14,6 +14,7 @@ Authenticated (seller or admin):
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_db, require_role
@@ -69,6 +70,8 @@ async def get_my_seller_profile(
         "email": user.email,
         "bio": seller.bio,
         "photo_url": seller.photo_url,
+        "banner_url": getattr(seller, "banner_url", None),
+        "photos": getattr(seller, "photos", []) or [],
         "upi_id": seller.upi_id,
         "upi_account_name": getattr(seller, "upi_account_name", None),
         "is_upi_verified": getattr(seller, "is_upi_verified", bool(seller.upi_id)),
@@ -91,6 +94,51 @@ async def update_my_profile(
     """Update the authenticated seller's own profile."""
     seller_service.update_seller_profile(db, current_user.id, request)
     return {"message": "Profile updated successfully."}
+
+
+@router.post("/me/photo")
+async def upload_my_photo(
+    file: UploadFile = File(..., description="Avatar/logo image (JPEG, PNG, WebP — max 5 MB)"),
+    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    db: Session = DB_DEPENDENCY,
+):
+    """Upload seller avatar photo."""
+    photo_url = await seller_service.upload_seller_photo(db, current_user.id, file)
+    return {"photo_url": photo_url, "message": "Avatar photo updated successfully."}
+
+
+@router.post("/me/banner")
+async def upload_my_banner(
+    file: UploadFile | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
+    preset_url: str | None = Query(default=None, description="Curated banner preset URL"),
+    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    db: Session = DB_DEPENDENCY,
+):
+    """Upload seller kitchen banner or select a curated preset banner URL."""
+    banner_url = await seller_service.upload_seller_banner(db, current_user.id, file=file, preset_url=preset_url)
+    return {"banner_url": banner_url, "message": "Kitchen banner updated successfully."}
+
+
+@router.post("/me/photos")
+async def upload_my_photos(
+    files: list[UploadFile] = File(..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"),
+    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    db: Session = DB_DEPENDENCY,
+):
+    """Upload one or more photos to seller kitchen gallery."""
+    photos = await seller_service.upload_seller_photos(db, current_user.id, files)
+    return {"photos": photos, "message": f"{len(files)} photo(s) added to gallery."}
+
+
+@router.delete("/me/photos")
+async def delete_my_photo(
+    photo_url: str = Query(..., description="Photo URL to delete"),
+    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    db: Session = DB_DEPENDENCY,
+):
+    """Delete a photo from seller kitchen gallery."""
+    photos = seller_service.delete_seller_photo(db, current_user.id, photo_url)
+    return {"photos": photos, "message": "Photo deleted successfully."}
 
 
 @router.get("/me/orders")
@@ -163,6 +211,8 @@ async def get_seller(seller_id: int, db: Session = DB_DEPENDENCY):
         "name": user.name,
         "bio": seller.bio,
         "photo_url": seller.photo_url,
+        "banner_url": getattr(seller, "banner_url", None),
+        "photos": getattr(seller, "photos", []) or [],
         "rating": seller.rating,
         "review_count": seller.review_count,
         "flat_number": user.flat_number,

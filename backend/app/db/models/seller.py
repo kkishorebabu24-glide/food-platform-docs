@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum as SAEnum
 from sqlalchemy import Float, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -49,7 +50,14 @@ class SellerProfile(TimestampMixin, Base):
     lifetime_orders_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Profile photo URL (CDN / S3 link)
+    # Profile photo URL (CDN / S3 link or local upload)
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Kitchen background banner URL or preset
+    banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Multi-photo kitchen & partner gallery (list of image URLs)
+    photos: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
     # ── Aggregate Rating (Customer Reviews) ───────────────────────────────────
     # Rating 1–5 with 0.2 precision; updated by rating_service after each review

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { menusAPI, sellersAPI, getErrorMessage } from '../services/api';
 import DishImageModal, { getDishImageUrl } from '../components/DishImageModal';
 import {
@@ -51,6 +51,10 @@ const CATEGORIES = [
 
 export default function MenuPage({ onAddToCart }) {
   const { sellerId: routeSellerId } = useParams();
+  const [searchParams] = useSearchParams();
+  const deepLinkedDishId = searchParams.get('dishId');
+  const urlSearch = searchParams.get('search');
+
   const [items, setItems] = useState([]);
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +63,8 @@ export default function MenuPage({ onAddToCart }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [modalItem, setModalItem] = useState(null);
+  const [modalIndex, setModalIndex] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const resolvedSellerId =
     routeSellerId ||
@@ -124,6 +130,34 @@ export default function MenuPage({ onAddToCart }) {
     return matchesSearch && matchesCategory;
   });
 
+  const handleOpenModal = (targetItem) => {
+    const idx = displayedItems.findIndex((it) => it.id === targetItem.id);
+    setModalIndex(idx !== -1 ? idx : 0);
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    if (deepLinkedDishId && items.length > 0) {
+      const targetItem = items.find((it) => String(it.id) === String(deepLinkedDishId));
+      if (targetItem) {
+        if (targetItem.is_preorder_only && activeTab !== 1) {
+          setActiveTab(1);
+        } else if (!targetItem.is_preorder_only && activeTab !== 0) {
+          setActiveTab(0);
+        }
+        setTimeout(() => {
+          const list = targetItem.is_preorder_only ? preorderItems : instantItems;
+          const idx = list.findIndex((it) => String(it.id) === String(deepLinkedDishId));
+          setModalIndex(idx !== -1 ? idx : 0);
+          setIsModalOpen(true);
+        }, 100);
+      }
+    }
+    if (urlSearch && !searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+  }, [deepLinkedDishId, urlSearch, items]);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4, color: '#fff' }}>
       {/* Self-Order Notice for Chefs viewing their own kitchen */}
@@ -147,6 +181,9 @@ export default function MenuPage({ onAddToCart }) {
         <Box
           sx={{
             bgcolor: '#191928',
+            backgroundImage: seller.banner_url ? `linear-gradient(rgba(25, 25, 40, 0.82), rgba(25, 25, 40, 0.95)), url(${seller.banner_url})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             p: { xs: 2.5, md: 3.5 },
             borderRadius: 3,
             mb: 4,
@@ -159,6 +196,7 @@ export default function MenuPage({ onAddToCart }) {
         >
 
           <Avatar
+            src={seller.photo_url || undefined}
             sx={{
               width: { xs: 56, md: 72 },
               height: { xs: 56, md: 72 },
@@ -363,9 +401,11 @@ export default function MenuPage({ onAddToCart }) {
                       },
                     }}
                     onClick={() => setModalItem(item)}
+                    onClick={() => handleOpenModal(item)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' && setModalItem(item)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleOpenModal(item)}
                     aria-label={`View photo and details of ${item.name}`}
                   >
                     <Box
@@ -490,6 +530,7 @@ export default function MenuPage({ onAddToCart }) {
                       size="small"
                       variant="text"
                       onClick={() => setModalItem(item)}
+                      onClick={() => handleOpenModal(item)}
                       sx={{ color: '#2EC4B6', fontWeight: 'bold', textTransform: 'none' }}
                     >
                       Photo & Details →
@@ -540,10 +581,19 @@ export default function MenuPage({ onAddToCart }) {
       )}
 
       {/* Modern Dish Image Popup Lightbox Modal */}
+      {/* Modern Dish Image Popup Lightbox Modal with Sliding Carousel */}
       <DishImageModal
         open={Boolean(modalItem)}
         onClose={() => setModalItem(null)}
         item={modalItem}
+        open={isModalOpen && modalIndex !== null && displayedItems.length > 0}
+        onClose={() => {
+          setIsModalOpen(false);
+          setModalIndex(null);
+        }}
+        items={displayedItems}
+        currentIndex={modalIndex ?? 0}
+        onIndexChange={(newIdx) => setModalIndex(newIdx)}
         sellerName={seller?.name}
         sellerFlat={seller?.flat_number}
         isSelfKitchen={isSelfKitchen}

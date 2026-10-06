@@ -147,10 +147,45 @@ export const sellersAPI = {
 
   /** Register as a seller */
   register: (data) => api.post('/sellers/register', data),
+
+  /** Upload seller avatar photo */
+  uploadPhoto: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/sellers/me/photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /** Upload kitchen banner image */
+  uploadBanner: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/sellers/me/banner', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /** Upload one or multiple photos to kitchen gallery */
+  uploadPhotos: (files) => {
+    const formData = new FormData();
+    Array.from(files).forEach((file) => formData.append('files', file));
+    return api.post('/sellers/me/photos', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /** Delete a photo from kitchen gallery */
+  deletePhoto: (photoUrl) =>
+    api.delete('/sellers/me/photos', { params: { photo_url: photoUrl } }),
 };
 
 // ── Menus API ──────────────────────────────────────────────────────────────
 export const menusAPI = {
+  /** Search dishes across all approved sellers */
+  search: (query = '', params = {}) =>
+    api.get('/menus/search', { params: { q: query, ...params } }),
+
   /** Get menus for a seller */
   bySeller: (sellerId, category = null, search = null, availableOnly = false) =>
     api.get(`/menus/sellers/${sellerId}`, {

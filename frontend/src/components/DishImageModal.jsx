@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
   Dialog,
@@ -18,6 +18,8 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import StarIcon from '@mui/icons-material/Star';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const SLOT_SHORT_LABELS = {
   lunch_today: '☀️ Lunch Today',
@@ -75,17 +77,89 @@ export default function DishImageModal({
   open,
   onClose,
   item,
+  items = [],
+  currentIndex = 0,
+  onIndexChange,
   sellerName,
   sellerFlat,
   onAddToCart,
   isSelfKitchen = false,
 }) {
+  const activeList = items && items.length > 0 ? items : (item ? [item] : []);
+  const [internalIndex, setInternalIndex] = useState(currentIndex || 0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const touchStartX = useRef(null);
 
-  if (!item) return null;
+  useEffect(() => {
+    setInternalIndex(currentIndex || 0);
+  }, [currentIndex]);
 
-  const imageUrl = getDishImageUrl(item);
-  const isVeg = item.category === 'veg' || (!item.category?.includes('non') && !item.name?.toLowerCase().includes('chicken') && !item.name?.toLowerCase().includes('mutton'));
+  const activeIndex = onIndexChange ? (currentIndex ?? 0) : internalIndex;
+  const currentDish = activeList[activeIndex] || item;
+
+  const handlePrev = (e) => {
+    if (e) e.stopPropagation();
+    if (activeList.length <= 1) return;
+    const nextIdx = activeIndex === 0 ? activeList.length - 1 : activeIndex - 1;
+    if (onIndexChange) {
+      onIndexChange(nextIdx);
+    } else {
+      setInternalIndex(nextIdx);
+    }
+  };
+
+  const handleNext = (e) => {
+    if (e) e.stopPropagation();
+    if (activeList.length <= 1) return;
+    const nextIdx = activeIndex === activeList.length - 1 ? 0 : activeIndex + 1;
+    if (onIndexChange) {
+      onIndexChange(nextIdx);
+    } else {
+      setInternalIndex(nextIdx);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') {
+        handlePrev();
+      } else if (e.key === 'ArrowRight') {
+        handleNext();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, activeIndex, activeList.length]);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (diff > 40) {
+      handleNext();
+    } else if (diff < -40) {
+      handlePrev();
+    }
+    touchStartX.current = null;
+  };
+
+  if (!currentDish) return null;
+
+  const imageUrl = getDishImageUrl(currentDish);
+  const isVeg = currentDish.category === 'veg' || (!currentDish.category?.includes('non') && !currentDish.name?.toLowerCase().includes('chicken') && !currentDish.name?.toLowerCase().includes('mutton'));
+  const currentSellerName = currentDish.seller_name || sellerName;
+  const currentSellerFlat = currentDish.seller_flat || sellerFlat;
+
+  const spiceBadge = currentDish.spice_level === 'hot'
+    ? '🌶️🌶️🌶️ Hot'
+    : currentDish.spice_level === 'mild'
+    ? '🌶️ Mild'
+    : '🌶️🌶️ Medium';
 
   return (
     <Dialog
@@ -111,21 +185,95 @@ export default function DishImageModal({
         },
       }}
     >
-      {/* Top Image Banner with Modern Coffee/Food App Overlays */}
-      <Box sx={{ position: 'relative', width: '100%', height: { xs: 240, sm: 300 } }}>
+      {/* Top Image Banner with Sliding Carousel Controls */}
+      <Box
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: { xs: 250, sm: 320 },
+          bgcolor: '#12121e',
+          overflow: 'hidden',
+          userSelect: 'none',
+        }}
+      >
         <Box
+          key={currentDish.id || activeIndex}
           component="img"
           src={imageUrl}
-          alt={item.name}
+          alt={currentDish.name}
           sx={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            animation: 'fadeInSlide 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            '@keyframes fadeInSlide': {
+              from: { opacity: 0.5, transform: 'scale(0.97)' },
+              to: { opacity: 1, transform: 'scale(1)' },
+            },
           }}
         />
 
-        {/* Top-Left Badges: Category & Star Rating */}
-        <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 1 }}>
+        {/* Floating Prev & Next Navigation Buttons */}
+        {activeList.length > 1 && (
+          <>
+            <IconButton
+              aria-label="Previous dish"
+              onClick={handlePrev}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                left: 12,
+                bgcolor: 'rgba(18, 18, 30, 0.75)',
+                color: '#fff',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                zIndex: 4,
+                '&:hover': { bgcolor: '#E05A2B', transform: 'translateY(-50%) scale(1.1)' },
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+
+            <IconButton
+              aria-label="Next dish"
+              onClick={handleNext}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                right: 12,
+                bgcolor: 'rgba(18, 18, 30, 0.75)',
+                color: '#fff',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                zIndex: 4,
+                '&:hover': { bgcolor: '#E05A2B', transform: 'translateY(-50%) scale(1.1)' },
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          </>
+        )}
+
+        {/* Top-Left Badges: Counter, Category & Rating */}
+        <Box sx={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 1, flexWrap: 'wrap', zIndex: 3 }}>
+          {activeList.length > 1 && (
+            <Chip
+              label={`Dish ${activeIndex + 1} of ${activeList.length}`}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(224, 90, 43, 0.9)',
+                color: '#fff',
+                fontWeight: 'bold',
+                backdropFilter: 'blur(6px)',
+              }}
+            />
+          )}
           <Chip
             label={isVeg ? '🟢 Pure Veg' : '🔴 Non-Veg'}
             size="small"
@@ -152,7 +300,7 @@ export default function DishImageModal({
         </Box>
 
         {/* Top-Right Action Controls: Favorite Heart & Close */}
-        <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+        <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1, zIndex: 3 }}>
           <IconButton
             onClick={() => setIsFavorite(!isFavorite)}
             aria-label="favorite"
@@ -168,6 +316,7 @@ export default function DishImageModal({
 
           <IconButton
             onClick={onClose}
+            aria-label="close"
             sx={{
               bgcolor: 'rgba(0,0,0,0.6)',
               color: '#fff',
@@ -185,20 +334,20 @@ export default function DishImageModal({
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
           <Box>
             <Typography variant="h5" fontWeight="bold" color="#fff">
-              {item.name}
+              {currentDish.name}
             </Typography>
-            {(sellerName || sellerFlat) && (
+            {(currentSellerName || currentSellerFlat) && (
               <Typography variant="body2" color="text.secondary" mt={0.5}>
-                by <strong>{sellerName || 'Home Chef'}</strong> {sellerFlat ? `(Flat #${sellerFlat})` : ''}
+                by <strong>{currentSellerName || 'Home Chef'}</strong> {currentSellerFlat ? `(Flat #${currentSellerFlat})` : ''}
               </Typography>
             )}
           </Box>
           <Typography variant="h5" fontWeight="bold" color="#E05A2B">
-            ₹{item.price}
+            ₹{currentDish.price}
           </Typography>
         </Box>
 
-        {/* Culinary & Dietary Attribute Pills (Coffee App Style) */}
+        {/* Culinary & Dietary Attribute Pills */}
         <Box display="flex" gap={1} flexWrap="wrap" mb={2}>
           <Chip
             size="small"
@@ -212,24 +361,24 @@ export default function DishImageModal({
           />
           <Chip
             size="small"
-            label="⏱️ Ready in ~25m"
-            sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#ccc', fontWeight: 600, fontSize: 12 }}
+            label={spiceBadge}
+            sx={{ bgcolor: 'rgba(224, 90, 43, 0.15)', color: '#E05A2B', fontWeight: 600, fontSize: 12 }}
           />
           <Chip
             size="small"
-            label="🌶️ Mildly Spiced"
-            sx={{ bgcolor: 'rgba(224, 90, 43, 0.15)', color: '#E05A2B', fontWeight: 600, fontSize: 12 }}
+            label="⏱️ Ready in ~25m"
+            sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#ccc', fontWeight: 600, fontSize: 12 }}
           />
         </Box>
 
-        {item.description && (
+        {currentDish.description && (
           <Typography variant="body2" color="rgba(255,255,255,0.8)" sx={{ mb: 2.5, lineHeight: 1.6 }}>
-            {item.description}
+            {currentDish.description}
           </Typography>
         )}
 
         {/* Pre-Order Specifics */}
-        {item.is_preorder_only && (
+        {currentDish.is_preorder_only && (
           <Box sx={{ bgcolor: 'rgba(246, 189, 96, 0.1)', border: '1px solid rgba(246, 189, 96, 0.25)', p: 2, borderRadius: 2, mb: 2.5 }}>
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <AccessTimeIcon sx={{ color: '#F6BD60', fontSize: 20 }} />
@@ -237,14 +386,14 @@ export default function DishImageModal({
                 Advance Pre-Order Required
               </Typography>
             </Box>
-            {item.preorder_cutoff_time && (
+            {currentDish.preorder_cutoff_time && (
               <Typography variant="body2" color="rgba(255,255,255,0.85)" mb={1}>
-                Booking Cutoff: <strong>{item.preorder_cutoff_time}</strong>
+                Booking Cutoff: <strong>{currentDish.preorder_cutoff_time}</strong>
               </Typography>
             )}
-            {item.available_slots && item.available_slots.length > 0 && (
+            {currentDish.available_slots && currentDish.available_slots.length > 0 && (
               <Box display="flex" gap={1} flexWrap="wrap" mt={1}>
-                {item.available_slots.map((s) => (
+                {currentDish.available_slots.map((s) => (
                   <Chip
                     key={s}
                     size="small"
@@ -286,7 +435,7 @@ export default function DishImageModal({
             startIcon={<AddShoppingCartIcon />}
             onClick={() => {
               if (onAddToCart) {
-                onAddToCart(item);
+                onAddToCart(currentDish);
               }
               onClose();
             }}
@@ -300,8 +449,58 @@ export default function DishImageModal({
               '&:hover': { bgcolor: '#c9481c' },
             }}
           >
-            {item.is_preorder_only ? `Pre-Order for ₹${item.price}` : `Add to Basket • ₹${item.price}`}
+            {currentDish.is_preorder_only ? `Pre-Order for ₹${currentDish.price}` : `Add to Basket • ₹${currentDish.price}`}
           </Button>
+        )}
+
+        {/* Quick Thumbnail Strip Carousel for Multiple Dishes */}
+        {activeList.length > 1 && (
+          <Box sx={{ mt: 2.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Slide to Browse Other Dishes ({activeList.length})
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1.2,
+                overflowX: 'auto',
+                py: 0.5,
+                '&::-webkit-scrollbar': { height: 6 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 3 },
+              }}
+            >
+              {activeList.map((dish, idx) => (
+                <Box
+                  key={dish.id || idx}
+                  onClick={() => {
+                    if (onIndexChange) onIndexChange(idx);
+                    else setInternalIndex(idx);
+                  }}
+                  sx={{
+                    flexShrink: 0,
+                    width: 56,
+                    height: 56,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    border: '2px solid',
+                    borderColor: idx === activeIndex ? '#E05A2B' : 'rgba(255,255,255,0.15)',
+                    opacity: idx === activeIndex ? 1 : 0.6,
+                    transform: idx === activeIndex ? 'scale(1.05)' : 'none',
+                    transition: 'all 0.2s',
+                    '&:hover': { opacity: 1, borderColor: '#E05A2B' },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={getDishImageUrl(dish)}
+                    alt={dish.name}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          </Box>
         )}
       </DialogContent>
     </Dialog>
@@ -312,6 +511,9 @@ DishImageModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   item: PropTypes.object,
+  items: PropTypes.array,
+  currentIndex: PropTypes.number,
+  onIndexChange: PropTypes.func,
   sellerName: PropTypes.string,
   sellerFlat: PropTypes.string,
   onAddToCart: PropTypes.func,

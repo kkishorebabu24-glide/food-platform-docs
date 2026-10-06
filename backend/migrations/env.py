@@ -18,9 +18,13 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 config.set_main_option(
     "sqlalchemy.url",
-    settings.DATABASE_URL,
+    db_url,
 )
 import app.db.models
 from app.db.base import Base

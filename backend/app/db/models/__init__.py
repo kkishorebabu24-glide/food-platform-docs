@@ -5,7 +5,7 @@ Importing this package (or any submodule) registers all ORM classes on
 Base.metadata, which is required for Alembic autogenerate to detect all tables.
 
 Usage:
-    from app.db.models import User, SellerProfile, Menu, Order, Rating
+    from app.db.models import User, PartnerProfile, Menu, Order, Rating
     from app.db.models import Payment, LedgerEntry, Payout, Delivery
 """
 
@@ -16,9 +16,12 @@ from app.db.models.order import Order
 from app.db.models.payment import Payment
 from app.db.models.payout import Payout
 from app.db.models.rating import Rating
-from app.db.models.seller import SellerProfile
+from app.db.models.partner_profile import PartnerProfile
 from app.db.models.suggestion import DishSuggestion, DishUpvote
 from app.db.models.user import User
+
+# Backward compatibility alias
+SellerProfile = PartnerProfile
 
 __all__ = [
     "Delivery",
@@ -30,6 +33,7 @@ __all__ = [
     "Payment",
     "Payout",
     "Rating",
+    "PartnerProfile",
     "SellerProfile",
     "User",
 ]

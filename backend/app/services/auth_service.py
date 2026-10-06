@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password, verify_password
 from app.db.models import User
-from app.db.models.enums import UserRole, VerificationStatus
+from app.db.models.enums import UserRole, UserStatus
 
 
 def register_user(
@@ -20,7 +20,7 @@ def register_user(
     email: str,
     name: str,
     password: str,
-    role: str = "buyer",
+    role: str = "resident",
 ) -> User:
     """
     Register a new user with a hashed password.
@@ -33,12 +33,15 @@ def register_user(
             detail="An account with this email already exists.",
         )
 
+    role_map = {"seller": "partner", "buyer": "resident"}
+    normalized_role = role_map.get(role, role)
+
     user = User(
         email=email,
         name=name,
-        role=UserRole(role),
+        role=UserRole(normalized_role),
         hashed_password=hash_password(password),
-        verification_status=VerificationStatus.pending,
+        status=UserStatus.pending_verification,
         is_active=True,
     )
     db.add(user)
@@ -87,8 +90,8 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
 
 def mark_user_verified(db: Session, user: User) -> User:
     """Mark a user as verified (called after OTP login or admin action)."""
-    if user.verification_status != VerificationStatus.verified:
-        user.verification_status = VerificationStatus.verified
+    if user.status != UserStatus.active:
+        user.status = UserStatus.active
         user.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(user)
@@ -113,7 +116,7 @@ def find_or_create_user(
         email=email,
         name=name or email.split("@")[0],
         role=UserRole(role),
-        verification_status=VerificationStatus.verified,
+        status=UserStatus.active,
         is_active=True,
     )
     db.add(user)

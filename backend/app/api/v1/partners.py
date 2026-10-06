@@ -1,8 +1,16 @@
 """
-Seller legacy routes — backward-compatibility alias for partner routes.
+Partner routes — browse partners, manage profiles, and order management.
 
-All operations delegate to partner_service and order_service, allowing
-existing clients using /api/v1/sellers to continue functioning without changes.
+Public:
+  GET  /api/v1/partners/                   → list approved partners
+  GET  /api/v1/partners/{id}               → get partner detail
+
+Authenticated (partner or admin):
+  POST /api/v1/partners/register           → register as a partner
+  GET  /api/v1/partners/me                 → get own profile
+  PUT  /api/v1/partners/me                 → update own profile
+  GET  /api/v1/partners/me/orders          → get own orders (with optional status filter)
+  PATCH /api/v1/partners/me/open          → toggle open/closed status
 """
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -14,48 +22,49 @@ from app.db.models import User
 from app.schemas.partner import PartnerRegisterRequest, PartnerUpdateRequest
 from app.services import order_service, partner_service
 
-router = APIRouter(prefix="/api/v1/sellers", tags=["sellers (legacy alias)"])
+router = APIRouter(prefix="/api/v1/partners", tags=["partners"])
 
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "seller", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 @router.get("/")
-async def list_sellers(
+async def list_partners(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = DB_DEPENDENCY,
 ):
-    """List all approved sellers/partners (public — no auth required)."""
+    """List all approved partners (public — no auth required)."""
     return partner_service.list_approved_partners(db, skip=skip, limit=limit)
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register_seller(
+async def register_partner(
     request: PartnerRegisterRequest,
     current_user: User = GET_USER_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Register the authenticated user as a seller/partner."""
+    """
+    Register the authenticated user as a partner.
+    Creates a PartnerProfile pending admin approval.
+    """
     profile = partner_service.register_partner_profile(db, current_user, request)
     return {
-        "message": "Seller registration submitted. Awaiting admin approval.",
-        "seller_id": profile.id,
+        "message": "Partner registration submitted. Awaiting admin approval.",
         "partner_id": profile.id,
     }
 
 
 @router.get("/me")
-async def get_my_seller_profile(
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+async def get_my_partner_profile(
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller/partner's own profile."""
+    """Return the authenticated partner's own profile."""
     partner, user = partner_service.get_partner_by_id(db, current_user.id)
     return {
         "id": partner.id,
-        "seller_id": partner.id,
         "name": user.name,
         "email": user.email,
         "bio": partner.bio,
@@ -78,10 +87,10 @@ async def get_my_seller_profile(
 @router.put("/me")
 async def update_my_profile(
     request: PartnerUpdateRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Update the authenticated seller/partner's own profile."""
+    """Update the authenticated partner's own profile."""
     partner_service.update_partner_profile(db, current_user.id, request)
     return {"message": "Profile updated successfully."}
 
@@ -89,10 +98,10 @@ async def update_my_profile(
 @router.post("/me/photo")
 async def upload_my_photo(
     file: UploadFile = File(..., description="Avatar/logo image (JPEG, PNG, WebP — max 5 MB)"),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Upload seller avatar photo."""
+    """Upload partner avatar photo."""
     photo_url = await partner_service.upload_partner_photo(db, current_user.id, file)
     return {"photo_url": photo_url, "message": "Avatar photo updated successfully."}
 
@@ -101,10 +110,10 @@ async def upload_my_photo(
 async def upload_my_banner(
     file: UploadFile | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
     preset_url: str | None = Query(default=None, description="Curated banner preset URL"),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Upload seller kitchen banner or select a curated preset banner URL."""
+    """Upload partner kitchen banner or select a curated preset banner URL."""
     banner_url = await partner_service.upload_partner_banner(db, current_user.id, file=file, preset_url=preset_url)
     return {"banner_url": banner_url, "message": "Kitchen banner updated successfully."}
 
@@ -112,10 +121,10 @@ async def upload_my_banner(
 @router.post("/me/photos")
 async def upload_my_photos(
     files: list[UploadFile] = File(..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Upload one or more photos to seller kitchen gallery."""
+    """Upload one or more photos to partner kitchen gallery."""
     photos = await partner_service.upload_partner_photos(db, current_user.id, files)
     return {"photos": photos, "message": f"{len(files)} photo(s) added to gallery."}
 
@@ -123,10 +132,10 @@ async def upload_my_photos(
 @router.delete("/me/photos")
 async def delete_my_photo(
     photo_url: str = Query(..., description="Photo URL to delete"),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Delete a photo from seller kitchen gallery."""
+    """Delete a photo from partner kitchen gallery."""
     photos = partner_service.delete_partner_photo(db, current_user.id, photo_url)
     return {"photos": photos, "message": "Photo deleted successfully."}
 
@@ -135,15 +144,12 @@ async def delete_my_photo(
 async def get_my_orders(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    status_filter: str | None = Query(
-        default=None,
-        alias="status",
-        description="Filter by order status: placed, accepted, preparing, ready, delivered, cancelled",
-    ),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    status_filter: str | None = Query(default=None, alias="status",
+        description="Filter by order status: placed, accepted, preparing, ready, dispatched, in_transit, delivered, cancelled"),
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller/partner's orders."""
+    """Return the authenticated partner's orders, newest first. Optionally filter by status."""
     return order_service.get_partner_orders(
         db,
         partner_id=current_user.id,
@@ -155,12 +161,18 @@ async def get_my_orders(
 
 @router.patch("/me/open")
 async def toggle_open_status(
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Toggle the seller's open/closed status."""
+    """
+    Toggle the partner's open/closed status.
+
+    When closed (is_open=False), residents cannot place new orders.
+    Closed status does not affect existing orders or menu visibility.
+    """
     partner, user = partner_service.get_partner_by_id(db, current_user.id)
 
+    # When opening the kitchen, ensure UPI is configured and maintenance quota is healthy
     if not partner.is_open:
         if not partner.upi_id:
             raise HTTPException(
@@ -189,13 +201,12 @@ async def toggle_open_status(
     }
 
 
-@router.get("/{seller_id}")
-async def get_seller(seller_id: int, db: Session = DB_DEPENDENCY):
-    """Get a seller/partner's public profile by id."""
-    partner, user = partner_service.get_partner_by_id(db, seller_id)
+@router.get("/{partner_id}")
+async def get_partner(partner_id: int, db: Session = DB_DEPENDENCY):
+    """Get a partner's public profile by id."""
+    partner, user = partner_service.get_partner_by_id(db, partner_id)
     return {
         "id": partner.id,
-        "seller_id": partner.id,
         "name": user.name,
         "bio": partner.bio,
         "photo_url": partner.photo_url,
@@ -207,4 +218,3 @@ async def get_seller(seller_id: int, db: Session = DB_DEPENDENCY):
         "is_approved": partner.is_approved,
         "is_open": partner.is_open,
     }
-

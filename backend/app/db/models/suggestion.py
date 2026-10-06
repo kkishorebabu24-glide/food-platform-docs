@@ -19,13 +19,13 @@ from app.db.models.enums import MenuCategory, SuggestionStatus
 
 if TYPE_CHECKING:
     from app.db.models.menu import Menu
-    from app.db.models.seller import SellerProfile
+    from app.db.models.partner_profile import PartnerProfile
     from app.db.models.user import User
 
 
 class DishSuggestion(TimestampMixin, Base):
     """
-    A community dish request posted by a resident buyer.
+    A community dish request posted by a resident resident.
     Other residents can upvote it, and chefs can claim it to launch a pre-order batch.
     """
 
@@ -65,8 +65,8 @@ class DishSuggestion(TimestampMixin, Base):
     )
 
     # Chef who claimed this request (optional)
-    accepted_by_seller_id: Mapped[int | None] = mapped_column(
-        ForeignKey("seller_profiles.id"), nullable=True, index=True
+    accepted_by_partner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("partner_profiles.id"), nullable=True, index=True
     )
 
     # Pre-order menu item created by the chef from this suggestion (optional)
@@ -76,8 +76,8 @@ class DishSuggestion(TimestampMixin, Base):
 
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
-    seller: Mapped[Optional["SellerProfile"]] = relationship(
-        "SellerProfile", foreign_keys=[accepted_by_seller_id]
+    partner: Mapped[Optional["PartnerProfile"]] = relationship(
+        "PartnerProfile", foreign_keys=[accepted_by_partner_id]
     )
     menu: Mapped[Optional["Menu"]] = relationship("Menu", foreign_keys=[created_menu_id])
     upvotes: Mapped[list["DishUpvote"]] = relationship(

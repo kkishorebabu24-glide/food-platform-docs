@@ -3,10 +3,12 @@
 from datetime import date, datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
-VALID_STATUSES = {"pending", "accepted", "ready", "completed", "cancelled"}
+from app.db.models.enums import OrderStatus
+
 VALID_DELIVERY_TYPES = {"doorstep", "self_pickup"}
+VALID_STATUSES = {s.value for s in OrderStatus}
 
 
 class OrderItem(BaseModel):
@@ -21,13 +23,27 @@ class OrderItem(BaseModel):
 class OrderCreateRequest(BaseModel):
     """Request body for placing a new order."""
 
-    seller_id: int
+    partner_id: int | None = None
+    seller_id: int | None = None
     items: list[OrderItem]
     notes: str | None = None
     is_preorder: bool = False
     delivery_slot: str | None = None
     target_delivery_date: str | None = None
     delivery_type: str = "doorstep"
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_partner_id(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            p_id = data.get("partner_id")
+            if p_id is None:
+                p_id = data.get("seller_id")
+            if p_id is None:
+                raise ValueError("Either partner_id or seller_id must be provided")
+            data["partner_id"] = p_id
+            data["seller_id"] = p_id
+        return data
 
     @field_validator("items")
     @classmethod
@@ -45,7 +61,7 @@ class OrderCreateRequest(BaseModel):
 
 
 class OrderStatusUpdate(BaseModel):
-    """Request body for a seller updating order status."""
+    """Request body for a partner updating order status."""
 
     status: str
 
@@ -63,8 +79,10 @@ class OrderResponse(BaseModel):
     """Response schema for a single order."""
 
     id: int
-    buyer_id: int
-    seller_id: int
+    resident_id: int
+    partner_id: int
+    buyer_id: int | None = None
+    seller_id: int | None = None
     status: str
     items: Any  # Parsed from JSON text
     total_price: float
@@ -77,4 +95,12 @@ class OrderResponse(BaseModel):
     completed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def populate_legacy_ids(self):
+        if self.seller_id is None:
+            self.seller_id = self.partner_id
+        if self.buyer_id is None:
+            self.buyer_id = self.resident_id
+        return self
 

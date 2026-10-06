@@ -62,9 +62,9 @@ class SuggestionResponse(BaseModel):
     target_date: date | None = None
     upvotes_count: int
     status: str
-    accepted_by_seller_id: int | None = None
-    seller_name: str | None = None
-    seller_flat: str | None = None
+    accepted_by_partner_id: int | None = None
+    partner_name: str | None = None
+    partner_flat: str | None = None
     created_menu_id: int | None = None
     menu_name: str | None = None
     menu_price: float | None = None

@@ -1,10 +1,10 @@
-"""Rating service — create ratings and compute seller aggregates."""
+"""Rating service — create ratings and compute partner aggregates."""
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Order, Rating, SellerProfile
+from app.db.models import Order, Rating, PartnerProfile
 from app.db.models.enums import OrderStatus
 from app.schemas.rating import RatingCreateRequest
 
@@ -19,10 +19,10 @@ def create_rating(
     Submit a rating for a completed order.
 
     Validates:
-      - The order exists and belongs to the rater (as buyer)
+      - The order exists and belongs to the rater (as resident)
       - The order is in 'completed' status
       - No duplicate rating for this order
-    Then updates the seller's aggregate rating.
+    Then updates the partner's aggregate rating.
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
@@ -30,12 +30,12 @@ def create_rating(
             status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
         )
 
-    if order.buyer_id != rater_id:
+    if order.resident_id != rater_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
         )
 
-    if order.status != OrderStatus.completed:
+    if order.status != OrderStatus.delivered:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You can only rate completed orders.",
@@ -50,7 +50,7 @@ def create_rating(
 
     rating = Rating(
         order_id=order_id,
-        seller_id=order.seller_id,
+        partner_id=order.partner_id,
         rater_id=rater_id,
         score=request.score,
         review_text=request.review_text,
@@ -58,34 +58,34 @@ def create_rating(
     db.add(rating)
     db.flush()
 
-    _update_seller_aggregate(db, order.seller_id)
+    _update_partner_aggregate(db, order.partner_id)
 
     db.commit()
     db.refresh(rating)
     return rating
 
 
-def get_seller_ratings(
-    db: Session, seller_id: int, skip: int = 0, limit: int = 20
+def get_partner_ratings(
+    db: Session, partner_id: int, skip: int = 0, limit: int = 20
 ) -> dict:
-    """Return paginated ratings for a seller with distribution summary."""
+    """Return paginated ratings for a partner with distribution summary."""
     ratings = (
         db.query(Rating)
-        .filter(Rating.seller_id == seller_id)
+        .filter(Rating.partner_id == partner_id)
         .order_by(Rating.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
-    total = db.query(Rating).filter(Rating.seller_id == seller_id).count()
+    total = db.query(Rating).filter(Rating.partner_id == partner_id).count()
 
     avg_result = (
-        db.query(func.avg(Rating.score)).filter(Rating.seller_id == seller_id).scalar()
+        db.query(func.avg(Rating.score)).filter(Rating.partner_id == partner_id).scalar()
     )
     average = round(float(avg_result), 2) if avg_result else 0.0
 
     distribution = {str(i): 0 for i in range(1, 6)}
-    for r in db.query(Rating).filter(Rating.seller_id == seller_id).all():
+    for r in db.query(Rating).filter(Rating.partner_id == partner_id).all():
         distribution[str(r.score)] = distribution.get(str(r.score), 0) + 1
 
     return {
@@ -105,16 +105,16 @@ def get_seller_ratings(
     }
 
 
-def _update_seller_aggregate(db: Session, seller_id: int) -> None:
-    """Recompute and persist the seller's average rating and review count."""
+def _update_partner_aggregate(db: Session, partner_id: int) -> None:
+    """Recompute and persist the partner's average rating and review count."""
     result = (
         db.query(func.avg(Rating.score), func.count(Rating.id))
-        .filter(Rating.seller_id == seller_id)
+        .filter(Rating.partner_id == partner_id)
         .first()
     )
     avg_score, count = result if result else (0, 0)
 
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if seller:
-        seller.rating = round(float(avg_score or 0), 2)
-        seller.review_count = count or 0
+    partner = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if partner:
+        partner.rating = round(float(avg_score or 0), 2)
+        partner.review_count = count or 0

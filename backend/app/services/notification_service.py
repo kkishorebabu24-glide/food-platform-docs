@@ -6,10 +6,10 @@ never block the HTTP response. If SMTP credentials are not configured,
 all functions are no-ops (safe for local dev without email).
 
 Triggered from:
-  order_service  → send_order_placed_email    (new order → seller)
-  order_service  → send_order_status_email    (status change → buyer)
-  delivery_service → send_delivery_dispatched_email  (dispatched → buyer)
-  delivery_service → send_delivery_delivered_email   (delivered → buyer)
+  order_service  → send_order_placed_email    (new order → partner)
+  order_service  → send_order_status_email    (status change → resident)
+  delivery_service → send_delivery_dispatched_email  (dispatched → resident)
+  delivery_service → send_delivery_delivered_email   (delivered → resident)
 """
 
 import logging
@@ -144,20 +144,20 @@ async def send_otp_whatsapp(phone: str, otp: str) -> None:
 # ── Order Notifications ───────────────────────────────────────────────────────
 
 async def send_order_placed_email(
-    seller_email: str,
-    seller_name: str,
+    partner_email: str,
+    partner_name: str,
     order_id: int,
-    buyer_name: str,
+    resident_name: str,
     items_summary: str,
     total_price: float,
 ) -> None:
-    """Notify seller that a new order has been placed (called via BackgroundTask)."""
+    """Notify partner that a new order has been placed (called via BackgroundTask)."""
     subject = f"🍽️ New Order #{order_id} — Society Food"
     body = f"""
     <html><body style="font-family:Arial,sans-serif;color:#333;">
       <h2 style="color:#FF6B35;">New Order Received! 🎉</h2>
-      <p>Hi <strong>{seller_name}</strong>,</p>
-      <p>You have a new order from <strong>{buyer_name}</strong>.</p>
+      <p>Hi <strong>{partner_name}</strong>,</p>
+      <p>You have a new order from <strong>{resident_name}</strong>.</p>
       <table style="border-collapse:collapse;width:100%;">
         <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Order #</strong></td>
             <td style="padding:8px;border:1px solid #ddd;">{order_id}</td></tr>
@@ -170,23 +170,23 @@ async def send_order_placed_email(
       <p style="color:#888;font-size:12px;">— {settings.SENDER_NAME}</p>
     </body></html>
     """
-    await _send(seller_email, subject, body)
+    await _send(partner_email, subject, body)
 
 
 async def send_order_status_email(
-    buyer_email: str,
-    buyer_name: str,
+    resident_email: str,
+    resident_name: str,
     order_id: int,
     new_status: str,
-    seller_name: str,
-    seller_flat: str | None = None,
+    partner_name: str,
+    partner_flat: str | None = None,
 ) -> None:
-    """Notify buyer when their order status changes (called via BackgroundTask)."""
+    """Notify resident when their order status changes (called via BackgroundTask)."""
     status_labels = {
         "accepted":  ("✅ Order Accepted", "Your order has been accepted and is being prepared."),
-        "ready":     ("🍱 Food is Ready!", f"Your food is ready for pickup at Flat {seller_flat or 'the seller'}."),
+        "ready":     ("🍱 Food is Ready!", f"Your food is ready for pickup at Flat {partner_flat or 'the partner'}."),
         "completed": ("🎉 Order Completed", "Your order has been marked as completed. Enjoy your meal!"),
-        "cancelled": ("❌ Order Cancelled", "Unfortunately your order has been cancelled by the seller."),
+        "cancelled": ("❌ Order Cancelled", "Unfortunately your order has been cancelled by the partner."),
     }
     label, message = status_labels.get(
         new_status,
@@ -196,59 +196,59 @@ async def send_order_status_email(
     body = f"""
     <html><body style="font-family:Arial,sans-serif;color:#333;">
       <h2 style="color:#FF6B35;">{label}</h2>
-      <p>Hi <strong>{buyer_name}</strong>,</p>
+      <p>Hi <strong>{resident_name}</strong>,</p>
       <p>{message}</p>
-      <p><strong>Order #:</strong> {order_id} &nbsp;|&nbsp; <strong>Seller:</strong> {seller_name}</p>
+      <p><strong>Order #:</strong> {order_id} &nbsp;|&nbsp; <strong>Partner:</strong> {partner_name}</p>
       <p style="color:#888;font-size:12px;">— {settings.SENDER_NAME}</p>
     </body></html>
     """
-    await _send(buyer_email, subject, body)
+    await _send(resident_email, subject, body)
 
 
 # ── Delivery Notifications ────────────────────────────────────────────────────
 
 async def send_delivery_dispatched_email(
-    buyer_email: str,
-    buyer_name: str,
+    resident_email: str,
+    resident_name: str,
     order_id: int,
-    seller_name: str,
+    partner_name: str,
     estimated_minutes: int | None,
     notes: str | None,
 ) -> None:
-    """Notify buyer that the seller has dispatched their delivery (called via BackgroundTask)."""
+    """Notify resident that the partner has dispatched their delivery (called via BackgroundTask)."""
     eta_text = f"Estimated arrival: ~{estimated_minutes} minutes." if estimated_minutes else ""
-    notes_text = f"<p><strong>Seller note:</strong> {notes}</p>" if notes else ""
+    notes_text = f"<p><strong>Partner note:</strong> {notes}</p>" if notes else ""
     subject = f"🚶 Food on the Way! — Order #{order_id}"
     body = f"""
     <html><body style="font-family:Arial,sans-serif;color:#333;">
       <h2 style="color:#FF6B35;">Your Food is On the Way! 🚶</h2>
-      <p>Hi <strong>{buyer_name}</strong>,</p>
-      <p><strong>{seller_name}</strong> has picked up your food and is heading to your door.</p>
+      <p>Hi <strong>{resident_name}</strong>,</p>
+      <p><strong>{partner_name}</strong> has picked up your food and is heading to your door.</p>
       <p>{eta_text}</p>
       {notes_text}
       <p><strong>Order #:</strong> {order_id}</p>
       <p style="color:#888;font-size:12px;">— {settings.SENDER_NAME}</p>
     </body></html>
     """
-    await _send(buyer_email, subject, body)
+    await _send(resident_email, subject, body)
 
 
 async def send_delivery_delivered_email(
-    buyer_email: str,
-    buyer_name: str,
+    resident_email: str,
+    resident_name: str,
     order_id: int,
-    seller_name: str,
+    partner_name: str,
 ) -> None:
-    """Notify buyer that their food has been delivered (called via BackgroundTask)."""
+    """Notify resident that their food has been delivered (called via BackgroundTask)."""
     subject = f"🎉 Food Delivered! — Order #{order_id}"
     body = f"""
     <html><body style="font-family:Arial,sans-serif;color:#333;">
       <h2 style="color:#FF6B35;">Your Food Has Been Delivered! 🎉</h2>
-      <p>Hi <strong>{buyer_name}</strong>,</p>
-      <p>Your order from <strong>{seller_name}</strong> has been delivered to your door.</p>
+      <p>Hi <strong>{resident_name}</strong>,</p>
+      <p>Your order from <strong>{partner_name}</strong> has been delivered to your door.</p>
       <p>Enjoy your meal! Don't forget to rate your experience.</p>
       <p><strong>Order #:</strong> {order_id}</p>
       <p style="color:#888;font-size:12px;">— {settings.SENDER_NAME}</p>
     </body></html>
     """
-    await _send(buyer_email, subject, body)
+    await _send(resident_email, subject, body)

@@ -1,4 +1,4 @@
-"""Menu model — food items offered by a seller."""
+"""Menu model — food items offered by a partner."""
 
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
@@ -11,19 +11,19 @@ from app.db.base import Base, TimestampMixin
 from app.db.models.enums import MenuCategory
 
 if TYPE_CHECKING:
-    from app.db.models.seller import SellerProfile
+    from app.db.models.partner_profile import PartnerProfile
 
 
 class Menu(TimestampMixin, Base):
-    """A single food item in a seller's menu."""
+    """A single food item in a partner's menu."""
 
     __tablename__ = "menus"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # FK to seller_profiles.id — only sellers own menus
-    seller_id: Mapped[int] = mapped_column(
-        ForeignKey("seller_profiles.id"), index=True, nullable=False
+    # FK to partner_profiles.id — only partners own menus
+    partner_id: Mapped[int] = mapped_column(
+        ForeignKey("partner_profiles.id"), index=True, nullable=False
     )
 
     # Item name — mandatory, displayed in UI
@@ -41,7 +41,7 @@ class Menu(TimestampMixin, Base):
     # Price stored as exact decimal (2dp) to avoid float rounding errors
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    # Availability toggle — seller can mark items out of stock
+    # Availability toggle — partner can mark items out of stock
     is_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Optional quantity (0 = unlimited); useful for limited-batch items
@@ -71,10 +71,24 @@ class Menu(TimestampMixin, Base):
     min_lead_time_hours: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    seller: Mapped["SellerProfile"] = relationship(
-        "SellerProfile", back_populates="menus"
+    partner: Mapped["PartnerProfile"] = relationship(
+        "PartnerProfile", back_populates="menus"
     )
 
+
+    def __init__(self, **kwargs):
+        if "seller_id" in kwargs and "partner_id" not in kwargs:
+            kwargs["partner_id"] = kwargs.pop("seller_id")
+        super().__init__(**kwargs)
+
+    # ── Convenience Properties (backward compatibility) ───────────────────────
+    @property
+    def seller_id(self) -> int:
+        return self.partner_id
+
+    @seller_id.setter
+    def seller_id(self, val: int):
+        self.partner_id = val
 
     # ── Validators ────────────────────────────────────────────────────────────
 

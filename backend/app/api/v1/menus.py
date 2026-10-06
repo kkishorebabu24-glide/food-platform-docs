@@ -1,11 +1,11 @@
 """
-Menu routes — menu item management for sellers.
+Menu routes — menu item management for partners.
 
 Public:
-  GET  /api/v1/menus/sellers/{seller_id}     → list a seller's menu items
+  GET  /api/v1/menus/partners/{partner_id}     → list a partner's menu items
                                                  ?available_only, ?category, ?search
 
-Authenticated (seller):
+Authenticated (partner):
   POST /api/v1/menus/                        → create a menu item
   PUT  /api/v1/menus/{menu_id}               → update a menu item
   DELETE /api/v1/menus/{menu_id}             → delete a menu item
@@ -20,11 +20,12 @@ from app.api.dependencies import get_db, require_role
 from app.db.models import User
 from app.schemas.menu import AvailabilityRequest, MenuCreateRequest, MenuUpdateRequest
 from app.services import menu_service
+from app.db.models.enums import UserRole
 
 router = APIRouter(prefix="/api/v1/menus", tags=["menus"])
 
 DB_DEPENDENCY = Depends(get_db)
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 @router.get("/search")
@@ -37,7 +38,7 @@ async def search_menus(
     limit: int = Query(default=50, ge=1, le=100),
     db: Session = DB_DEPENDENCY,
 ):
-    """Public global search for dishes across all approved sellers in the community."""
+    """Public global search for dishes across all approved partners/sellers in the community."""
     return menu_service.search_public_dishes(
         db,
         query=q,
@@ -49,9 +50,9 @@ async def search_menus(
     )
 
 
-@router.get("/sellers/{seller_id}")
-async def get_seller_menus(
-    seller_id: int,
+@router.get("/partners/{partner_id}")
+async def get_partner_menus(
+    partner_id: int,
     available_only: bool = Query(default=True, description="Only return available items"),
     category: str | None = Query(
         default=None,
@@ -63,10 +64,28 @@ async def get_seller_menus(
     ),
     db: Session = DB_DEPENDENCY,
 ):
-    """Get menu items for a given seller (public). Supports category and name filters."""
-    return menu_service.get_seller_menus(
+    """Get menu items for a given partner (public). Supports category and name filters."""
+    return menu_service.get_partner_menus(
         db,
-        seller_id=seller_id,
+        partner_id=partner_id,
+        available_only=available_only,
+        category=category,
+        search=search,
+    )
+
+
+@router.get("/sellers/{seller_id}")
+async def get_seller_menus_alias(
+    seller_id: int,
+    available_only: bool = Query(default=True, description="Only return available items"),
+    category: str | None = Query(default=None),
+    search: str | None = Query(default=None),
+    db: Session = DB_DEPENDENCY,
+):
+    """Backward compatibility alias for /api/v1/menus/sellers/{id}."""
+    return menu_service.get_partner_menus(
+        db,
+        partner_id=seller_id,
         available_only=available_only,
         category=category,
         search=search,
@@ -76,11 +95,11 @@ async def get_seller_menus(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_menu_item(
     request: MenuCreateRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Create a new menu item. The seller_id is taken from the authenticated user."""
-    item = menu_service.create_menu_item(db, seller_id=current_user.id, request=request)
+    """Create a new menu item. The partner_id is taken from the authenticated user."""
+    item = menu_service.create_menu_item(db, partner_id=current_user.id, request=request)
     return {
         "id": item.id,
         "name": item.name,
@@ -94,11 +113,11 @@ async def create_menu_item(
 async def update_menu_item(
     menu_id: int,
     request: MenuUpdateRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Update a menu item. Sellers can only update their own items."""
-    owner_id = current_user.id if current_user.role == "seller" else None
+    """Update a menu item. Partners can only update their own items."""
+    owner_id = current_user.id if current_user.role == UserRole.partner else None
     menu_service.update_menu_item(
         db, menu_id=menu_id, request=request, owner_id=owner_id
     )
@@ -108,11 +127,11 @@ async def update_menu_item(
 @router.delete("/{menu_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_menu_item(
     menu_id: int,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """Delete a menu item."""
-    owner_id = current_user.id if current_user.role == "seller" else None
+    owner_id = current_user.id if current_user.role == UserRole.partner else None
     menu_service.delete_menu_item(db, menu_id=menu_id, owner_id=owner_id)
 
 
@@ -120,11 +139,11 @@ async def delete_menu_item(
 async def toggle_availability(
     menu_id: int,
     request: AvailabilityRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """Toggle the availability and portion count of a menu item."""
-    owner_id = current_user.id if current_user.role == "seller" else None
+    owner_id = current_user.id if current_user.role == UserRole.partner else None
     item = menu_service.toggle_availability(
         db,
         menu_id=menu_id,
@@ -140,7 +159,7 @@ async def toggle_availability(
 async def upload_image(
     menu_id: int,
     file: UploadFile = File(..., description="Image file (JPEG, PNG, WebP, GIF — max 5 MB)"),
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
@@ -149,7 +168,7 @@ async def upload_image(
     Saves the image to the local filesystem under uploads/menus/.
     Returns the updated menu item with the new image_url.
     """
-    owner_id = current_user.id if current_user.role == "seller" else None
+    owner_id = current_user.id if current_user.role == UserRole.partner else None
     item = await menu_service.upload_menu_image(
         db, menu_id=menu_id, file=file, owner_id=owner_id
     )

@@ -12,12 +12,14 @@ from app.api.v1 import (
     ai,
     auth,
     buyers,
+    residents,
     delivery,
     menus,
     orders,
     payments,
     payouts,
     ratings,
+    partners,
     sellers,
     suggestions,
 )
@@ -25,7 +27,9 @@ from app.api.v1 import (
 router = APIRouter()
 
 router.include_router(auth.router)
+router.include_router(partners.router)
 router.include_router(sellers.router)
+router.include_router(residents.router)
 router.include_router(buyers.router)
 router.include_router(menus.router)
 router.include_router(orders.router)

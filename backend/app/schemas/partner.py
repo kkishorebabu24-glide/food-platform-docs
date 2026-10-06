@@ -1,0 +1,53 @@
+"""Partner request/response schemas."""
+
+from pydantic import BaseModel
+
+
+class PartnerRegisterRequest(BaseModel):
+    """Request body for a user registering as a partner."""
+
+    bio: str = ""
+
+
+class PartnerUpdateRequest(BaseModel):
+    """Request body for updating a partner's own profile."""
+
+    bio: str | None = None
+    photo_url: str | None = None
+    banner_url: str | None = None
+    photos: list[str] | None = None
+    upi_id: str | None = None
+    upi_account_name: str | None = None
+
+
+class PartnerResponse(BaseModel):
+    """Compact partner card (used in list views)."""
+
+    id: int
+    name: str
+    bio: str | None = None
+    photo_url: str | None = None
+    banner_url: str | None = None
+    photos: list[str] = []
+    rating: float
+    review_count: int
+    on_time_delivery_rate: float = 100.0
+    punctuality_rating: float = 5.0
+    avg_delivery_minutes: int = 25
+    total_orders_completed: int = 0
+    flat_number: str | None = None
+    is_approved: bool
+    upi_id: str | None = None
+    upi_account_name: str | None = None
+    is_upi_verified: bool = False
+    free_orders_remaining: int = 50
+
+    model_config = {"from_attributes": True}
+
+
+class PartnerDetailResponse(PartnerResponse):
+    """Full partner detail (includes email, used in admin and own-profile views)."""
+
+    email: str
+    maintenance_balance: float = 0.0
+

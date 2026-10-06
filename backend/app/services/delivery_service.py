@@ -2,13 +2,13 @@
 Delivery service — business logic for in-building food delivery.
 
 Lifecycle:
-  Seller creates delivery record (order must be completed/ready)
+  Partner creates delivery record (order must be completed/ready)
       → status = pending
-  Seller dispatches delivery
+  Partner dispatches delivery
       → status = dispatched, dispatched_at = now
-  Seller marks delivered
+  Partner marks delivered
       → status = delivered, delivered_at = now
-  Seller marks failed (buyer absent, etc.)
+  Partner marks failed (resident absent, etc.)
       → status = failed
 """
 
@@ -18,12 +18,12 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Delivery, Order, SellerProfile, User
+from app.db.models import Delivery, Order, PartnerProfile, User
 from app.db.models.enums import DeliveryStatus, OrderStatus
 
 logger = logging.getLogger(__name__)
 
-# Valid delivery status transitions (seller-controlled)
+# Valid delivery status transitions (partner-controlled)
 _VALID_TRANSITIONS: dict[DeliveryStatus, set[DeliveryStatus]] = {
     DeliveryStatus.pending:    {DeliveryStatus.dispatched, DeliveryStatus.failed},
     DeliveryStatus.dispatched: {DeliveryStatus.delivered, DeliveryStatus.failed},
@@ -35,27 +35,27 @@ _VALID_TRANSITIONS: dict[DeliveryStatus, set[DeliveryStatus]] = {
 def create_delivery(
     db: Session,
     order_id: int,
-    seller_id: int,
+    partner_id: int,
     estimated_minutes: int | None = None,
     notes: str | None = None,
 ) -> Delivery:
     """
     Create a delivery record for a completed order.
 
-    Only the seller who owns the order can create a delivery.
+    Only the partner who owns the order can create a delivery.
     The order must be in 'ready' or 'completed' status.
     """
-    # Verify order exists and belongs to seller
+    # Verify order exists and belongs to partner
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
-    if order.seller_id != seller_id:
+    if order.partner_id != partner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
         )
 
-    if order.status not in (OrderStatus.ready, OrderStatus.completed):
+    if order.status not in (OrderStatus.ready, OrderStatus.delivered):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot create delivery for order in '{order.status}' status. "
@@ -71,16 +71,16 @@ def create_delivery(
         )
 
     # Snapshot flat numbers at time of delivery creation
-    seller_user = db.query(User).filter(User.id == seller_id).first()
-    buyer_user = db.query(User).filter(User.id == order.buyer_id).first()
+    partner_user = db.query(User).filter(User.id == partner_id).first()
+    resident_user = db.query(User).filter(User.id == order.resident_id).first()
 
     delivery = Delivery(
         order_id=order_id,
-        seller_id=seller_id,
-        buyer_id=order.buyer_id,
+        partner_id=partner_id,
+        resident_id=order.resident_id,
         status=DeliveryStatus.pending,
-        seller_flat=seller_user.flat_number if seller_user else None,
-        buyer_flat=buyer_user.flat_number if buyer_user else None,
+        partner_flat=partner_user.flat_number if partner_user else None,
+        resident_flat=resident_user.flat_number if resident_user else None,
         estimated_minutes=estimated_minutes,
         notes=notes,
     )
@@ -89,8 +89,8 @@ def create_delivery(
     db.refresh(delivery)
 
     logger.info(
-        "Delivery created: order_id=%s seller=%s buyer=%s",
-        order_id, seller_id, order.buyer_id
+        "Delivery created: order_id=%s partner=%s resident=%s",
+        order_id, partner_id, order.resident_id
     )
     return delivery
 
@@ -98,14 +98,14 @@ def create_delivery(
 def update_delivery_status(
     db: Session,
     delivery_id: int,
-    seller_id: int,
+    partner_id: int,
     new_status: str,
     notes: str | None = None,
 ) -> Delivery:
     """
     Advance the delivery lifecycle.
 
-    Only the owning seller can update status.
+    Only the owning partner can update status.
     Validates transitions against _VALID_TRANSITIONS.
     """
     delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
@@ -114,7 +114,7 @@ def update_delivery_status(
             status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found."
         )
 
-    if delivery.seller_id != seller_id:
+    if delivery.partner_id != partner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your delivery."
         )
@@ -166,19 +166,19 @@ def get_delivery_by_order(db: Session, order_id: int) -> Delivery:
     return delivery
 
 
-def get_seller_deliveries(
-    db: Session, seller_id: int, skip: int = 0, limit: int = 20
+def get_partner_deliveries(
+    db: Session, partner_id: int, skip: int = 0, limit: int = 20
 ) -> dict:
-    """Return paginated deliveries for a seller."""
+    """Return paginated deliveries for a partner."""
     deliveries = (
         db.query(Delivery)
-        .filter(Delivery.seller_id == seller_id)
+        .filter(Delivery.partner_id == partner_id)
         .order_by(Delivery.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
-    total = db.query(Delivery).filter(Delivery.seller_id == seller_id).count()
+    total = db.query(Delivery).filter(Delivery.partner_id == partner_id).count()
     return {"deliveries": [_serialize(d) for d in deliveries], "total": total}
 
 
@@ -186,11 +186,11 @@ def _serialize(d: Delivery) -> dict:
     return {
         "id": d.id,
         "order_id": d.order_id,
-        "seller_id": d.seller_id,
-        "buyer_id": d.buyer_id,
+        "partner_id": d.partner_id,
+        "resident_id": d.resident_id,
         "status": d.status,
-        "seller_flat": d.seller_flat,
-        "buyer_flat": d.buyer_flat,
+        "partner_flat": d.partner_flat,
+        "resident_flat": d.resident_flat,
         "estimated_minutes": d.estimated_minutes,
         "notes": d.notes,
         "dispatched_at": d.dispatched_at.isoformat() if d.dispatched_at else None,

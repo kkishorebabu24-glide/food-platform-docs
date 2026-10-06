@@ -1,4 +1,4 @@
-"""Menu service — CRUD for a seller's menu items."""
+"""Menu service — CRUD for a partner's menu items."""
 
 import logging
 import os
@@ -9,9 +9,8 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.db.models import Menu, SellerProfile
-from app.db.models import Menu, SellerProfile, User
-from app.db.models.enums import ApprovalStatus
+from app.db.models import Menu, PartnerProfile, User
+from app.db.models.enums import PartnerApplicationStatus
 from app.schemas.menu import MenuCreateRequest, MenuUpdateRequest
 
 logger = logging.getLogger(__name__)
@@ -22,29 +21,29 @@ ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_IMAGE_SIZE_MB = 5
 
 
-def get_seller_menus(
+def get_partner_menus(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     available_only: bool = True,
     category: str | None = None,
     search: str | None = None,
 ) -> dict:
     """
-    Return menu items for a seller.
+    Return menu items for a partner.
 
     Supports filtering by:
       - available_only: only items with is_available=True (default)
       - category:       filter by MenuCategory value (e.g. 'veg', 'non-veg')
       - search:         case-insensitive substring match on item name
     """
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller:
+    partner = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Seller {seller_id} not found.",
+            detail=f"Partner {partner_id} not found.",
         )
 
-    query = db.query(Menu).filter(Menu.seller_id == seller_id)
+    query = db.query(Menu).filter(Menu.partner_id == partner_id)
 
     if available_only:
         query = query.filter(Menu.is_available == True)
@@ -90,21 +89,21 @@ def search_public_dishes(
     limit: int = 50,
 ) -> dict:
     """
-    Search dishes across all approved active sellers in the society.
-    Returns matched dish items joined with seller & user metadata, plus matched sellers summary.
+    Search dishes across all approved active partners in the society.
+    Returns matched dish items joined with partner & user metadata, plus matched partners summary.
     """
     q = (
-        db.query(Menu, SellerProfile, User)
-        .join(SellerProfile, Menu.seller_id == SellerProfile.id)
-        .join(User, SellerProfile.id == User.id)
+        db.query(Menu, PartnerProfile, User)
+        .join(PartnerProfile, Menu.partner_id == PartnerProfile.id)
+        .join(User, PartnerProfile.id == User.id)
         .filter(
-            SellerProfile.approval_status == ApprovalStatus.approved,
+            PartnerProfile.application_status == PartnerApplicationStatus.approved,
             User.is_active == True,
         )
     )
 
     if available_only:
-        q = q.filter(Menu.is_available == True, SellerProfile.is_open == True)
+        q = q.filter(Menu.is_available == True, PartnerProfile.is_open == True)
 
     if veg_only:
         q = q.filter(Menu.category == "veg")
@@ -128,10 +127,10 @@ def search_public_dishes(
     results = q.offset(skip).limit(limit).all()
 
     items = []
-    matched_sellers_map = {}
+    matched_partners_map = {}
 
-    for menu_item, seller, user in results:
-        items.append({
+    for menu_item, partner, user in results:
+        dish_info = {
             "id": menu_item.id,
             "name": menu_item.name,
             "description": menu_item.description,
@@ -144,59 +143,72 @@ def search_public_dishes(
             "preorder_cutoff_time": menu_item.preorder_cutoff_time,
             "available_slots": menu_item.available_slots or [],
             "spice_level": menu_item.spice_level or "medium",
-            "seller_id": seller.id,
+            "partner_id": partner.id,
+            "partner_name": user.name,
+            "partner_flat": user.flat_number,
+            "partner_photo_url": partner.photo_url,
+            "partner_banner_url": getattr(partner, "banner_url", None),
+            "partner_photos": getattr(partner, "photos", []) or [],
+            "partner_rating": partner.rating,
+            "partner_punctuality": getattr(partner, "on_time_delivery_rate", 100.0),
+            # Backward compatibility aliases for existing frontend
+            "seller_id": partner.id,
             "seller_name": user.name,
             "seller_flat": user.flat_number,
-            "seller_photo_url": seller.photo_url,
-            "seller_banner_url": getattr(seller, "banner_url", None),
-            "seller_photos": getattr(seller, "photos", []) or [],
-            "seller_rating": seller.rating,
-            "seller_punctuality": getattr(seller, "on_time_delivery_rate", 100.0),
-        })
+            "seller_photo_url": partner.photo_url,
+            "seller_banner_url": getattr(partner, "banner_url", None),
+            "seller_photos": getattr(partner, "photos", []) or [],
+            "seller_rating": partner.rating,
+            "seller_punctuality": getattr(partner, "on_time_delivery_rate", 100.0),
+        }
+        items.append(dish_info)
 
-        if seller.id not in matched_sellers_map:
-            matched_sellers_map[seller.id] = {
-                "id": seller.id,
+        if partner.id not in matched_partners_map:
+            matched_partners_map[partner.id] = {
+                "id": partner.id,
                 "name": user.name,
                 "flat_number": user.flat_number,
-                "photo_url": seller.photo_url,
-                "banner_url": getattr(seller, "banner_url", None),
-                "photos": getattr(seller, "photos", []) or [],
-                "rating": seller.rating,
+                "photo_url": partner.photo_url,
+                "banner_url": getattr(partner, "banner_url", None),
+                "photos": getattr(partner, "photos", []) or [],
+                "rating": partner.rating,
                 "matching_dishes_count": 0,
                 "sample_dishes": [],
             }
-        matched_sellers_map[seller.id]["matching_dishes_count"] += 1
-        if len(matched_sellers_map[seller.id]["sample_dishes"]) < 4:
-            matched_sellers_map[seller.id]["sample_dishes"].append({
+        matched_partners_map[partner.id]["matching_dishes_count"] += 1
+        if len(matched_partners_map[partner.id]["sample_dishes"]) < 4:
+            matched_partners_map[partner.id]["sample_dishes"].append({
                 "id": menu_item.id,
                 "name": menu_item.name,
                 "price": float(menu_item.price),
                 "image_url": menu_item.image_url,
             })
 
+    matched_partners_list = list(matched_partners_map.values())
     return {
         "items": items,
         "total": len(items),
-        "matched_sellers": list(matched_sellers_map.values()),
+        "matched_partners": matched_partners_list,
+        # Backward compatibility alias
+        "matched_sellers": matched_partners_list,
     }
 
 
 def create_menu_item(
     db: Session,
-    seller_id: int,
+    partner_id: int,
     request: MenuCreateRequest,
 ) -> Menu:
-    """Create a new menu item for the given seller."""
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller:
+    """Create a new menu item for the given partner."""
+    partner = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
+    if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Seller {seller_id} not found.",
+            detail=f"Partner {partner_id} not found.",
         )
 
     item = Menu(
-        seller_id=seller_id,
+        partner_id=partner_id,
         name=request.name,
         description=request.description,
         category=request.category,
@@ -225,7 +237,7 @@ def update_menu_item(
 ) -> Menu:
     """
     Update a menu item's fields.
-    If owner_id is provided, ensures the item belongs to that seller.
+    If owner_id is provided, ensures the item belongs to that partner.
     """
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
@@ -233,7 +245,7 @@ def update_menu_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -284,7 +296,7 @@ def delete_menu_item(db: Session, menu_id: int, owner_id: int | None = None) -> 
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -307,7 +319,7 @@ def toggle_availability(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )
@@ -345,7 +357,7 @@ async def upload_menu_image(
             status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
         )
 
-    if owner_id and item.seller_id != owner_id:
+    if owner_id and item.partner_id != owner_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
         )

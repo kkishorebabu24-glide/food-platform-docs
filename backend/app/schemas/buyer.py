@@ -1,27 +1,16 @@
-"""Buyer request/response schemas."""
+"""Buyer schemas — backward compatibility shim pointing to resident schemas."""
 
-from datetime import datetime
+from app.schemas.resident import (
+    ResidentProfileResponse as BuyerProfileResponse,
+    ResidentProfileUpdate as BuyerProfileUpdate,
+    ResidentProfileResponse,
+    ResidentProfileUpdate,
+)
 
-from pydantic import BaseModel
+__all__ = [
+    "BuyerProfileResponse",
+    "BuyerProfileUpdate",
+    "ResidentProfileResponse",
+    "ResidentProfileUpdate",
+]
 
-
-class BuyerProfileResponse(BaseModel):
-    """Response schema for a buyer's own profile."""
-
-    id: int
-    name: str
-    email: str
-    phone: str | None = None
-    flat_number: str | None = None
-    is_verified: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class BuyerProfileUpdate(BaseModel):
-    """Request body for updating a buyer's own profile."""
-
-    name: str | None = None
-    phone: str | None = None
-    flat_number: str | None = None

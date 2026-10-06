@@ -1,8 +1,8 @@
 """
-Payout service — manage seller payout transfers via Razorpay.
+Payout service — manage partner payout transfers via Razorpay.
 
 Payouts are admin-triggered for MVP safety. The Razorpay Payouts API
-transfers funds from the platform account to the seller's UPI / bank.
+transfers funds from the platform account to the partner's UPI / bank.
 """
 
 import logging
@@ -12,42 +12,42 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Payout, SellerProfile
+from app.db.models import Payout, PartnerProfile
 from app.db.models.enums import PayoutStatus
 from app.services import ledger_service
 
 logger = logging.getLogger(__name__)
 
 
-def initiate_payout(db: Session, seller_id: int, amount: Decimal) -> Payout:
+def initiate_payout(db: Session, partner_id: int, amount: Decimal) -> Payout:
     """
-    Initiate a payout for a seller (admin-triggered).
-    Validates that the seller has sufficient balance.
+    Initiate a payout for a partner (admin-triggered).
+    Validates that the partner has sufficient balance.
     """
-    seller_profile = (
-        db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
+    partner_profile = (
+        db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
     )
-    if not seller_profile:
+    if not partner_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Seller {seller_id} not found.",
+            detail=f"Partner {partner_id} not found.",
         )
 
-    balance = ledger_service.get_seller_balance(db, seller_id)
+    balance = ledger_service.get_partner_balance(db, partner_id)
     if amount > balance:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"Insufficient seller balance. "
+                f"Insufficient partner balance. "
                 f"Requested: \u20b9{float(amount):.2f}, Available: \u20b9{float(balance):.2f}"
             ),
         )
 
     payout = Payout(
-        seller_id=seller_id,
+        partner_id=partner_id,
         amount=amount,
         status=PayoutStatus.pending,
-        upi_id=seller_profile.upi_id,
+        upi_id=partner_profile.upi_id,
         provider="razorpay",
     )
     db.add(payout)
@@ -55,8 +55,8 @@ def initiate_payout(db: Session, seller_id: int, amount: Decimal) -> Payout:
     db.refresh(payout)
 
     logger.info(
-        "Payout initiated: seller_id=%s amount=%.2f payout_id=%s",
-        seller_id,
+        "Payout initiated: partner_id=%s amount=%.2f payout_id=%s",
+        partner_id,
         float(amount),
         payout.id,
     )
@@ -112,19 +112,19 @@ def fail_payout(db: Session, payout_id: int, reason: str) -> Payout:
     return payout
 
 
-def list_seller_payouts(
-    db: Session, seller_id: int, skip: int = 0, limit: int = 20
+def list_partner_payouts(
+    db: Session, partner_id: int, skip: int = 0, limit: int = 20
 ) -> dict:
-    """Return paginated payouts for a seller."""
+    """Return paginated payouts for a partner."""
     payouts = (
         db.query(Payout)
-        .filter(Payout.seller_id == seller_id)
+        .filter(Payout.partner_id == partner_id)
         .order_by(Payout.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
-    total = db.query(Payout).filter(Payout.seller_id == seller_id).count()
+    total = db.query(Payout).filter(Payout.partner_id == partner_id).count()
     return {"payouts": [_serialize_payout(p) for p in payouts], "total": total}
 
 
@@ -134,7 +134,7 @@ def list_all_payouts(
     skip: int = 0,
     limit: int = 50,
 ) -> dict:
-    """Return all payouts across all sellers (admin view)."""
+    """Return all payouts across all partners (admin view)."""
     query = db.query(Payout)
     if status_filter:
         try:
@@ -160,7 +160,7 @@ def _get_payout_or_404(db: Session, payout_id: int) -> Payout:
 def _serialize_payout(p: Payout) -> dict:
     return {
         "id": p.id,
-        "seller_id": p.seller_id,
+        "partner_id": p.partner_id,
         "amount": float(p.amount),
         "status": p.status,
         "upi_id": p.upi_id,

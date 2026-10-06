@@ -4,15 +4,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
-from app.db.models import SellerProfile, User
-from app.db.models.enums import ApprovalStatus, UserRole
+from app.db.models import PartnerProfile, User
+from app.db.models.enums import PartnerApplicationStatus, UserRole
 
 
-def test_create_and_list_suggestions(client: TestClient, buyer_headers: dict):
+def test_create_and_list_suggestions(client: TestClient, resident_headers: dict):
     # 1. Create a dish craving
     res = client.post(
         "/api/v1/suggestions/",
-        headers=buyer_headers,
+        headers=resident_headers,
         json={
             "title": "Hyderabadi Dum Biryani",
             "description": "Authentic spicy dum biryani for Sunday lunch",
@@ -26,17 +26,17 @@ def test_create_and_list_suggestions(client: TestClient, buyer_headers: dict):
     suggestion_id = data["id"]
 
     # 2. List suggestions
-    list_res = client.get("/api/v1/suggestions/", headers=buyer_headers)
+    list_res = client.get("/api/v1/suggestions/", headers=resident_headers)
     assert list_res.status_code == 200
     suggestions = list_res.json()["suggestions"]
     assert any(s["id"] == suggestion_id for s in suggestions)
 
 
-def test_toggle_upvote(client: TestClient, db: Session, test_buyer: User, buyer_headers: dict):
+def test_toggle_upvote(client: TestClient, db: Session, test_resident: User, resident_headers: dict):
     # Create suggestion
     res = client.post(
         "/api/v1/suggestions/",
-        headers=buyer_headers,
+        headers=resident_headers,
         json={"title": "Ragi Dosa with Chutney", "category": "veg"},
     )
     sug_id = res.json()["id"]
@@ -45,12 +45,12 @@ def test_toggle_upvote(client: TestClient, db: Session, test_buyer: User, buyer_
     other_user = User(
         name="Neighbor 2",
         email="neighbor2@test.com",
-        role=UserRole.buyer,
+        role=UserRole.resident,
         is_active=True,
     )
     db.add(other_user)
     db.commit()
-    token = create_access_token(other_user.id, "buyer")
+    token = create_access_token(other_user.id, "resident")
     headers = {"Authorization": f"Bearer {token}"}
 
     # Upvote
@@ -66,11 +66,11 @@ def test_toggle_upvote(client: TestClient, db: Session, test_buyer: User, buyer_
     assert downvote_res.json()["has_upvoted"] is False
 
 
-def test_chef_claim_suggestion(client: TestClient, db: Session, test_buyer: User, buyer_headers: dict):
-    # 1. Buyer creates suggestion
+def test_chef_claim_suggestion(client: TestClient, db: Session, test_resident: User, resident_headers: dict):
+    # 1. Resident creates suggestion
     res = client.post(
         "/api/v1/suggestions/",
-        headers=buyer_headers,
+        headers=resident_headers,
         json={"title": "Gujarati Khandvi", "category": "snacks"},
     )
     sug_id = res.json()["id"]
@@ -79,20 +79,20 @@ def test_chef_claim_suggestion(client: TestClient, db: Session, test_buyer: User
     chef_user = User(
         name="Chef Patel",
         email="chefpatel@test.com",
-        role=UserRole.seller,
+        role=UserRole.partner,
         is_active=True,
     )
     db.add(chef_user)
     db.commit()
-    chef_profile = SellerProfile(
+    chef_profile = PartnerProfile(
         id=chef_user.id,
         bio="Authentic Gujarati snacks",
-        approval_status=ApprovalStatus.approved,
+        application_status=PartnerApplicationStatus.approved,
     )
     db.add(chef_profile)
     db.commit()
 
-    chef_token = create_access_token(chef_user.id, "seller")
+    chef_token = create_access_token(chef_user.id, "partner")
     chef_headers = {"Authorization": f"Bearer {chef_token}"}
 
     # 3. Chef claims suggestion

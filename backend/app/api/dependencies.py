@@ -73,12 +73,25 @@ def require_role(*roles: str):
             ...
 
         @router.post("/menu")
-        def add_menu(user: User = Depends(require_role("seller", "admin"))):
+        def add_menu(user: User = Depends(require_role("partner", "admin"))):
             ...
     """
+    role_map = {
+        "seller": "partner",
+        "partner": "seller",
+        "buyer": "resident",
+        "resident": "buyer",
+    }
+    allowed_roles = set()
+    for r in roles:
+        r_str = str(r.value if hasattr(r, "value") else r)
+        allowed_roles.add(r_str)
+        if r_str in role_map:
+            allowed_roles.add(role_map[r_str])
 
     def role_guard(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in roles:
+        user_role_str = str(current_user.role.value if hasattr(current_user.role, "value") else current_user.role)
+        if user_role_str not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required role(s): {', '.join(roles)}",

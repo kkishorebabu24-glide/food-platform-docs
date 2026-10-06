@@ -1,4 +1,4 @@
-"""SellerProfile model — extended profile for users with role=seller."""
+"""PartnerProfile model — extended profile for users with role=partner."""
 
 import re
 from decimal import Decimal
@@ -10,7 +10,7 @@ from sqlalchemy import Float, ForeignKey, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
-from app.db.models.enums import ApprovalStatus
+from app.db.models.enums import PartnerApplicationStatus, PartnerStatus
 
 if TYPE_CHECKING:
     from app.db.models.menu import Menu
@@ -18,20 +18,20 @@ if TYPE_CHECKING:
     from app.db.models.user import User
 
 
-class SellerProfile(TimestampMixin, Base):
+class PartnerProfile(TimestampMixin, Base):
     """
-    One-to-one extension of User for sellers.
+    One-to-one extension of User for partners.
 
-    Uses the User's primary key as both PK and FK so a SellerProfile
-    can only exist for an existing User with role=seller.
+    Uses the User's primary key as both PK and FK so a PartnerProfile
+    can only exist for an existing User with role=partner.
     """
 
-    __tablename__ = "seller_profiles"
+    __tablename__ = "partner_profiles"
 
     # Uses the User's primary key as both PK and FK
     id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
 
-    # Seller bio — text area in UI describing what products they supply
+    # Partner bio — text area in UI describing what products they supply
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Payment Details (Direct P2PM UPI) ─────────────────────────────────────
@@ -73,28 +73,47 @@ class SellerProfile(TimestampMixin, Base):
 
 
     # ── Availability ──────────────────────────────────────────────────────────
-    # Sellers can toggle themselves open/closed without affecting menus or approval.
-    # Buyers only see open sellers; closed sellers cannot receive new orders.
+    # Partners can toggle themselves open/closed without affecting menus or approval.
+    # Residents only see open partners; closed partners cannot receive new orders.
     is_open: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # ── Admin Approval ────────────────────────────────────────────────────────
-    # Sellers are only visible to buyers after admin approval
-    approval_status: Mapped[ApprovalStatus] = mapped_column(
-        SAEnum(ApprovalStatus, name="approvalstatus", create_constraint=True),
+    # Partners are only visible to residents after admin approval
+    application_status: Mapped[PartnerApplicationStatus] = mapped_column(
+        SAEnum(PartnerApplicationStatus, name="approvalstatus", create_constraint=True),
         nullable=False,
-        default=ApprovalStatus.pending,
+        default=PartnerApplicationStatus.pending,
+    )
+
+    partner_status: Mapped["PartnerStatus"] = mapped_column(
+        SAEnum(PartnerStatus, name="partnerstatus", create_constraint=True),
+        nullable=False,
+        default=PartnerStatus.pending,
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    user: Mapped["User"] = relationship("User", back_populates="seller_profile")
-    menus: Mapped[list["Menu"]] = relationship("Menu", back_populates="seller")
-    ratings: Mapped[list["Rating"]] = relationship("Rating", back_populates="seller")
+    user: Mapped["User"] = relationship("User", back_populates="partner_profile")
+    menus: Mapped[list["Menu"]] = relationship("Menu", back_populates="partner")
+    ratings: Mapped[list["Rating"]] = relationship("Rating", back_populates="partner")
+
+    def __init__(self, **kwargs):
+        if "approval_status" in kwargs and "application_status" not in kwargs:
+            kwargs["application_status"] = kwargs.pop("approval_status")
+        super().__init__(**kwargs)
 
     # ── Convenience Property (backward compatibility) ─────────────────────────
     @property
+    def approval_status(self) -> PartnerApplicationStatus:
+        return self.application_status
+
+    @approval_status.setter
+    def approval_status(self, val: PartnerApplicationStatus):
+        self.application_status = val
+
+    @property
     def is_approved(self) -> bool:
-        """True when approval_status is 'approved'. Read-only shortcut."""
-        return self.approval_status == ApprovalStatus.approved
+        """True when application_status is 'approved'. Read-only shortcut."""
+        return self.application_status == PartnerApplicationStatus.approved
 
     # ── Validators ────────────────────────────────────────────────────────────
 

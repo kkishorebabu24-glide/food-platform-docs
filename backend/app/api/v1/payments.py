@@ -1,14 +1,14 @@
 """
 Payment routes — initiate, capture, and query order payments.
 
-Buyer flow:
+Resident flow:
   POST /api/v1/payments/orders/{order_id}/initiate → get Razorpay checkout data
   POST /api/v1/payments/orders/{order_id}/capture  → confirm payment after widget
 
 Webhook (Razorpay server → our server):
   POST /api/v1/payments/webhook                    → auto-capture events
 
-Seller:
+Partner:
   GET  /api/v1/payments/ledger/me                  → own ledger entries
   GET  /api/v1/payments/balance/me                 → current balance
 
@@ -29,8 +29,8 @@ from app.schemas.payment import (
     PaymentCaptureRequest,
     PaymentInitiateResponse,
     PaymentResponse,
-    SellerBalanceResponse,
-    SellerMaintenanceStatusResponse,
+    PartnerBalanceResponse,
+    PartnerMaintenanceStatusResponse,
     SubmitUTRRequest,
 )
 from app.services import ledger_service, payment_service
@@ -41,8 +41,8 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
-BUYER_OR_ADMIN_DEPENDENCY = Depends(require_role("buyer", "admin"))
-SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
+RESIDENT_OR_ADMIN_DEPENDENCY = Depends(require_role("resident", "admin"))
+PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 # ── Direct P2PM UPI & SaaS Pass Routes ────────────────────────────────────────
@@ -54,15 +54,15 @@ SELLER_OR_ADMIN_DEPENDENCY = Depends(require_role("seller", "admin"))
 )
 async def initiate_direct_upi_payment(
     order_id: int,
-    current_user: User = BUYER_OR_ADMIN_DEPENDENCY,
+    current_user: User = RESIDENT_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
     Generate Direct P2PM UPI intent for an order.
-    Returns seller's UPI VPA, name, amount, and deep-link URI.
+    Returns partner's UPI VPA, name, amount, and deep-link URI.
     """
     data = payment_service.generate_direct_upi_payload(
-        db, order_id=order_id, buyer_id=current_user.id
+        db, order_id=order_id, resident_id=current_user.id
     )
     return DirectUPIInitiateResponse(**data)
 
@@ -75,17 +75,17 @@ async def initiate_direct_upi_payment(
 async def submit_order_utr(
     order_id: int,
     request: SubmitUTRRequest,
-    current_user: User = BUYER_OR_ADMIN_DEPENDENCY,
+    current_user: User = RESIDENT_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
-    Buyer submits 12-digit UPI UTR / reference ID after making direct transfer.
+    Resident submits 12-digit UPI UTR / reference ID after making direct transfer.
     Moves payment status to 'submitted'.
     """
-    payment = payment_service.submit_buyer_payment(
+    payment = payment_service.submit_resident_payment(
         db,
         order_id=order_id,
-        buyer_id=current_user.id,
+        resident_id=current_user.id,
         utr_number=request.utr_number,
     )
     return PaymentResponse.model_validate(payment)
@@ -98,58 +98,58 @@ async def submit_order_utr(
 )
 async def confirm_payment_received(
     order_id: int,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
     Home chef confirms receipt of direct UPI credit in their bank account.
     Marks payment captured, moves order to 'accepted', and updates SaaS pass quota.
     """
-    payment = payment_service.confirm_seller_payment(
-        db, order_id=order_id, seller_id=current_user.id
+    payment = payment_service.confirm_partner_payment(
+        db, order_id=order_id, partner_id=current_user.id
     )
     return PaymentResponse.model_validate(payment)
 
 
 @router.get(
     "/maintenance/status",
-    response_model=SellerMaintenanceStatusResponse,
+    response_model=PartnerMaintenanceStatusResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_my_maintenance_status(
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
     Return the authenticated chef's SaaS pass quota, free orders remaining,
     maintenance balance, and platform recharge details.
     """
-    status_data = payment_service.get_seller_maintenance_status(
-        db, seller_id=current_user.id
+    status_data = payment_service.get_partner_maintenance_status(
+        db, partner_id=current_user.id
     )
-    return SellerMaintenanceStatusResponse(**status_data)
+    return PartnerMaintenanceStatusResponse(**status_data)
 
 
 @router.post(
     "/maintenance/topup",
-    response_model=SellerMaintenanceStatusResponse,
+    response_model=PartnerMaintenanceStatusResponse,
     status_code=status.HTTP_200_OK,
 )
 async def topup_maintenance_balance(
     request: MaintenanceTopupRequest,
-    current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
+    current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
     Chef submits recharge UTR to top up platform maintenance balance.
     """
-    status_data = payment_service.topup_seller_maintenance(
+    status_data = payment_service.topup_partner_maintenance(
         db,
-        seller_id=current_user.id,
+        partner_id=current_user.id,
         amount=request.amount,
         utr_number=request.utr_number,
     )
-    return SellerMaintenanceStatusResponse(**status_data)
+    return PartnerMaintenanceStatusResponse(**status_data)
 
 
 # ── Razorpay Gateway Routes (Legacy / Fallback) ───────────────────────────────
@@ -162,7 +162,7 @@ async def topup_maintenance_balance(
 )
 async def initiate_payment(
     order_id: int,
-    current_user: User = BUYER_OR_ADMIN_DEPENDENCY,
+    current_user: User = RESIDENT_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
@@ -172,7 +172,7 @@ async def initiate_payment(
     the Razorpay JS checkout widget.
     """
     data = payment_service.create_payment_order(
-        db, order_id=order_id, buyer_id=current_user.id
+        db, order_id=order_id, resident_id=current_user.id
     )
     return PaymentInitiateResponse(**data)
 
@@ -181,7 +181,7 @@ async def initiate_payment(
 async def capture_payment(
     order_id: int,
     request: PaymentCaptureRequest,
-    current_user: User = BUYER_OR_ADMIN_DEPENDENCY,
+    current_user: User = RESIDENT_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """
@@ -193,7 +193,7 @@ async def capture_payment(
     payment = payment_service.capture_payment(
         db,
         order_id=order_id,
-        buyer_id=current_user.id,
+        resident_id=current_user.id,
         provider_payment_id=request.provider_payment_id,
         provider_signature=request.provider_signature,
     )
@@ -222,7 +222,7 @@ async def get_payment(
     current_user: User = GET_USER_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Get payment detail for an order (buyer, seller, or admin)."""
+    """Get payment detail for an order (resident, partner, or admin)."""
     payment = payment_service.get_payment_by_order(db, order_id=order_id)
     if not payment:
         raise HTTPException(
@@ -231,8 +231,8 @@ async def get_payment(
         )
 
     if current_user.role not in ("admin",) and current_user.id not in (
-        payment.buyer_id,
-        payment.seller_id,
+        payment.resident_id,
+        payment.partner_id,
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -246,24 +246,24 @@ async def get_payment(
 async def get_my_ledger(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    current_user: User = Depends(require_role("seller", "admin")),
+    current_user: User = Depends(require_role("partner", "admin")),
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller's ledger entries."""
-    return ledger_service.get_seller_ledger(
-        db, seller_id=current_user.id, skip=skip, limit=limit
+    """Return the authenticated partner's ledger entries."""
+    return ledger_service.get_partner_ledger(
+        db, partner_id=current_user.id, skip=skip, limit=limit
     )
 
 
-@router.get("/balance/me", response_model=SellerBalanceResponse)
+@router.get("/balance/me", response_model=PartnerBalanceResponse)
 async def get_my_balance(
-    current_user: User = Depends(require_role("seller", "admin")),
+    current_user: User = Depends(require_role("partner", "admin")),
     db: Session = DB_DEPENDENCY,
 ):
-    """Return the authenticated seller's current balance."""
-    balance = ledger_service.get_seller_balance(db, seller_id=current_user.id)
-    return SellerBalanceResponse(
-        seller_id=current_user.id,
+    """Return the authenticated partner's current balance."""
+    balance = ledger_service.get_partner_balance(db, partner_id=current_user.id)
+    return PartnerBalanceResponse(
+        partner_id=current_user.id,
         balance=balance,
         currency="INR",
     )

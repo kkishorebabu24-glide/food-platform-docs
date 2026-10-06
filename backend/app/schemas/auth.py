@@ -4,7 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
 
-VALID_ROLES = {"buyer", "seller", "admin"}
+VALID_ROLES = {"resident", "partner", "admin", "buyer", "seller"}
+ROLE_NORMALIZATION_MAP = {"seller": "partner", "buyer": "resident"}
 
 
 class RegisterRequest(BaseModel):
@@ -12,7 +13,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
-    role: str = "buyer"
+    role: str = "resident"
 
     @field_validator("password")
     @classmethod
@@ -24,9 +25,10 @@ class RegisterRequest(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        if v not in VALID_ROLES:
-            raise ValueError(f"Role must be one of: {', '.join(sorted(VALID_ROLES))}")
-        return v
+        mapped = ROLE_NORMALIZATION_MAP.get(v, v)
+        if mapped not in {"resident", "partner", "admin"}:
+            raise ValueError("Role must be one of: resident, partner, admin (or legacy buyer, seller)")
+        return mapped
 
     @field_validator("name")
     @classmethod
@@ -56,7 +58,7 @@ class UserInfo(BaseModel):
     name: str
     role: str
     flat_number: str | None = None
-    verification_status: str
+    status: str
     is_verified: bool
 
 
@@ -77,16 +79,17 @@ class RefreshResponse(BaseModel):
 class OTPRequest(BaseModel):
     """Request body for requesting an OTP."""
     email: EmailStr
-    role: str = "buyer"
+    role: str = "resident"
     channel: str = "email"  # "email" | "whatsapp"
     phone: str | None = None
 
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        if v not in VALID_ROLES:
-            raise ValueError(f"Role must be one of: {', '.join(sorted(VALID_ROLES))}")
-        return v
+        mapped = ROLE_NORMALIZATION_MAP.get(v, v)
+        if mapped not in {"resident", "partner", "admin"}:
+            raise ValueError("Role must be one of: resident, partner, admin (or legacy buyer, seller)")
+        return mapped
 
 
 class OTPVerifyRequest(BaseModel):
@@ -94,7 +97,7 @@ class OTPVerifyRequest(BaseModel):
     email: EmailStr
     otp: str
     name: str | None = None
-    role: str = "buyer"
+    role: str = "resident"
 
     @field_validator("otp")
     @classmethod

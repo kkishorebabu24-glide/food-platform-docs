@@ -180,6 +180,9 @@ export const sellersAPI = {
     api.delete('/sellers/me/photos', { params: { photo_url: photoUrl } }),
 };
 
+// ── Partners API (Alias to Sellers API for modern terminology) ───────────
+export const partnersAPI = sellersAPI;
+
 // ── Menus API ──────────────────────────────────────────────────────────────
 export const menusAPI = {
   /** Search dishes across all approved sellers */
@@ -367,6 +370,36 @@ export const aiAPI = {
     api.post('/ai/search', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+};
+
+// ── Admin API ──────────────────────────────────────────────────────────────
+export const adminAPI = {
+  /** Platform-wide summary statistics and revenue metrics */
+  getAnalytics: () => api.get('/admin/analytics'),
+
+  /** List partners awaiting approval */
+  getPendingPartners: (skip = 0, limit = 20) =>
+    api.get('/admin/partners/pending', { params: { skip, limit } }),
+
+  /** Approve a pending partner registration */
+  approvePartner: (partnerId) =>
+    api.post(`/admin/partners/${partnerId}/approve`),
+
+  /** Reject a pending partner registration */
+  rejectPartner: (partnerId) =>
+    api.post(`/admin/partners/${partnerId}/reject`),
+
+  /** List registered residents */
+  getResidents: (skip = 0, limit = 50) =>
+    api.get('/admin/residents', { params: { skip, limit } }),
+
+  /** Activate or deactivate user account */
+  setUserStatus: (userId, isActive) =>
+    api.patch(`/admin/users/${userId}/status`, { is_active: isActive }),
+
+  /** Issue full refund for an order */
+  refundOrder: (orderId) =>
+    api.post(`/admin/orders/${orderId}/refund`),
 };
 
 export default api;

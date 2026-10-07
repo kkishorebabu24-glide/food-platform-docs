@@ -66,6 +66,21 @@ import Footer from './components/Footer';
 import './App.css';
 import LandingPage from './pages/Landing';
 
+// ── Partner Workspace Sub-Pages ──────────────────────────────────────────────
+import PartnerLayout from './pages/partner/PartnerLayout';
+import PartnerOverview from './pages/partner/PartnerOverview';
+import PartnerOrders from './pages/partner/PartnerOrders';
+import PartnerMenu from './pages/partner/PartnerMenu';
+import PartnerGallery from './pages/partner/PartnerGallery';
+import PartnerFinances from './pages/partner/PartnerFinances';
+
+// ── Admin Console Sub-Pages ──────────────────────────────────────────────────
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminApprovals from './pages/admin/AdminApprovals';
+import AdminResidents from './pages/admin/AdminResidents';
+import AdminRefunds from './pages/admin/AdminRefunds';
+
 // ── Warm Culinary Theme (Modern Coffee/Food Ordering Inspired) ───────────────
 const theme = createTheme({
   palette: {
@@ -158,8 +173,8 @@ function Navbar({ cartCount, onOpenCart }) {
   const handleSwitchRole = async (targetRole) => {
     try {
       const updated = await switchRole(targetRole);
-      if (updated.role === 'seller') {
-        navigate('/seller/dashboard');
+      if (updated.role === 'seller' || updated.role === 'partner') {
+        navigate('/partner');
       } else {
         navigate('/buyer');
       }
@@ -178,10 +193,26 @@ function Navbar({ cartCount, onOpenCart }) {
 
         {user ? (
           <>
-            {/* Seller Mode Navigation */}
-            {user.role === 'seller' ? (
+            {/* Admin Navigation */}
+            {user.role === 'admin' ? (
               <>
-                <Button component={Link} to="/seller/dashboard" color="inherit" size="small" sx={{ mr: 1 }}>
+                <Button component={Link} to="/admin" color="inherit" size="small" sx={{ mr: 1, color: '#2EC4B6', fontWeight: 'bold' }}>
+                  Admin Console
+                </Button>
+                <Button component={Link} to="/partner" color="inherit" size="small" sx={{ mr: 1 }}>
+                  Kitchen Hub
+                </Button>
+                <Button component={Link} to="/orders" color="inherit" size="small" sx={{ mr: 1 }}>
+                  Orders
+                </Button>
+                <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
+                  Cravings
+                </Button>
+              </>
+            ) : (user.role === 'seller' || user.role === 'partner') ? (
+              /* Seller / Partner Navigation */
+              <>
+                <Button component={Link} to="/partner" color="inherit" size="small" sx={{ mr: 1 }}>
                   Kitchen Hub
                 </Button>
                 <Button component={Link} to="/orders" color="inherit" size="small" sx={{ mr: 1 }}>
@@ -192,7 +223,7 @@ function Navbar({ cartCount, onOpenCart }) {
                 </Button>
               </>
             ) : (
-              /* Buyer Mode Navigation: Strictly Cravings, Orders, Cart */
+              /* Buyer / Resident Mode Navigation */
               <>
                 <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
                   Cravings
@@ -210,25 +241,44 @@ function Navbar({ cartCount, onOpenCart }) {
               </Badge>
             </IconButton>
 
-            {/* Instant Role Persona Switcher Button */}
-            <Button
-              size="small"
-              onClick={() => handleSwitchRole(user.role === 'seller' ? 'buyer' : 'seller')}
-              sx={{
-                mr: 1.5,
-                textTransform: 'none',
-                fontWeight: 'bold',
-                bgcolor: user.role === 'seller' ? 'rgba(46,196,182,0.15)' : 'rgba(224,90,43,0.15)',
-                color: user.role === 'seller' ? '#2EC4B6' : '#E05A2B',
-                border: '1px solid',
-                borderColor: user.role === 'seller' ? 'rgba(46,196,182,0.3)' : 'rgba(224,90,43,0.3)',
-                '&:hover': {
-                  bgcolor: user.role === 'seller' ? 'rgba(46,196,182,0.25)' : 'rgba(224,90,43,0.25)',
-                },
-              }}
-            >
-              {user.role === 'seller' ? '🛒 Switch to Buyer Mode' : '🍳 Switch to Chef Mode'}
-            </Button>
+            {/* Role Switcher Button */}
+            {user.role === 'admin' ? (
+              <Button
+                size="small"
+                component={Link}
+                to="/admin"
+                sx={{
+                  mr: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  bgcolor: 'rgba(46,196,182,0.15)',
+                  color: '#2EC4B6',
+                  border: '1px solid rgba(46,196,182,0.3)',
+                  '&:hover': { bgcolor: 'rgba(46,196,182,0.25)' },
+                }}
+              >
+                🛡️ Admin Console
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                onClick={() => handleSwitchRole((user.role === 'seller' || user.role === 'partner') ? 'buyer' : 'seller')}
+                sx={{
+                  mr: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  bgcolor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.15)' : 'rgba(224,90,43,0.15)',
+                  color: (user.role === 'seller' || user.role === 'partner') ? '#2EC4B6' : '#E05A2B',
+                  border: '1px solid',
+                  borderColor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.3)' : 'rgba(224,90,43,0.3)',
+                  '&:hover': {
+                    bgcolor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.25)' : 'rgba(224,90,43,0.25)',
+                  },
+                }}
+              >
+                {(user.role === 'seller' || user.role === 'partner') ? '🛒 Switch to Buyer Mode' : '🍳 Switch to Chef Mode'}
+              </Button>
+            )}
 
             {/* User Info Chip with Interactive Popover */}
             <Chip
@@ -290,10 +340,26 @@ function Navbar({ cartCount, onOpenCart }) {
                   <Typography variant="caption" color="text.secondary">Active Mode:</Typography>
                   <Chip
                     size="small"
-                    label={user.role === 'seller' ? '🍳 Home Chef' : '🛒 Resident Buyer'}
+                    label={
+                      user.role === 'admin'
+                        ? '🛡️ Society Admin'
+                        : (user.role === 'seller' || user.role === 'partner')
+                        ? '🍳 Home Chef'
+                        : '🛒 Resident Buyer'
+                    }
                     sx={{
-                      bgcolor: user.role === 'seller' ? 'rgba(46,196,182,0.15)' : 'rgba(224,90,43,0.15)',
-                      color: user.role === 'seller' ? '#2EC4B6' : '#E05A2B',
+                      bgcolor:
+                        user.role === 'admin'
+                          ? 'rgba(46,196,182,0.15)'
+                          : (user.role === 'seller' || user.role === 'partner')
+                          ? 'rgba(224,90,43,0.15)'
+                          : 'rgba(255,255,255,0.08)',
+                      color:
+                        user.role === 'admin'
+                          ? '#2EC4B6'
+                          : (user.role === 'seller' || user.role === 'partner')
+                          ? '#E05A2B'
+                          : '#fff',
                       fontWeight: 'bold',
                       fontSize: '0.75rem',
                     }}
@@ -318,6 +384,34 @@ function Navbar({ cartCount, onOpenCart }) {
               </Box>
 
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 2 }} />
+
+              {/* Workspace Shortcuts */}
+              {user.role === 'admin' && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  component={Link}
+                  to="/admin"
+                  onClick={() => setUserMenuAnchor(null)}
+                  size="small"
+                  sx={{ mb: 1, color: '#2EC4B6', borderColor: '#2EC4B6', textTransform: 'none', fontWeight: 'bold' }}
+                >
+                  🛡️ Admin Console
+                </Button>
+              )}
+              {(user.role === 'seller' || user.role === 'partner' || user.role === 'admin') && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  component={Link}
+                  to="/partner"
+                  onClick={() => setUserMenuAnchor(null)}
+                  size="small"
+                  sx={{ mb: 1, color: '#E05A2B', borderColor: '#E05A2B', textTransform: 'none', fontWeight: 'bold' }}
+                >
+                  🍳 Kitchen Workspace
+                </Button>
+              )}
 
               {/* Shortcut to the Profile */}
               <Button
@@ -1877,29 +1971,64 @@ function AppContent() {
             </PrivateRoute>
           }
         />
+        {/* Partner Workspace Sub-Pages */}
+        <Route
+          path="/partner"
+          element={
+            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+              <PartnerLayout currentUser={user} />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<PartnerOverview />} />
+          <Route path="overview" element={<Navigate to="/partner" replace />} />
+          <Route path="orders" element={<PartnerOrders />} />
+          <Route path="menu" element={<PartnerMenu />} />
+          <Route path="gallery" element={<PartnerGallery />} />
+          <Route path="finances" element={<PartnerFinances />} />
+        </Route>
+
+        {/* Admin Console Sub-Pages */}
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <AdminLayout currentUser={user} />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<AdminOverview />} />
+          <Route path="overview" element={<Navigate to="/admin" replace />} />
+          <Route path="approvals" element={<AdminApprovals />} />
+          <Route path="residents" element={<AdminResidents />} />
+          <Route path="refunds" element={<AdminRefunds />} />
+          <Route path="disputes" element={<Navigate to="/admin/refunds" replace />} />
+        </Route>
+
+        {/* Backward-compatibility routes for legacy seller links & test suites */}
         <Route
           path="/seller/dashboard"
           element={
-            <PrivateRoute allowedRoles={['seller', 'admin']}>
+            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
               <SellerDashboardPage currentUser={user} />
             </PrivateRoute>
           }
         />
-        <Route path="/seller-dashboard" element={<Navigate to="/seller/dashboard" replace />} />
+        <Route path="/seller-dashboard" element={<Navigate to="/partner" replace />} />
 
         <Route
           path="/seller/dashboard/menus"
           element={
-            <PrivateRoute allowedRoles={['seller', 'admin']}>
-              <MenuPage onAddToCart={handleAddToCart} />
+            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+              <Navigate to="/partner/menu" replace />
             </PrivateRoute>
           }
         />
         <Route
           path="/seller/dashboard/orders"
           element={
-            <PrivateRoute allowedRoles={['seller', 'admin']}>
-              <OrdersPage />
+            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+              <Navigate to="/partner/orders" replace />
             </PrivateRoute>
           }
         />
@@ -1943,11 +2072,23 @@ function AppContent() {
           >
             <IconButton
               component={Link}
-              to={user.role === 'seller' ? '/seller/dashboard' : '/buyer'}
+              to={
+                user.role === 'admin'
+                  ? '/admin'
+                  : (user.role === 'seller' || user.role === 'partner')
+                  ? '/partner'
+                  : '/buyer'
+              }
               aria-label="Mobile Navigation Home"
               sx={{
                 flexDirection: 'column',
-                color: location.pathname === '/buyer' || location.pathname.startsWith('/seller') ? '#2EC4B6' : 'text.secondary',
+                color:
+                  location.pathname === '/buyer' ||
+                  location.pathname.startsWith('/seller') ||
+                  location.pathname.startsWith('/partner') ||
+                  location.pathname.startsWith('/admin')
+                    ? '#2EC4B6'
+                    : 'text.secondary',
                 py: 0.5,
               }}
             >

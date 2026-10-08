@@ -43,10 +43,14 @@ export default function AdminLayout({ currentUser }) {
         adminAPI.getPendingPartners().catch(() => ({ data: [] })),
       ]);
 
-      if (analyticsRes.data) {
+      if (analyticsRes?.data) {
         setAnalytics(analyticsRes.data);
+      } else {
+        setAnalytics({});
       }
-      const pendingList = Array.isArray(pendingRes.data) ? pendingRes.data : [];
+      const pendingList = Array.isArray(pendingRes?.data)
+        ? pendingRes.data
+        : (pendingRes?.data?.partners || pendingRes?.data?.pending_partners || []);
       setPendingCount(pendingList.length);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to fetch admin overview data.'));
@@ -204,7 +208,7 @@ export default function AdminLayout({ currentUser }) {
       </Box>
 
       {/* Sub-Page Content */}
-      {loading && !analytics ? (
+      {loading && !analytics && (location.pathname === '/admin' || location.pathname === '/admin/') ? (
         <Box display="flex" justifyContent="center" py={8}>
           <CircularProgress sx={{ color: '#E05A2B' }} />
         </Box>

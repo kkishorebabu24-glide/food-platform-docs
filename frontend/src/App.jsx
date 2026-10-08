@@ -386,20 +386,21 @@ function Navbar({ cartCount, onOpenCart }) {
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 2 }} />
 
               {/* Workspace Shortcuts */}
-              {user.role === 'admin' && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  component={Link}
-                  to="/admin"
-                  onClick={() => setUserMenuAnchor(null)}
-                  size="small"
-                  sx={{ mb: 1, color: '#2EC4B6', borderColor: '#2EC4B6', textTransform: 'none', fontWeight: 'bold' }}
-                >
-                  🛡️ Admin Console
-                </Button>
-              )}
-              {(user.role === 'seller' || user.role === 'partner' || user.role === 'admin') && (
+              <Typography variant="caption" color="text.secondary" fontWeight="bold" display="block" mb={1} sx={{ letterSpacing: '0.5px' }}>
+                WORKSPACE SWITCHER
+              </Typography>
+              <Button
+                fullWidth
+                variant="outlined"
+                component={Link}
+                to="/"
+                onClick={() => setUserMenuAnchor(null)}
+                size="small"
+                sx={{ mb: 1, color: '#2EC4B6', borderColor: 'rgba(46,196,182,0.4)', textTransform: 'none', fontWeight: 'bold' }}
+              >
+                🏡 Resident Space
+              </Button>
+              {(user.role === 'seller' || user.role === 'partner' || user.role === 'admin' || user.role === 'super_admin') && (
                 <Button
                   fullWidth
                   variant="outlined"
@@ -407,9 +408,22 @@ function Navbar({ cartCount, onOpenCart }) {
                   to="/partner"
                   onClick={() => setUserMenuAnchor(null)}
                   size="small"
-                  sx={{ mb: 1, color: '#E05A2B', borderColor: '#E05A2B', textTransform: 'none', fontWeight: 'bold' }}
+                  sx={{ mb: 1, color: '#E05A2B', borderColor: 'rgba(224,90,43,0.4)', textTransform: 'none', fontWeight: 'bold' }}
                 >
-                  🍳 Kitchen Workspace
+                  🍳 Kitchen Hub (Partner)
+                </Button>
+              )}
+              {(user.role === 'admin' || user.role === 'super_admin') && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  component={Link}
+                  to="/admin"
+                  onClick={() => setUserMenuAnchor(null)}
+                  size="small"
+                  sx={{ mb: 1, color: '#F6BD60', borderColor: 'rgba(246,189,96,0.4)', textTransform: 'none', fontWeight: 'bold' }}
+                >
+                  🛡️ Society Admin Console
                 </Button>
               )}
 
@@ -423,7 +437,7 @@ function Navbar({ cartCount, onOpenCart }) {
                 size="small"
                 sx={{ mb: 1, color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
               >
-                👤 View Full Profile
+                👤 View Full Profile & Services
               </Button>
 
               <Button
@@ -475,10 +489,26 @@ function LoginPage() {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState(params.get('role') || 'buyer');
+  const [role, setRole] = useState(params.get('role') || 'resident');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+
+  const getSmartRedirect = (userData) => {
+    const next = params.get('next');
+    if (next && next.startsWith('/') && !next.startsWith('/login')) {
+      if (next.startsWith('/seller/dashboard') || next.startsWith('/seller')) return '/partner';
+      return next;
+    }
+    const userRole = userData?.role;
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      return '/admin';
+    }
+    if (userRole === 'partner' || userRole === 'seller') {
+      return '/partner';
+    }
+    return '/';
+  };
 
   // ── 1. Passwordless OTP Authentication Flow ──────────────────────────────
   const handleRequestOTP = async (e) => {
@@ -487,7 +517,7 @@ function LoginPage() {
     setInfo('');
     setLoading(true);
     try {
-      const res = await authAPI.requestOtp(email, role, 'email');
+      const res = await authAPI.requestOtp(email, 'resident', 'email');
       const devOtp = res.data?.dev_otp;
       setInfo(
         devOtp
@@ -507,12 +537,10 @@ function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await authAPI.verifyOtp(email, otp, name, role);
+      const res = await authAPI.verifyOtp(email, otp, name);
       const { access_token, user: userData } = res.data;
-      login(userData || { email, role }, access_token);
-      const next = params.get('next') || (userData?.role === 'seller' ? '/seller/dashboard' : '/');
-      const safeNext = next && next.startsWith('/') ? next : '/';
-      navigate(safeNext);
+      login(userData || { email }, access_token);
+      navigate(getSmartRedirect(userData));
     } catch (err) {
       setError(getErrorMessage(err, 'Invalid or expired code. Please try again.'));
     } finally {
@@ -529,9 +557,7 @@ function LoginPage() {
       const res = await authAPI.login(email, password, role);
       const { access_token, user: userData } = res.data;
       login(userData || { email, role }, access_token);
-      const next = params.get('next') || (userData?.role === 'seller' ? '/seller/dashboard' : '/');
-      const safeNext = next && next.startsWith('/') ? next : '/';
-      navigate(safeNext);
+      navigate(getSmartRedirect(userData));
     } catch (err) {
       setError(getErrorMessage(err, 'Invalid email or password. Please try again.'));
     } finally {
@@ -547,11 +573,10 @@ function LoginPage() {
     setLoading(true);
     try {
       await authAPI.register(email, password, name, role);
-      const loginRes = await authAPI.login(email, password, role);
+      const loginRes = await authAPI.login(email, password);
       const { access_token, user: userData } = loginRes.data;
       login(userData || { email, name, role }, access_token);
-      const next = role === 'seller' ? '/seller/dashboard' : '/';
-      navigate(next);
+      navigate(getSmartRedirect(userData));
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to create account. Please check your information.'));
     } finally {
@@ -631,25 +656,9 @@ function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 fullWidth
                 required
-                sx={{ mb: 2 }}
+                sx={{ mb: 3 }}
                 placeholder="you@example.com"
               />
-              <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                I am signing in as:
-              </Typography>
-              <Box sx={{ mb: 3, display: 'flex', gap: 1.5 }}>
-                {['buyer', 'seller'].map((r) => (
-                  <Button
-                    key={r}
-                    variant={role === r ? 'contained' : 'outlined'}
-                    color="primary"
-                    onClick={() => setRole(r)}
-                    sx={{ flex: 1, py: 1, fontWeight: 'bold' }}
-                  >
-                    {r === 'buyer' ? '🛒 Resident Buyer' : '🍳 Home Chef'}
-                  </Button>
-                ))}
-              </Box>
               <Button
                 type="submit"
                 variant="contained"
@@ -723,18 +732,21 @@ function LoginPage() {
               placeholder="••••••••"
             />
             <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-              Sign in as:
+              Signing in as:
             </Typography>
             <Box sx={{ mb: 3, display: 'flex', gap: 1.5 }}>
-              {['buyer', 'seller'].map((r) => (
+              {[
+                { id: 'buyer', label: '🛒 Resident Buyer' },
+                { id: 'seller', label: '🍳 Home Chef' },
+              ].map((r) => (
                 <Button
-                  key={r}
-                  variant={role === r ? 'contained' : 'outlined'}
+                  key={r.id}
+                  variant={role === r.id ? 'contained' : 'outlined'}
                   color="primary"
-                  onClick={() => setRole(r)}
+                  onClick={() => setRole(r.id)}
                   sx={{ flex: 1, py: 1, fontWeight: 'bold' }}
                 >
-                  {r === 'buyer' ? '🛒 Resident Buyer' : '🍳 Home Chef'}
+                  {r.label}
                 </Button>
               ))}
             </Box>
@@ -749,7 +761,6 @@ function LoginPage() {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
-
           </Box>
         ) : (
           /* Create Account Form */
@@ -785,18 +796,21 @@ function LoginPage() {
               placeholder="••••••••"
             />
             <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-              I want to use Society Food as:
+              I want to join Society Food as:
             </Typography>
             <Box sx={{ mb: 3, display: 'flex', gap: 1.5 }}>
-              {['buyer', 'seller'].map((r) => (
+              {[
+                { id: 'resident', label: '🏡 Resident Member' },
+                { id: 'partner', label: '🍳 Home Chef (Partner)' },
+              ].map((r) => (
                 <Button
-                  key={r}
-                  variant={role === r ? 'contained' : 'outlined'}
+                  key={r.id}
+                  variant={role === r.id ? 'contained' : 'outlined'}
                   color="primary"
-                  onClick={() => setRole(r)}
+                  onClick={() => setRole(r.id)}
                   sx={{ flex: 1, py: 1, fontWeight: 'bold' }}
                 >
-                  {r === 'buyer' ? '🛒 Resident Buyer' : '🍳 Home Chef'}
+                  {r.label}
                 </Button>
               ))}
             </Box>
@@ -2073,16 +2087,17 @@ function AppContent() {
             <IconButton
               component={Link}
               to={
-                user.role === 'admin'
+                user.role === 'admin' || user.role === 'super_admin'
                   ? '/admin'
                   : (user.role === 'seller' || user.role === 'partner')
                   ? '/partner'
-                  : '/buyer'
+                  : '/'
               }
               aria-label="Mobile Navigation Home"
               sx={{
                 flexDirection: 'column',
                 color:
+                  location.pathname === '/' ||
                   location.pathname === '/buyer' ||
                   location.pathname.startsWith('/seller') ||
                   location.pathname.startsWith('/partner') ||

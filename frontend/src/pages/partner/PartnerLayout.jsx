@@ -460,7 +460,7 @@ export default function PartnerLayout({ currentUser }) {
       </Box>
 
       {/* Sub-Page Content Container */}
-      {loading && !sellerProfile ? (
+      {loading && !sellerProfile && (location.pathname === '/partner' || location.pathname === '/partner/') ? (
         <Box display="flex" justifyContent="center" py={8}>
           <CircularProgress sx={{ color: '#E05A2B' }} />
         </Box>

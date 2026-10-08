@@ -44,10 +44,13 @@ export default function AdminApprovals() {
         sellersAPI.list(0, 50).catch(() => ({ data: [] })),
       ]);
 
-      setPendingPartners(Array.isArray(pendingRes.data) ? pendingRes.data : []);
-      const approvedList = Array.isArray(approvedRes.data)
+      const pendingList = Array.isArray(pendingRes?.data)
+        ? pendingRes.data
+        : (pendingRes?.data?.partners || pendingRes?.data?.pending_partners || []);
+      setPendingPartners(pendingList);
+      const approvedList = Array.isArray(approvedRes?.data)
         ? approvedRes.data
-        : (approvedRes.data?.sellers || []);
+        : (approvedRes?.data?.partners || approvedRes?.data?.sellers || []);
       setApprovedPartners(approvedList);
     } catch (err) {
       setError?.(getErrorMessage(err, 'Failed to fetch partner applicants.'));

@@ -41,6 +41,7 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
     UserInfo,
+    ROLE_NORMALIZATION_MAP,
 )
 from app.services import auth_service, notification_service
 
@@ -89,24 +90,26 @@ async def login(request: LoginRequest, db: Session = DB_DEPENDENCY):
     """
     user = auth_service.authenticate_user(db, str(request.email), request.password)
 
-    # If the user explicitly selects a role upon login, update active role
-    if request.role and request.role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != request.role:
-        user.role = UserRole(request.role)
-        if user.role == UserRole.partner:
-            existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
-            if not existing_profile:
-                new_profile = PartnerProfile(
-                    id=user.id,
-                    is_open=True,
-                    application_status=PartnerApplicationStatus.approved,
-                    rating=0.0,
-                    review_count=0,
-                    on_time_delivery_rate=100.0,
-                    avg_delivery_minutes=25,
-                )
-                db.add(new_profile)
-        db.commit()
-        db.refresh(user)
+    # If the user explicitly selects a role upon login, update active role (protect admin / super_admin from demotion)
+    if request.role and user.role not in (UserRole.admin, UserRole.super_admin):
+        norm_role = ROLE_NORMALIZATION_MAP.get(request.role, request.role)
+        if norm_role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != norm_role:
+            user.role = UserRole(norm_role)
+            if user.role == UserRole.partner:
+                existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
+                if not existing_profile:
+                    new_profile = PartnerProfile(
+                        id=user.id,
+                        is_open=True,
+                        application_status=PartnerApplicationStatus.approved,
+                        rating=0.0,
+                        review_count=0,
+                        on_time_delivery_rate=100.0,
+                        avg_delivery_minutes=25,
+                    )
+                    db.add(new_profile)
+            db.commit()
+            db.refresh(user)
 
 
     access_token = create_access_token(user.id, user.role)
@@ -343,24 +346,26 @@ async def verify_otp_route(
         role=request.role,
     )
 
-    # If the resident selected a role (e.g. resident or partner) upon OTP verification, adopt active role
-    if request.role and request.role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != request.role:
-        user.role = UserRole(request.role)
-        if user.role == UserRole.partner:
-            existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
-            if not existing_profile:
-                new_profile = PartnerProfile(
-                    id=user.id,
-                    is_open=True,
-                    application_status=PartnerApplicationStatus.approved,
-                    rating=0.0,
-                    review_count=0,
-                    on_time_delivery_rate=100.0,
-                    avg_delivery_minutes=25,
-                )
-                db.add(new_profile)
-        db.commit()
-        db.refresh(user)
+    # If the resident selected a role (e.g. resident or partner) upon OTP verification, adopt active role (protect admin / super_admin)
+    if request.role and user.role not in (UserRole.admin, UserRole.super_admin):
+        norm_role = ROLE_NORMALIZATION_MAP.get(request.role, request.role)
+        if norm_role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != norm_role:
+            user.role = UserRole(norm_role)
+            if user.role == UserRole.partner:
+                existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
+                if not existing_profile:
+                    new_profile = PartnerProfile(
+                        id=user.id,
+                        is_open=True,
+                        application_status=PartnerApplicationStatus.approved,
+                        rating=0.0,
+                        review_count=0,
+                        on_time_delivery_rate=100.0,
+                        avg_delivery_minutes=25,
+                    )
+                    db.add(new_profile)
+            db.commit()
+            db.refresh(user)
 
 
     if not user.is_active:

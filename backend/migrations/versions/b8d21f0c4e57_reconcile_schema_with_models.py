@@ -1,7 +1,7 @@
 """Reconcile migration-built schema with the ORM models
 
 Revision ID: b8d21f0c4e57
-Revises: a547385bacf7
+Revises: c789123ef456
 Create Date: 2026-10-08 18:00:00.000000
 
 Several model features (community cravings, pre-orders, review moderation and
@@ -20,7 +20,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "b8d21f0c4e57"
-down_revision: Union[str, Sequence[str], None] = "a547385bacf7"
+down_revision: Union[str, Sequence[str], None] = "c789123ef456"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -39,8 +39,11 @@ ORDER_STATUSES = (
     "cancelled",
     "refund_pending",
     "refunded",
+    # Legacy labels kept so OrderStatus.pending/completed aliases stay valid
+    "pending",
+    "completed",
 )
-ORDER_UPGRADE_MAP = {"pending": "placed", "completed": "delivered"} | {s: s for s in ORDER_STATUSES}
+ORDER_UPGRADE_MAP = {s: s for s in ORDER_STATUSES} | {"pending": "placed", "completed": "delivered"}
 ORDER_DOWNGRADE_MAP = {
     "draft": "pending",
     "placed": "pending",
@@ -54,6 +57,8 @@ ORDER_DOWNGRADE_MAP = {
     "cancelled": "cancelled",
     "refund_pending": "cancelled",
     "refunded": "cancelled",
+    "pending": "pending",
+    "completed": "completed",
 }
 
 PAYMENT_STATUSES_OLD = ("created", "captured", "failed", "refunded", "submitted")

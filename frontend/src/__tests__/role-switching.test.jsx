@@ -62,7 +62,7 @@ describe('Role Selection & Switching Flow', () => {
     });
   });
 
-  test('allows switching role directly via Navbar Persona Switcher', async () => {
+  test('displays Workspace Switcher in User Popover and confirms obsolete mode toggle button is removed', async () => {
     // Pre-seed authenticated buyer in localStorage
     const initialUser = {
       id: 202,
@@ -75,26 +75,22 @@ describe('Role Selection & Switching Flow', () => {
     localStorage.setItem('user', JSON.stringify(initialUser));
     localStorage.setItem('access_token', 'initial-buyer-token');
 
-    const switchRoleSpy = jest.spyOn(apiModule.authAPI, 'switchRole').mockResolvedValue({
-      data: {
-        access_token: 'new-seller-token',
-        user: { ...initialUser, role: 'seller' },
-      },
-    });
-
     render(<App />);
 
-    // Verify initial buyer navbar
+    // Verify initial resident navbar
     expect(screen.getByText(/Anil Kumar \(resident\)/i)).toBeInTheDocument();
 
-    // Click "Switch to Chef Mode" button
-    const switchBtn = screen.getByRole('button', { name: /Switch to Chef Mode/i });
-    fireEvent.click(switchBtn);
+    // Verify that the obsolete mode switch button is completely removed from navbar
+    expect(screen.queryByRole('button', { name: /Switch to Chef Mode/i })).not.toBeInTheDocument();
 
+    // Click User Chip to open User Popover
+    const userChip = screen.getByText(/Anil Kumar \(resident\)/i);
+    fireEvent.click(userChip);
+
+    // Verify Workspace Switcher shortcuts in Popover
     await waitFor(() => {
-      expect(switchRoleSpy).toHaveBeenCalledWith('partner');
-      expect(screen.getByText(/Anil Kumar \(partner\)/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Switch to Buyer Mode/i })).toBeInTheDocument();
+      expect(screen.getByText('WORKSPACE SWITCHER')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Resident Space/i })).toBeInTheDocument();
     });
   });
 });

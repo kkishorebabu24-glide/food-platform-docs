@@ -27,7 +27,7 @@ router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
-RESIDENT_OR_ADMIN_DEPENDENCY = Depends(require_role("resident", "admin"))
+RESIDENT_OR_ADMIN_DEPENDENCY = Depends(require_role("resident", "partner", "admin"))
 
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)

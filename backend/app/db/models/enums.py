@@ -74,10 +74,11 @@ SellerStatus = PartnerStatus
 
 
 class OrderStatus(str, enum.Enum):
-    """12-state lifecycle for a resident order."""
+    """14-state lifecycle for a resident order (including backward-compatible DB states)."""
 
     draft = "draft"  # Order being built by resident (not submitted)
     placed = "placed"  # Order submitted; awaiting partner acceptance
+    pending = "pending"  # Legacy / database alias for placed
     accepted = "accepted"  # Partner accepted the order
     rejected = "rejected"  # Partner rejected the order
     preparing = "preparing"  # Partner is cooking
@@ -85,9 +86,21 @@ class OrderStatus(str, enum.Enum):
     dispatched = "dispatched"  # Partner has picked up food for doorstep delivery
     in_transit = "in_transit"  # En route to resident's flat
     delivered = "delivered"  # Successfully delivered to resident
+    completed = "completed"  # Legacy / database alias for delivered
     cancelled = "cancelled"  # Order cancelled (by resident or partner)
     refund_pending = "refund_pending"  # Cancellation accepted; refund being processed
     refunded = "refunded"  # Refund completed
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            mapping = {
+                "pending": cls.pending,
+                "completed": cls.completed,
+            }
+            if value.lower() in mapping:
+                return mapping[value.lower()]
+        return None
 
 
 class PaymentStatus(str, enum.Enum):

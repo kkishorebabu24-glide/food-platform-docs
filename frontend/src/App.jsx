@@ -165,7 +165,7 @@ const useAuth = () => useContext(AuthContext);
 
 // ── Navigation Bar ───────────────────────────────────────────────────────────
 function Navbar({ cartCount, onOpenCart }) {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
 
@@ -177,21 +177,6 @@ function Navbar({ cartCount, onOpenCart }) {
     }
     logout();
     navigate('/login');
-  };
-
-  const handleSwitchRole = async (targetRole) => {
-    try {
-      const updated = await switchRole(targetRole);
-      navigate(homePathForRole(updated.role));
-    } catch (err) {
-      const detail = err?.response?.data?.detail;
-      console.error('Failed to switch role', err);
-      if (err?.response?.status === 403) {
-        window.alert(
-          detail || 'Partner workspace is available once your partner application is approved.'
-        );
-      }
-    }
   };
 
   return (
@@ -286,51 +271,6 @@ function Navbar({ cartCount, onOpenCart }) {
                 <ShoppingBagOutlinedIcon />
               </Badge>
             </IconButton>
-
-            {/* Role Switcher Button */}
-            {isAdminRole(user.role) ? (
-              <Button
-                size="small"
-                component={Link}
-                to="/admin"
-                sx={{
-                  mr: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 'bold',
-                  bgcolor: 'rgba(46,196,182,0.15)',
-                  color: '#2EC4B6',
-                  border: '1px solid rgba(46,196,182,0.3)',
-                  '&:hover': { bgcolor: 'rgba(46,196,182,0.25)' },
-                }}
-              >
-                🛡️ Admin Console
-              </Button>
-            ) : (
-              <Button
-                size="small"
-                onClick={() => handleSwitchRole(isPartnerRole(user.role) ? 'resident' : 'partner')}
-                sx={{
-                  mr: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 'bold',
-                  bgcolor: isPartnerRole(user.role)
-                    ? 'rgba(46,196,182,0.15)'
-                    : 'rgba(224,90,43,0.15)',
-                  color: isPartnerRole(user.role) ? '#2EC4B6' : '#E05A2B',
-                  border: '1px solid',
-                  borderColor: isPartnerRole(user.role)
-                    ? 'rgba(46,196,182,0.3)'
-                    : 'rgba(224,90,43,0.3)',
-                  '&:hover': {
-                    bgcolor: isPartnerRole(user.role)
-                      ? 'rgba(46,196,182,0.25)'
-                      : 'rgba(224,90,43,0.25)',
-                  },
-                }}
-              >
-                {isPartnerRole(user.role) ? '🛒 Switch to Buyer Mode' : '🍳 Switch to Chef Mode'}
-              </Button>
-            )}
 
             {/* User Info Chip with Interactive Popover */}
             <Chip
@@ -2110,13 +2050,44 @@ function HomePage() {
           variant="contained"
           size="large"
           component={Link}
-          to="/sellers"
+          to="/browse"
           startIcon={<StoreIcon />}
+          sx={{
+            bgcolor: '#E05A2B',
+            fontWeight: 'bold',
+            px: 3,
+            '&:hover': { bgcolor: '#c9481c' },
+          }}
         >
-          Browse Sellers
+          Browse Kitchens
+        </Button>
+        <Button
+          variant="outlined"
+          size="large"
+          component={Link}
+          to="/suggestions"
+          startIcon={<LocalFireDepartmentIcon />}
+          sx={{
+            color: '#F6BD60',
+            borderColor: '#F6BD60',
+            fontWeight: 'bold',
+            px: 3,
+            '&:hover': {
+              borderColor: '#e5ad50',
+              bgcolor: 'rgba(246, 189, 96, 0.08)',
+            },
+          }}
+        >
+          Community Cravings
         </Button>
         {!user && (
-          <Button variant="outlined" size="large" component={Link} to="/login">
+          <Button
+            variant="outlined"
+            size="large"
+            component={Link}
+            to="/login"
+            sx={{ fontWeight: 'bold' }}
+          >
             Login / Register
           </Button>
         )}
@@ -2228,6 +2199,14 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/browse"
+          element={
+            <PrivateRoute>
+              <SellersPage onAddToCart={handleAddToCart} />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/sellers"
           element={

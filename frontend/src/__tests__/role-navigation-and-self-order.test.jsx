@@ -13,7 +13,7 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
     jest.clearAllMocks();
   });
 
-  test('Buyer Mode Navbar displays only Cravings, Orders, Cart, Switch Mode and clicking User Chip opens Profile Popover', async () => {
+  test('Resident Mode Navbar displays Cravings, Orders, and clicking User Chip opens Profile Popover', async () => {
     const mockBuyer = {
       id: 101,
       email: 'buyer@society.com',
@@ -27,12 +27,13 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
 
     render(<App />);
 
-    // In Buyer Mode: Cravings, Orders, Cart, Switch to Chef Mode should be visible
+    // In Resident Mode: Cravings, Orders should be visible
     expect(screen.getByRole('link', { name: /^Cravings$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Switch to Chef Mode/i })).toBeInTheDocument();
+    // Mode switch button is removed in favor of unified navigation
+    expect(screen.queryByRole('button', { name: /Switch to Chef Mode/i })).not.toBeInTheDocument();
 
-    // Kitchen Hub must NOT be in the navbar for a buyer
+    // Kitchen Hub must NOT be in the navbar for a resident
     expect(screen.queryByRole('link', { name: /^Kitchen Hub$/i })).not.toBeInTheDocument();
 
     // Click the User Chip to open the User Info Popover
@@ -48,7 +49,7 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
     });
   });
 
-  test('Seller Mode Navbar displays Kitchen Hub and Switch to Buyer Mode', async () => {
+  test('Partner/Seller Mode Navbar displays Kitchen Hub without obsolete mode toggle button', async () => {
     const mockSeller = {
       id: 202,
       email: 'chefmeera@society.com',
@@ -64,7 +65,7 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
 
     // In Seller Mode: Kitchen Hub must be visible
     expect(screen.getByRole('link', { name: /^Kitchen Hub$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Switch to Buyer Mode/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Switch to Buyer Mode/i })).not.toBeInTheDocument();
   });
 
   test('Kitchen Hub lists seller dishes with dynamic portion controls and availability toggle', async () => {

@@ -14,8 +14,9 @@ describe('Authentication & Landing Experience', () => {
     // Verify main brand
     expect(screen.getByText('Society Food')).toBeInTheDocument();
 
-    // Verify cravings button
-    expect(screen.getByRole('link', { name: /Cravings/i })).toBeInTheDocument();
+    // Verify cravings button is present
+    const cravingsLinks = screen.getAllByRole('link', { name: /Cravings/i });
+    expect(cravingsLinks.length).toBeGreaterThanOrEqual(1);
 
     // Verify login link is present for guests
     const loginLinks = screen.getAllByRole('link', { name: /Login/i });

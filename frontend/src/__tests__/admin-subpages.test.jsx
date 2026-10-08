@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AdminLayout from '../pages/admin/AdminLayout';
 import AdminOverview from '../pages/admin/AdminOverview';
@@ -65,7 +65,9 @@ jest.mock('../services/api', () => ({
         },
       }),
     setUserStatus: jest.fn(() => Promise.resolve({ data: { message: 'Updated' } })),
-    refundOrder: jest.fn(() => Promise.resolve({ data: { amount_refunded: 350, status: 'refunded' } })),
+    refundOrder: jest.fn(() =>
+      Promise.resolve({ data: { amount_refunded: 350, status: 'refunded' } })
+    ),
   },
   sellersAPI: {
     list: () => Promise.resolve({ data: [] }),
@@ -126,8 +128,8 @@ describe('Admin Console Sub-Pages Suite', () => {
     await waitFor(() => {
       expect(screen.getByText(/Platform Financial Performance/i)).toBeInTheDocument();
       expect(screen.getByText(/₹45,000/i)).toBeInTheDocument(); // Gross GMV
-      expect(screen.getByText(/₹1,200/i)).toBeInTheDocument();  // Refunded
-      expect(screen.getByText(/₹43,800/i)).toBeInTheDocument();  // Net GMV
+      expect(screen.getByText(/₹1,200/i)).toBeInTheDocument(); // Refunded
+      expect(screen.getByText(/₹43,800/i)).toBeInTheDocument(); // Net GMV
     });
   });
 

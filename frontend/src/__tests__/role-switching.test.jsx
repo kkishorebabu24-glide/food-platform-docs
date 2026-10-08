@@ -55,13 +55,9 @@ describe('Role Selection & Switching Flow', () => {
     fireEvent.click(signInBtn);
 
     await waitFor(() => {
-      expect(loginSpy).toHaveBeenCalledWith(
-        'chef.meera@society.local',
-        'secret123',
-        'seller'
-      );
+      expect(loginSpy).toHaveBeenCalledWith('chef.meera@society.local', 'secret123', 'partner');
       // Verify user is now authenticated as seller and sees Kitchen Hub in Navbar
-      expect(screen.getByText(/Chef Meera \(seller\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Chef Meera \(partner\)/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Kitchen Hub/i })).toBeInTheDocument();
     });
   });
@@ -89,17 +85,16 @@ describe('Role Selection & Switching Flow', () => {
     render(<App />);
 
     // Verify initial buyer navbar
-    expect(screen.getByText(/Anil Kumar \(buyer\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Anil Kumar \(resident\)/i)).toBeInTheDocument();
 
     // Click "Switch to Chef Mode" button
     const switchBtn = screen.getByRole('button', { name: /Switch to Chef Mode/i });
     fireEvent.click(switchBtn);
 
     await waitFor(() => {
-      expect(switchRoleSpy).toHaveBeenCalledWith('seller');
-      expect(screen.getByText(/Anil Kumar \(seller\)/i)).toBeInTheDocument();
+      expect(switchRoleSpy).toHaveBeenCalledWith('partner');
+      expect(screen.getByText(/Anil Kumar \(partner\)/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Switch to Buyer Mode/i })).toBeInTheDocument();
     });
   });
 });
-

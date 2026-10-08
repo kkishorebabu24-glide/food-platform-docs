@@ -6,7 +6,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Button,
   Chip,
   CircularProgress,
@@ -64,7 +63,11 @@ export default function OrdersPage() {
         </Box>
       )}
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {!loading && !error && orders.length === 0 && (
         <Box textAlign="center" py={8} bgcolor="#191928" borderRadius={3}>
@@ -99,14 +102,14 @@ export default function OrdersPage() {
                           o.status === 'completed'
                             ? 'rgba(46, 196, 182, 0.2)'
                             : o.status === 'ready'
-                            ? 'rgba(246, 189, 96, 0.2)'
-                            : 'rgba(224, 90, 43, 0.2)',
+                              ? 'rgba(246, 189, 96, 0.2)'
+                              : 'rgba(224, 90, 43, 0.2)',
                         color:
                           o.status === 'completed'
                             ? '#2EC4B6'
                             : o.status === 'ready'
-                            ? '#F6BD60'
-                            : '#E05A2B',
+                              ? '#F6BD60'
+                              : '#E05A2B',
                         fontWeight: 'bold',
                       }}
                     />
@@ -119,16 +122,31 @@ export default function OrdersPage() {
                         size="small"
                         icon={<AccessTimeIcon fontSize="small" />}
                         label={SLOT_LABELS[o.delivery_slot] || o.delivery_slot || 'Pre-Order'}
-                        sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 'bold' }}
+                        sx={{
+                          bgcolor: 'rgba(246, 189, 96, 0.15)',
+                          color: '#F6BD60',
+                          fontWeight: 'bold',
+                        }}
                       />
                     )}
                     <Chip
                       size="small"
-                      icon={o.delivery_type === 'doorstep' ? <DeliveryDiningIcon fontSize="small" /> : <StorefrontIcon fontSize="small" />}
+                      icon={
+                        o.delivery_type === 'doorstep' ? (
+                          <DeliveryDiningIcon fontSize="small" />
+                        ) : (
+                          <StorefrontIcon fontSize="small" />
+                        )
+                      }
                       label={o.delivery_type === 'doorstep' ? 'Doorstep Delivery' : 'Self-Pickup'}
                       sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff' }}
                     />
-                    <Typography variant="caption" color="text.secondary" ml="auto" alignSelf="center">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      ml="auto"
+                      alignSelf="center"
+                    >
                       Placed: {new Date(o.created_at).toLocaleDateString()}
                     </Typography>
                   </Box>
@@ -137,7 +155,8 @@ export default function OrdersPage() {
                   <Box mb={2}>
                     {(o.items || []).map((it, idx) => (
                       <Typography key={idx} variant="body2">
-                        {it.quantity}x {it.name} <span style={{ color: '#aaa' }}>— ₹{it.price * it.quantity}</span>
+                        {it.quantity}x {it.name}{' '}
+                        <span style={{ color: '#aaa' }}>— ₹{it.price * it.quantity}</span>
                       </Typography>
                     ))}
                   </Box>
@@ -171,7 +190,12 @@ export default function OrdersPage() {
                         variant="outlined"
                         startIcon={<StarOutlineIcon />}
                         onClick={() => setRatingOrderId(o.id)}
-                        sx={{ color: '#F6BD60', borderColor: '#F6BD60', textTransform: 'none', fontWeight: 'bold' }}
+                        sx={{
+                          color: '#F6BD60',
+                          borderColor: '#F6BD60',
+                          textTransform: 'none',
+                          fontWeight: 'bold',
+                        }}
                       >
                         Rate Meal
                       </Button>
@@ -211,4 +235,3 @@ export default function OrdersPage() {
     </Container>
   );
 }
-

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import {} from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -31,10 +31,9 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
-import PersonIcon from '@mui/icons-material/Person';
 import LocalDiningIcon from '@mui/icons-material/LocalDining';
 
-import { sellersAPI, paymentsAPI, getErrorMessage } from '../services/api';
+import { sellersAPI, getErrorMessage } from '../services/api';
 
 export default function ProfilePage() {
   let user = null;
@@ -47,7 +46,6 @@ export default function ProfilePage() {
   const role = user?.role || 'resident';
   const isPartner = role === 'partner' || role === 'seller';
   const isAdmin = role === 'admin' || role === 'super_admin';
-  const isResident = !isPartner && !isAdmin;
 
   // Partner profile & state
   const [loading, setLoading] = useState(isPartner);
@@ -100,7 +98,8 @@ export default function ProfilePage() {
     };
   }, [isPartner]);
 
-  const isValidUpi = upiId.trim().length > 0 && /^[a-zA-Z0-9.\-_]+@[a-zA-Z]{3,}$/.test(upiId.trim());
+  const isValidUpi =
+    upiId.trim().length > 0 && /^[a-zA-Z0-9.\-_]+@[a-zA-Z]{3,}$/.test(upiId.trim());
 
   const handleSaveUpi = async (e) => {
     e.preventDefault();
@@ -139,7 +138,9 @@ export default function ProfilePage() {
         upi_id: applyUpi.trim() || null,
         upi_account_name: applyName.trim() || null,
       });
-      setSuccess('Home Chef application submitted successfully! Your kitchen is now being enrolled.');
+      setSuccess(
+        'Home Chef application submitted successfully! Your kitchen is now being enrolled.'
+      );
       setOpenApplyDialog(false);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to submit chef application.'));
@@ -182,7 +183,13 @@ export default function ProfilePage() {
             border: '1px solid #232336',
           }}
         >
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            flexWrap="wrap"
+            gap={2}
+          >
             <Box>
               <Typography variant="h5" fontWeight="bold" gutterBottom>
                 Profile & Identity
@@ -212,7 +219,9 @@ export default function ProfilePage() {
               </Typography>
             </Box>
           ) : (
-            <Typography color="text.secondary" sx={{ mt: 2 }}>Not logged in.</Typography>
+            <Typography color="text.secondary" sx={{ mt: 2 }}>
+              Not logged in.
+            </Typography>
           )}
         </Paper>
 
@@ -262,10 +271,13 @@ export default function ProfilePage() {
                 <CardContent sx={{ pb: 1 }}>
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <DeliveryDiningIcon sx={{ color: '#2EC4B6' }} />
-                    <Typography variant="subtitle1" fontWeight="bold">Resident Space & Orders</Typography>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Resident Space & Orders
+                    </Typography>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
-                    Browse fresh homemade dishes from verified neighbors, view active cart, and order history.
+                    Browse fresh homemade dishes from verified neighbors, view active cart, and
+                    order history.
                   </Typography>
                 </CardContent>
                 <Box p={2} pt={0}>
@@ -274,7 +286,12 @@ export default function ProfilePage() {
                     size="small"
                     variant="outlined"
                     endIcon={<ArrowForwardIcon />}
-                    sx={{ color: '#2EC4B6', borderColor: '#2EC4B6', textTransform: 'none', fontWeight: 'bold' }}
+                    sx={{
+                      color: '#2EC4B6',
+                      borderColor: '#2EC4B6',
+                      textTransform: 'none',
+                      fontWeight: 'bold',
+                    }}
                   >
                     Open Resident Marketplace
                   </Button>
@@ -316,7 +333,12 @@ export default function ProfilePage() {
                       size="small"
                       variant="contained"
                       endIcon={<ArrowForwardIcon />}
-                      sx={{ bgcolor: '#E05A2B', '&:hover': { bgcolor: '#c84e24' }, textTransform: 'none', fontWeight: 'bold' }}
+                      sx={{
+                        bgcolor: '#E05A2B',
+                        '&:hover': { bgcolor: '#c84e24' },
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                      }}
                     >
                       Enter Kitchen Hub
                     </Button>
@@ -326,7 +348,12 @@ export default function ProfilePage() {
                       variant="contained"
                       onClick={() => setOpenApplyDialog(true)}
                       endIcon={<LocalDiningIcon />}
-                      sx={{ bgcolor: '#E05A2B', '&:hover': { bgcolor: '#c84e24' }, textTransform: 'none', fontWeight: 'bold' }}
+                      sx={{
+                        bgcolor: '#E05A2B',
+                        '&:hover': { bgcolor: '#c84e24' },
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                      }}
                     >
                       Apply as Home Chef
                     </Button>
@@ -353,10 +380,13 @@ export default function ProfilePage() {
                   <CardContent sx={{ pb: 1 }}>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
                       <AdminPanelSettingsIcon sx={{ color: '#F6BD60' }} />
-                      <Typography variant="subtitle1" fontWeight="bold">Society Admin Console</Typography>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Society Admin Console
+                      </Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Review chef applicant licenses, monitor society GMV, audit member directory and handle refunds.
+                      Review chef applicant licenses, monitor society GMV, audit member directory
+                      and handle refunds.
                     </Typography>
                   </CardContent>
                   <Box p={2} pt={0}>
@@ -365,7 +395,12 @@ export default function ProfilePage() {
                       size="small"
                       variant="outlined"
                       endIcon={<ArrowForwardIcon />}
-                      sx={{ color: '#F6BD60', borderColor: '#F6BD60', textTransform: 'none', fontWeight: 'bold' }}
+                      sx={{
+                        color: '#F6BD60',
+                        borderColor: '#F6BD60',
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                      }}
                     >
                       Open Admin Console
                     </Button>
@@ -392,10 +427,13 @@ export default function ProfilePage() {
                   <CardContent sx={{ pb: 1 }}>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
                       <AccountBalanceWalletIcon sx={{ color: '#4caf50' }} />
-                      <Typography variant="subtitle1" fontWeight="bold">Finances & SaaS Pass</Typography>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Finances & SaaS Pass
+                      </Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Configure your direct bank UPI QR handle, top up maintenance wallet, and inspect ledger.
+                      Configure your direct bank UPI QR handle, top up maintenance wallet, and
+                      inspect ledger.
                     </Typography>
                   </CardContent>
                   <Box p={2} pt={0}>
@@ -404,7 +442,12 @@ export default function ProfilePage() {
                       size="small"
                       variant="outlined"
                       endIcon={<ArrowForwardIcon />}
-                      sx={{ color: '#4caf50', borderColor: '#4caf50', textTransform: 'none', fontWeight: 'bold' }}
+                      sx={{
+                        color: '#4caf50',
+                        borderColor: '#4caf50',
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                      }}
                     >
                       View Financial Sub-Page
                     </Button>
@@ -426,7 +469,9 @@ export default function ProfilePage() {
               border: '1px solid #232336',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <AccountBalanceWalletIcon sx={{ color: '#E05A2B', fontSize: 28 }} />
                 <Typography variant="h6" fontWeight="bold">
@@ -453,8 +498,9 @@ export default function ProfilePage() {
             </Box>
 
             <Typography variant="body2" sx={{ color: '#aaa', mb: 3 }}>
-              Residents pay directly into your personal or business UPI account. <strong>0% aggregator commission</strong>.
-              Funds settle immediately into your bank account via UPI rails.
+              Residents pay directly into your personal or business UPI account.{' '}
+              <strong>0% aggregator commission</strong>. Funds settle immediately into your bank
+              account via UPI rails.
             </Typography>
 
             {loading ? (
@@ -551,7 +597,9 @@ export default function ProfilePage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <Box
+                sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}
+              >
                 <Card sx={{ bgcolor: '#1b1b2a', border: '1px solid #2d2d42', color: '#fff' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Typography variant="caption" sx={{ color: '#aaa' }}>
@@ -591,7 +639,12 @@ export default function ProfilePage() {
         onClose={() => setOpenApplyDialog(false)}
         PaperProps={{ sx: { bgcolor: '#161622', color: '#fff', width: 480, borderRadius: 3 } }}
       >
-        <DialogTitle fontWeight="bold" display="flex" justifyContent="space-between" alignItems="center">
+        <DialogTitle
+          fontWeight="bold"
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           🍳 Apply as Home Chef (Partner)
           <IconButton size="small" onClick={() => setOpenApplyDialog(false)} sx={{ color: '#aaa' }}>
             <CloseIcon fontSize="small" />
@@ -600,7 +653,8 @@ export default function ProfilePage() {
         <form onSubmit={handleApplyPartner}>
           <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.08)' }}>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Join the Society Food kitchen partner network. You will retain 100% of dish proceeds via direct resident UPI settlements.
+              Join the Society Food kitchen partner network. You will retain 100% of dish proceeds
+              via direct resident UPI settlements.
             </Typography>
             <TextField
               label="Chef / Kitchen Display Name"

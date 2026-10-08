@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -25,7 +26,6 @@ import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 import StoreIcon from '@mui/icons-material/Store';
 import SearchIcon from '@mui/icons-material/Search';
 import { ordersAPI, sellersAPI, suggestionsAPI, getErrorMessage } from '../services/api';
-
 
 const ORDER_STEPS = ['Order Placed', 'Chef Cooking', 'Ready / Out for Delivery', 'Delivered'];
 
@@ -64,8 +64,16 @@ export default function BuyerDashboardPage({ currentUser }) {
         ]);
 
         const allOrders = ordersRes.data.orders || [];
-        setActiveOrders(allOrders.filter((o) => o.status !== 'completed' && o.status !== 'cancelled' && !o.is_preorder));
-        setPreorders(allOrders.filter((o) => o.is_preorder && o.status !== 'completed' && o.status !== 'cancelled'));
+        setActiveOrders(
+          allOrders.filter(
+            (o) => o.status !== 'completed' && o.status !== 'cancelled' && !o.is_preorder
+          )
+        );
+        setPreorders(
+          allOrders.filter(
+            (o) => o.is_preorder && o.status !== 'completed' && o.status !== 'cancelled'
+          )
+        );
         setTopSellers(sellersRes.data.sellers || []);
         setTrendingCravings(suggRes.data.suggestions || []);
       } catch (err) {
@@ -116,8 +124,17 @@ export default function BuyerDashboardPage({ currentUser }) {
             <Box display="flex" alignItems="center" gap={1} mt={0.5} flexWrap="wrap">
               <Chip
                 size="small"
-                label={currentUser?.flat_number ? `📍 Flat #${currentUser.flat_number} • Resident` : '📍 Resident'}
-                sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#F6BD60', fontWeight: 'bold', fontSize: 12 }}
+                label={
+                  currentUser?.flat_number
+                    ? `📍 Flat #${currentUser.flat_number} • Resident`
+                    : '📍 Resident'
+                }
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.08)',
+                  color: '#F6BD60',
+                  fontWeight: 'bold',
+                  fontSize: 12,
+                }}
               />
               <Typography variant="body2" color="text.secondary">
                 Fresh home-cooked meals from passionate chefs in your society.
@@ -140,7 +157,13 @@ export default function BuyerDashboardPage({ currentUser }) {
             component={Link}
             to="/sellers"
             variant="outlined"
-            sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', fontWeight: 'bold', textTransform: 'none', borderRadius: 2 }}
+            sx={{
+              color: '#fff',
+              borderColor: 'rgba(255,255,255,0.2)',
+              fontWeight: 'bold',
+              textTransform: 'none',
+              borderRadius: 2,
+            }}
           >
             Browse Chefs
           </Button>
@@ -175,7 +198,12 @@ export default function BuyerDashboardPage({ currentUser }) {
                       navigate(`/sellers?search=${encodeURIComponent(searchQuery.trim())}`);
                     }
                   }}
-                  sx={{ bgcolor: '#E05A2B', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: '#c9481c' } }}
+                  sx={{
+                    bgcolor: '#E05A2B',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    '&:hover': { bgcolor: '#c9481c' },
+                  }}
                 >
                   Search Chefs
                 </Button>
@@ -195,7 +223,12 @@ export default function BuyerDashboardPage({ currentUser }) {
         />
 
         {/* Category Pills (Coffee App Inspired Filter Bar) */}
-        <Box display="flex" gap={1} overflow="auto" sx={{ mt: 2, pb: 0.5, '::-webkit-scrollbar': { display: 'none' } }}>
+        <Box
+          display="flex"
+          gap={1}
+          overflow="auto"
+          sx={{ mt: 2, pb: 0.5, '::-webkit-scrollbar': { display: 'none' } }}
+        >
           {[
             { id: 'all', label: 'All Specialties' },
             { id: 'veg', label: 'Veg 🟢' },
@@ -231,8 +264,11 @@ export default function BuyerDashboardPage({ currentUser }) {
         </Box>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
         <Box display="flex" justifyContent="center" py={6}>
@@ -248,17 +284,36 @@ export default function BuyerDashboardPage({ currentUser }) {
             </Typography>
 
             {activeOrders.length === 0 ? (
-              <Box bgcolor="#191928" p={3} borderRadius={3} mb={4} textAlign="center" border="1px solid rgba(255,255,255,0.08)">
+              <Box
+                bgcolor="#191928"
+                p={3}
+                borderRadius={3}
+                mb={4}
+                textAlign="center"
+                border="1px solid rgba(255,255,255,0.08)"
+              >
                 <Typography variant="body1" color="text.secondary">
                   No active orders right now. Craving something delicious?
                 </Typography>
-                <Button component={Link} to="/sellers" sx={{ color: '#E05A2B', fontWeight: 'bold', mt: 1 }}>
+                <Button
+                  component={Link}
+                  to="/sellers"
+                  sx={{ color: '#E05A2B', fontWeight: 'bold', mt: 1 }}
+                >
                   Explore Society Menus →
                 </Button>
               </Box>
             ) : (
               activeOrders.map((order) => (
-                <Card key={order.id} sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 3 }}>
+                <Card
+                  key={order.id}
+                  sx={{
+                    bgcolor: '#191928',
+                    borderRadius: 3,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    mb: 3,
+                  }}
+                >
                   <CardContent sx={{ p: 3 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="h6" fontWeight="bold">
@@ -267,8 +322,14 @@ export default function BuyerDashboardPage({ currentUser }) {
                       <Chip
                         size="small"
                         icon={<DeliveryDiningIcon />}
-                        label={order.delivery_type === 'doorstep' ? 'Doorstep Delivery' : 'Self-Pickup'}
-                        sx={{ bgcolor: 'rgba(46, 196, 182, 0.2)', color: '#2EC4B6', fontWeight: 'bold' }}
+                        label={
+                          order.delivery_type === 'doorstep' ? 'Doorstep Delivery' : 'Self-Pickup'
+                        }
+                        sx={{
+                          bgcolor: 'rgba(46, 196, 182, 0.2)',
+                          color: '#2EC4B6',
+                          fontWeight: 'bold',
+                        }}
                       />
                     </Box>
 
@@ -319,14 +380,28 @@ export default function BuyerDashboardPage({ currentUser }) {
             </Typography>
 
             {preorders.length === 0 ? (
-              <Box bgcolor="#191928" p={3} borderRadius={3} textAlign="center" border="1px solid rgba(255,255,255,0.08)">
+              <Box
+                bgcolor="#191928"
+                p={3}
+                borderRadius={3}
+                textAlign="center"
+                border="1px solid rgba(255,255,255,0.08)"
+              >
                 <Typography variant="body2" color="text.secondary">
                   No upcoming scheduled pre-orders. Check chefs' weekend and dinner specials!
                 </Typography>
               </Box>
             ) : (
               preorders.map((po) => (
-                <Card key={po.id} sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 2 }}>
+                <Card
+                  key={po.id}
+                  sx={{
+                    bgcolor: '#191928',
+                    borderRadius: 3,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    mb: 2,
+                  }}
+                >
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Box display="flex" alignItems="center" gap={1}>
@@ -338,11 +413,16 @@ export default function BuyerDashboardPage({ currentUser }) {
                       <Chip
                         size="small"
                         label={po.delivery_slot || 'Scheduled'}
-                        sx={{ bgcolor: 'rgba(246, 189, 96, 0.2)', color: '#F6BD60', fontWeight: 'bold' }}
+                        sx={{
+                          bgcolor: 'rgba(246, 189, 96, 0.2)',
+                          color: '#F6BD60',
+                          fontWeight: 'bold',
+                        }}
                       />
                     </Box>
                     <Typography variant="body2" color="text.secondary" mt={1}>
-                      {(po.items || []).map((it) => `${it.quantity}x ${it.name}`).join(', ')} • Total: ₹{po.total_price}
+                      {(po.items || []).map((it) => `${it.quantity}x ${it.name}`).join(', ')} •
+                      Total: ₹{po.total_price}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -353,7 +433,14 @@ export default function BuyerDashboardPage({ currentUser }) {
           {/* Right Column: Trending Cravings & Quick Actions */}
           <Grid item xs={12} md={4}>
             {/* Trending Community Cravings */}
-            <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 3 }}>
+            <Card
+              sx={{
+                bgcolor: '#191928',
+                borderRadius: 3,
+                border: '1px solid rgba(255,255,255,0.08)',
+                mb: 3,
+              }}
+            >
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
                   <LocalFireDepartmentIcon sx={{ color: '#E05A2B' }} />
@@ -373,7 +460,16 @@ export default function BuyerDashboardPage({ currentUser }) {
                         <Typography variant="subtitle2" fontWeight="bold">
                           {crave.title}
                         </Typography>
-                        <Chip size="small" label={`${crave.upvotes_count} votes`} sx={{ bgcolor: 'rgba(224, 90, 43, 0.2)', color: '#E05A2B', fontWeight: 'bold', fontSize: 11 }} />
+                        <Chip
+                          size="small"
+                          label={`${crave.upvotes_count} votes`}
+                          sx={{
+                            bgcolor: 'rgba(224, 90, 43, 0.2)',
+                            color: '#E05A2B',
+                            fontWeight: 'bold',
+                            fontSize: 11,
+                          }}
+                        />
                       </Box>
                       <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
                         {crave.description || 'Requested by resident'}
@@ -382,7 +478,19 @@ export default function BuyerDashboardPage({ currentUser }) {
                   ))
                 )}
 
-                <Button component={Link} to="/suggestions" fullWidth variant="outlined" sx={{ color: '#E05A2B', borderColor: '#E05A2B', fontWeight: 'bold', textTransform: 'none', mt: 1 }}>
+                <Button
+                  component={Link}
+                  to="/suggestions"
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    color: '#E05A2B',
+                    borderColor: '#E05A2B',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    mt: 1,
+                  }}
+                >
                   View All Cravings & Upvote →
                 </Button>
               </CardContent>
@@ -390,7 +498,13 @@ export default function BuyerDashboardPage({ currentUser }) {
 
             {/* Top Recommended Chefs */}
             {topSellers.length > 0 && (
-              <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Card
+                sx={{
+                  bgcolor: '#191928',
+                  borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
                 <CardContent>
                   <Box display="flex" alignItems="center" gap={1} mb={2}>
                     <StoreIcon sx={{ color: '#2EC4B6' }} />
@@ -400,16 +514,32 @@ export default function BuyerDashboardPage({ currentUser }) {
                   </Box>
 
                   {topSellers.slice(0, 3).map((seller) => (
-                    <Box key={seller.id} mb={1.5} p={1.5} bgcolor="#1F1F35" borderRadius={2} display="flex" justifyContent="space-between" alignItems="center">
+                    <Box
+                      key={seller.id}
+                      mb={1.5}
+                      p={1.5}
+                      bgcolor="#1F1F35"
+                      borderRadius={2}
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Box>
                         <Typography variant="subtitle2" fontWeight="bold">
                           {seller.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          ⚡ {seller.on_time_delivery_rate ?? 100}% on-time • ~{seller.avg_delivery_minutes ?? 25}m
+                          ⚡ {seller.on_time_delivery_rate ?? 100}% on-time • ~
+                          {seller.avg_delivery_minutes ?? 25}m
                         </Typography>
                       </Box>
-                      <Button component={Link} to={`/menus/${seller.id}`} size="small" variant="text" sx={{ color: '#2EC4B6', fontWeight: 'bold', textTransform: 'none' }}>
+                      <Button
+                        component={Link}
+                        to={`/menus/${seller.id}`}
+                        size="small"
+                        variant="text"
+                        sx={{ color: '#2EC4B6', fontWeight: 'bold', textTransform: 'none' }}
+                      >
                         Menu →
                       </Button>
                     </Box>
@@ -424,4 +554,9 @@ export default function BuyerDashboardPage({ currentUser }) {
   );
 }
 
-
+BuyerDashboardPage.propTypes = {
+  currentUser: PropTypes.shape({
+    name: PropTypes.string,
+    flat_number: PropTypes.string,
+  }),
+};

@@ -13,8 +13,6 @@ import {
   FormControlLabel,
   CircularProgress,
   Alert,
-  Tabs,
-  Tab,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -31,7 +29,6 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -39,15 +36,7 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CloseIcon from '@mui/icons-material/Close';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import {
-  ordersAPI,
-  sellersAPI,
-  menusAPI,
-  paymentsAPI,
-  deliveryAPI,
-  getErrorMessage,
-} from '../services/api';
+import { ordersAPI, sellersAPI, menusAPI, paymentsAPI, getErrorMessage } from '../services/api';
 
 const SLOT_LABELS = {
   lunch_today: '☀️ Lunch Today',
@@ -58,20 +47,48 @@ const SLOT_LABELS = {
 };
 
 const BACKGROUND_PRESETS = [
-  { id: 'bakery', name: '🥖 Bakery & Sweets', url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'south_indian', name: '🥘 South Indian Kitchen', url: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'north_spices', name: '🍛 North Indian Spices', url: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'healthy', name: '🥗 Fresh & Healthy Bowls', url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'street_tiffins', name: '🥟 Street Food & Tiffins', url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'pure_veg', name: '🌿 Pure Veg Sattvic', url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'cafe', name: '☕ Cafe & Beverages', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop&q=80' },
+  {
+    id: 'bakery',
+    name: '🥖 Bakery & Sweets',
+    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'south_indian',
+    name: '🥘 South Indian Kitchen',
+    url: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'north_spices',
+    name: '🍛 North Indian Spices',
+    url: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'healthy',
+    name: '🥗 Fresh & Healthy Bowls',
+    url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'street_tiffins',
+    name: '🥟 Street Food & Tiffins',
+    url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'pure_veg',
+    name: '🌿 Pure Veg Sattvic',
+    url: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'cafe',
+    name: '☕ Cafe & Beverages',
+    url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop&q=80',
+  },
 ];
 
 export default function SellerDashboardPage({ currentUser }) {
   const [sellerProfile, setSellerProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [balance, setBalance] = useState({ current_balance: 0, total_earned: 0 });
+  const [, setBalance] = useState({ current_balance: 0, total_earned: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
@@ -195,9 +212,7 @@ export default function SellerDashboardPage({ currentUser }) {
       setOrders(ordersRes.data.orders || []);
       setBalance(balRes.data || { current_balance: 0, total_earned: 0 });
       const rawMenuData = menusRes.data;
-      const fetchedItems = Array.isArray(rawMenuData)
-        ? rawMenuData
-        : (rawMenuData?.items || []);
+      const fetchedItems = Array.isArray(rawMenuData) ? rawMenuData : rawMenuData?.items || [];
       setMenuItems(fetchedItems);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to load seller dashboard.'));
@@ -208,6 +223,7 @@ export default function SellerDashboardPage({ currentUser }) {
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
   const handleToggleStoreOpen = async (event) => {
@@ -297,9 +313,7 @@ export default function SellerDashboardPage({ currentUser }) {
       await menusAPI.updatePortions(menuId, nextQty);
       setMenuItems((prev) =>
         prev.map((item) =>
-          item.id === menuId
-            ? { ...item, quantity: nextQty, is_available: nextAvailable }
-            : item
+          item.id === menuId ? { ...item, quantity: nextQty, is_available: nextAvailable } : item
         )
       );
       if (nextQty === 0) {
@@ -352,9 +366,9 @@ export default function SellerDashboardPage({ currentUser }) {
     setMenuImageUrl(dish.image_url || '');
     setSelectedImageFile(null);
     const resolvedUrl = dish.image_url
-      ? (dish.image_url.startsWith('http')
-          ? dish.image_url
-          : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`)
+      ? dish.image_url.startsWith('http')
+        ? dish.image_url
+        : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`
       : '';
     setImagePreviewUrl(resolvedUrl);
     setIsPreorder(Boolean(dish.is_preorder_only));
@@ -375,9 +389,9 @@ export default function SellerDashboardPage({ currentUser }) {
     setMenuImageUrl(dish.image_url || '');
     setSelectedImageFile(null);
     const resolvedUrl = dish.image_url
-      ? (dish.image_url.startsWith('http')
-          ? dish.image_url
-          : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`)
+      ? dish.image_url.startsWith('http')
+        ? dish.image_url
+        : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`
       : '';
     setImagePreviewUrl(resolvedUrl);
     setIsPreorder(Boolean(dish.is_preorder_only));
@@ -406,7 +420,7 @@ export default function SellerDashboardPage({ currentUser }) {
         is_preorder_only: isPreorder,
         preorder_cutoff_time: isPreorder ? cutoffTime : undefined,
         available_slots: isPreorder ? ['lunch_today', 'dinner_today'] : undefined,
-        max_batch_quantity: isPreorder ? (parseInt(maxBatch, 10) || portionsVal) : portionsVal,
+        max_batch_quantity: isPreorder ? parseInt(maxBatch, 10) || portionsVal : portionsVal,
       };
 
       let targetMenuId = editingMenuId;
@@ -436,12 +450,16 @@ export default function SellerDashboardPage({ currentUser }) {
       setImagePreviewUrl('');
       fetchDashboardData();
     } catch (err) {
-      setError(getErrorMessage(err, editingMenuId ? 'Failed to update menu item.' : 'Failed to create menu item.'));
+      setError(
+        getErrorMessage(
+          err,
+          editingMenuId ? 'Failed to update menu item.' : 'Failed to create menu item.'
+        )
+      );
     } finally {
       setSubmittingMenu(false);
     }
   };
-
 
   // Compute batch counts per slot
   const preorders = orders.filter((o) => o.is_preorder && o.status !== 'cancelled');
@@ -498,7 +516,6 @@ export default function SellerDashboardPage({ currentUser }) {
           </Box>
         </Box>
 
-
         <Box display="flex" alignItems="center" gap={2}>
           <FormControlLabel
             control={
@@ -532,14 +549,24 @@ export default function SellerDashboardPage({ currentUser }) {
         </Box>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
-      {actionSuccess && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>{actionSuccess}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {actionSuccess && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>
+          {actionSuccess}
+        </Alert>
+      )}
 
       {/* Metrics Row */}
       <Grid container spacing={3} mb={4}>
         {/* Pre-Order Batch Prep Sheet */}
         <Grid item xs={12} md={7}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <AccessTimeIcon sx={{ color: '#F6BD60' }} />
@@ -577,7 +604,9 @@ export default function SellerDashboardPage({ currentUser }) {
 
         {/* SaaS Pass & Direct UPI Quota Card */}
         <Grid item xs={12} md={5}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -590,7 +619,9 @@ export default function SellerDashboardPage({ currentUser }) {
                   size="small"
                   label={sellerProfile?.upi_id ? '🟢 Direct UPI' : '⚠️ Missing UPI'}
                   sx={{
-                    bgcolor: sellerProfile?.upi_id ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)',
+                    bgcolor: sellerProfile?.upi_id
+                      ? 'rgba(76, 175, 80, 0.15)'
+                      : 'rgba(255, 152, 0, 0.15)',
                     color: sellerProfile?.upi_id ? '#4caf50' : '#ff9800',
                     fontWeight: 'bold',
                   }}
@@ -603,7 +634,9 @@ export default function SellerDashboardPage({ currentUser }) {
                     Free Orders Remaining
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="#4caf50">
-                    {maintenanceStatus?.free_orders_remaining ?? sellerProfile?.free_orders_remaining ?? 50}{' '}
+                    {maintenanceStatus?.free_orders_remaining ??
+                      sellerProfile?.free_orders_remaining ??
+                      50}{' '}
                     <span style={{ fontSize: '1rem', color: '#aaa' }}>/ 50</span>
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -615,7 +648,12 @@ export default function SellerDashboardPage({ currentUser }) {
                     Platform Balance
                   </Typography>
                   <Typography variant="h5" fontWeight="bold" color="#E05A2B">
-                    ₹{Number(maintenanceStatus?.maintenance_balance ?? sellerProfile?.maintenance_balance ?? 0).toFixed(2)}
+                    ₹
+                    {Number(
+                      maintenanceStatus?.maintenance_balance ??
+                        sellerProfile?.maintenance_balance ??
+                        0
+                    ).toFixed(2)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     ₹5.00/order after free quota
@@ -644,15 +682,30 @@ export default function SellerDashboardPage({ currentUser }) {
       </Grid>
 
       {/* Chef Profile, Multi-Photo Gallery & Background Presets Section */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 4 }}>
+      <Card
+        sx={{
+          bgcolor: '#191928',
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.08)',
+          mb: 4,
+        }}
+      >
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2} mb={3}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            flexWrap="wrap"
+            gap={2}
+            mb={3}
+          >
             <Box>
               <Typography variant="h6" fontWeight="bold" display="flex" alignItems="center" gap={1}>
                 📸 Kitchen Branding & Multi-Photo Gallery
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Upload your chef photo, showcase multiple kitchen photos, and pick an aesthetic background for your cards.
+                Upload your chef photo, showcase multiple kitchen photos, and pick an aesthetic
+                background for your cards.
               </Typography>
             </Box>
             <Box display="flex" gap={1.5} flexWrap="wrap">
@@ -683,7 +736,12 @@ export default function SellerDashboardPage({ currentUser }) {
                 size="small"
                 startIcon={<PhotoCameraIcon />}
                 onClick={() => avatarInputRef.current?.click()}
-                sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
+                sx={{
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                }}
               >
                 Change Avatar
               </Button>
@@ -692,7 +750,12 @@ export default function SellerDashboardPage({ currentUser }) {
                 size="small"
                 startIcon={<PhotoCameraIcon />}
                 onClick={() => bannerInputRef.current?.click()}
-                sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
+                sx={{
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                }}
               >
                 Custom Banner
               </Button>
@@ -702,7 +765,12 @@ export default function SellerDashboardPage({ currentUser }) {
                 startIcon={<AddCircleOutlineIcon />}
                 onClick={() => galleryInputRef.current?.click()}
                 disabled={uploadingGallery}
-                sx={{ bgcolor: '#E05A2B', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: '#c9481c' } }}
+                sx={{
+                  bgcolor: '#E05A2B',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  '&:hover': { bgcolor: '#c9481c' },
+                }}
               >
                 {uploadingGallery ? 'Uploading...' : '+ Add Gallery Photos'}
               </Button>
@@ -711,7 +779,16 @@ export default function SellerDashboardPage({ currentUser }) {
 
           {/* Current Avatar & Banner Preview */}
           <Grid container spacing={3} alignItems="center" mb={3}>
-            <Grid item xs={12} sm={4} md={3} display="flex" flexDirection="column" alignItems="center" textAlign="center">
+            <Grid
+              item
+              xs={12}
+              sm={4}
+              md={3}
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              textAlign="center"
+            >
               <Avatar
                 src={sellerProfile?.photo_url || undefined}
                 sx={{
@@ -766,11 +843,18 @@ export default function SellerDashboardPage({ currentUser }) {
 
           {/* Multi-Photo Kitchen Gallery */}
           <Box>
-            <Typography variant="subtitle2" fontWeight="bold" mb={1.5} display="flex" alignItems="center" gap={1}>
+            <Typography
+              variant="subtitle2"
+              fontWeight="bold"
+              mb={1.5}
+              display="flex"
+              alignItems="center"
+              gap={1}
+            >
               🖼️ Multi-Photo Kitchen Gallery ({sellerProfile?.photos?.length || 0} Photos)
             </Typography>
 
-            {(!sellerProfile?.photos || sellerProfile.photos.length === 0) ? (
+            {!sellerProfile?.photos || sellerProfile.photos.length === 0 ? (
               <Box
                 sx={{
                   p: 3,
@@ -781,7 +865,8 @@ export default function SellerDashboardPage({ currentUser }) {
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  No gallery photos uploaded yet. Upload multiple photos of your kitchen, hygiene setup, ingredients, or cooking action to make your chef card shine!
+                  No gallery photos uploaded yet. Upload multiple photos of your kitchen, hygiene
+                  setup, ingredients, or cooking action to make your chef card shine!
                 </Typography>
               </Box>
             ) : (
@@ -800,7 +885,11 @@ export default function SellerDashboardPage({ currentUser }) {
                     >
                       <Box
                         component="img"
-                        src={photoUrl.startsWith('/') ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${photoUrl}` : photoUrl}
+                        src={
+                          photoUrl.startsWith('/')
+                            ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${photoUrl}`
+                            : photoUrl
+                        }
                         alt={`Kitchen Photo ${idx + 1}`}
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
@@ -820,7 +909,11 @@ export default function SellerDashboardPage({ currentUser }) {
                         <IconButton
                           size="small"
                           onClick={() => handleDeleteGalleryPhoto(photoUrl)}
-                          sx={{ bgcolor: 'rgba(224, 90, 43, 0.85)', color: '#fff', '&:hover': { bgcolor: '#c9481c' } }}
+                          sx={{
+                            bgcolor: 'rgba(224, 90, 43, 0.85)',
+                            color: '#fff',
+                            '&:hover': { bgcolor: '#c9481c' },
+                          }}
                         >
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
@@ -860,8 +953,18 @@ export default function SellerDashboardPage({ currentUser }) {
       </Box>
 
       {menuItems.length === 0 ? (
-        <Box textAlign="center" py={5} mb={4} color="text.secondary" bgcolor="#191928" borderRadius={3} border="1px dashed rgba(255,255,255,0.12)">
-          <Typography variant="body1" mb={1}>No dishes published from your kitchen yet.</Typography>
+        <Box
+          textAlign="center"
+          py={5}
+          mb={4}
+          color="text.secondary"
+          bgcolor="#191928"
+          borderRadius={3}
+          border="1px dashed rgba(255,255,255,0.12)"
+        >
+          <Typography variant="body1" mb={1}>
+            No dishes published from your kitchen yet.
+          </Typography>
           <Typography variant="caption" color="text.secondary" display="block" mb={2}>
             Add today's home-cooked specials or scheduled pre-order batches for society neighbors.
           </Typography>
@@ -878,7 +981,8 @@ export default function SellerDashboardPage({ currentUser }) {
       ) : (
         <Grid container spacing={2.5} mb={5}>
           {menuItems.map((dish) => {
-            const isSoldOut = !dish.is_available || (dish.quantity !== undefined && dish.quantity <= 0);
+            const isSoldOut =
+              !dish.is_available || (dish.quantity !== undefined && dish.quantity <= 0);
             const catColors = {
               veg: '#2EC4B6',
               'non-veg': '#E05A2B',
@@ -904,7 +1008,13 @@ export default function SellerDashboardPage({ currentUser }) {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5} gap={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={1.5}
+                      gap={1}
+                    >
                       <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
                         <Chip
                           label={dish.category?.toUpperCase() || 'DISH'}
@@ -924,8 +1034,8 @@ export default function SellerDashboardPage({ currentUser }) {
                               dish.spice_level === 'hot'
                                 ? '🌶️🌶️🌶️ Hot'
                                 : dish.spice_level === 'mild'
-                                ? '🌶️ Mild'
-                                : '🌶️🌶️ Medium'
+                                  ? '🌶️ Mild'
+                                  : '🌶️🌶️ Medium'
                             }
                             size="small"
                             sx={{
@@ -938,20 +1048,23 @@ export default function SellerDashboardPage({ currentUser }) {
                           />
                         )}
                         {/* Option C: Low Stock Warning Badge */}
-                        {dish.is_available && dish.quantity !== undefined && dish.quantity >= 1 && dish.quantity <= 3 && (
-                          <Chip
-                            label={`⚠️ Only ${dish.quantity} left`}
-                            size="small"
-                            sx={{
-                              bgcolor: 'rgba(255, 152, 0, 0.15)',
-                              color: '#ff9800',
-                              fontWeight: 'bold',
-                              fontSize: '0.7rem',
-                              height: 22,
-                              border: '1px solid rgba(255, 152, 0, 0.3)',
-                            }}
-                          />
-                        )}
+                        {dish.is_available &&
+                          dish.quantity !== undefined &&
+                          dish.quantity >= 1 &&
+                          dish.quantity <= 3 && (
+                            <Chip
+                              label={`⚠️ Only ${dish.quantity} left`}
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(255, 152, 0, 0.15)',
+                                color: '#ff9800',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                height: 22,
+                                border: '1px solid rgba(255, 152, 0, 0.3)',
+                              }}
+                            />
+                          )}
                       </Box>
 
                       <Box display="flex" alignItems="center" gap={0.5}>
@@ -994,9 +1107,15 @@ export default function SellerDashboardPage({ currentUser }) {
                     {dish.image_url && (
                       <Box
                         component="img"
-                        src={dish.image_url.startsWith('http') ? dish.image_url : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`}
+                        src={
+                          dish.image_url.startsWith('http')
+                            ? dish.image_url
+                            : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`
+                        }
                         alt={dish.name}
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
                         sx={{
                           width: '100%',
                           height: 120,
@@ -1040,7 +1159,13 @@ export default function SellerDashboardPage({ currentUser }) {
                     <Divider sx={{ borderColor: 'rgba(255,255,255,0.06)', my: 1.5 }} />
 
                     {/* Dynamic Portion Availability & Stepper Controls */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      flexWrap="wrap"
+                      gap={1}
+                    >
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block">
                           Portions Available:
@@ -1060,7 +1185,12 @@ export default function SellerDashboardPage({ currentUser }) {
                             <RemoveIcon fontSize="small" />
                           </IconButton>
 
-                          <Typography variant="body2" fontWeight="bold" color={isSoldOut ? '#ff5252' : '#2EC4B6'} sx={{ minWidth: 24, textAlign: 'center' }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight="bold"
+                            color={isSoldOut ? '#ff5252' : '#2EC4B6'}
+                            sx={{ minWidth: 24, textAlign: 'center' }}
+                          >
                             {dish.quantity ?? 0}
                           </Typography>
 
@@ -1085,13 +1215,26 @@ export default function SellerDashboardPage({ currentUser }) {
                           control={
                             <Switch
                               size="small"
-                              checked={Boolean(dish.is_available && (dish.quantity === undefined || dish.quantity > 0))}
-                              onChange={() => handleToggleDishAvailability(dish.id, dish.is_available, dish.quantity)}
+                              checked={Boolean(
+                                dish.is_available &&
+                                (dish.quantity === undefined || dish.quantity > 0)
+                              )}
+                              onChange={() =>
+                                handleToggleDishAvailability(
+                                  dish.id,
+                                  dish.is_available,
+                                  dish.quantity
+                                )
+                              }
                               color="success"
                             />
                           }
                           label={
-                            <Typography variant="caption" fontWeight="bold" color={!isSoldOut ? '#2EC4B6' : '#ff5252'}>
+                            <Typography
+                              variant="caption"
+                              fontWeight="bold"
+                              color={!isSoldOut ? '#2EC4B6' : '#ff5252'}
+                            >
                               {!isSoldOut ? 'IN STOCK 🟢' : 'SOLD OUT 🔴'}
                             </Typography>
                           }
@@ -1123,7 +1266,13 @@ export default function SellerDashboardPage({ currentUser }) {
         <Grid container spacing={2.5}>
           {orders.map((order) => (
             <Grid item xs={12} md={6} key={order.id}>
-              <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Card
+                sx={{
+                  bgcolor: '#191928',
+                  borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                     <Typography variant="subtitle1" fontWeight="bold">
@@ -1138,14 +1287,14 @@ export default function SellerDashboardPage({ currentUser }) {
                           order.status === 'completed'
                             ? 'rgba(46, 196, 182, 0.2)'
                             : order.status === 'ready'
-                            ? 'rgba(246, 189, 96, 0.2)'
-                            : 'rgba(224, 90, 43, 0.2)',
+                              ? 'rgba(246, 189, 96, 0.2)'
+                              : 'rgba(224, 90, 43, 0.2)',
                         color:
                           order.status === 'completed'
                             ? '#2EC4B6'
                             : order.status === 'ready'
-                            ? '#F6BD60'
-                            : '#E05A2B',
+                              ? '#F6BD60'
+                              : '#E05A2B',
                         fontWeight: 'bold',
                       }}
                     />
@@ -1157,14 +1306,18 @@ export default function SellerDashboardPage({ currentUser }) {
                       <Chip
                         size="small"
                         icon={<AccessTimeIcon fontSize="small" />}
-                        label={SLOT_LABELS[order.delivery_slot] || order.delivery_slot || 'Pre-Order'}
+                        label={
+                          SLOT_LABELS[order.delivery_slot] || order.delivery_slot || 'Pre-Order'
+                        }
                         sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60' }}
                       />
                     )}
                     <Chip
                       size="small"
                       icon={<DeliveryDiningIcon fontSize="small" />}
-                      label={order.delivery_type === 'doorstep' ? 'Doorstep Delivery' : 'Self-Pickup'}
+                      label={
+                        order.delivery_type === 'doorstep' ? 'Doorstep Delivery' : 'Self-Pickup'
+                      }
                       sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff' }}
                     />
                   </Box>
@@ -1173,7 +1326,8 @@ export default function SellerDashboardPage({ currentUser }) {
                   <Box mb={2}>
                     {(order.items || []).map((it, idx) => (
                       <Typography key={idx} variant="body2">
-                        {it.quantity}x {it.name} <span style={{ color: '#aaa' }}>— ₹{it.price * it.quantity}</span>
+                        {it.quantity}x {it.name}{' '}
+                        <span style={{ color: '#aaa' }}>— ₹{it.price * it.quantity}</span>
                       </Typography>
                     ))}
                   </Box>
@@ -1201,8 +1355,8 @@ export default function SellerDashboardPage({ currentUser }) {
                             order.status === 'pending'
                               ? '#E05A2B'
                               : order.status === 'accepted'
-                              ? '#F6BD60'
-                              : '#2EC4B6',
+                                ? '#F6BD60'
+                                : '#2EC4B6',
                           color: order.status === 'pending' ? '#fff' : '#000',
                           fontWeight: 'bold',
                           textTransform: 'none',
@@ -1211,8 +1365,8 @@ export default function SellerDashboardPage({ currentUser }) {
                         {order.status === 'pending'
                           ? 'Accept Order'
                           : order.status === 'accepted'
-                          ? 'Mark as Ready'
-                          : 'Mark Completed / Delivered'}
+                            ? 'Mark as Ready'
+                            : 'Mark Completed / Delivered'}
                       </Button>
                     )}
                   </Box>
@@ -1467,7 +1621,9 @@ export default function SellerDashboardPage({ currentUser }) {
           sx: { bgcolor: '#161622', color: '#fff', borderRadius: 3, border: '1px solid #28283c' },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Box>
             <Typography variant="h6" fontWeight="bold">
               Recharge Platform Credits
@@ -1530,7 +1686,9 @@ export default function SellerDashboardPage({ currentUser }) {
             />
             <Typography variant="caption" sx={{ color: '#aaa', display: 'block' }}>
               Scan to pay ₹{topupAmount} to{' '}
-              <strong style={{ color: '#fff' }}>{maintenanceStatus?.platform_upi_vpa || 'societyfood@upi'}</strong>
+              <strong style={{ color: '#fff' }}>
+                {maintenanceStatus?.platform_upi_vpa || 'societyfood@upi'}
+              </strong>
             </Typography>
           </Box>
 
@@ -1576,5 +1734,3 @@ SellerDashboardPage.propTypes = {
     role: PropTypes.string,
   }),
 };
-
-

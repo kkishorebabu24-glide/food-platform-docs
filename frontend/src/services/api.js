@@ -94,28 +94,26 @@ api.interceptors.response.use(
 // ── Auth API ───────────────────────────────────────────────────────────────
 export const authAPI = {
   /** Request passwordless OTP via Email or WhatsApp */
-  requestOtp: (email, role = 'buyer', channel = 'email', phone = null) =>
+  requestOtp: (email, role = 'resident', channel = 'email', phone = null) =>
     api.post('/auth/otp/request', { email, role, channel, phone }),
 
   /** Verify OTP and authenticate */
-  verifyOtp: (email, otp, name = null, role = 'buyer') =>
+  verifyOtp: (email, otp, name = null, role = 'resident') =>
     api.post('/auth/otp/verify', { email, otp, name, role }),
 
   /** Register a new user */
-  register: (email, password, name, role = 'buyer') =>
+  register: (email, password, name, role = 'resident') =>
     api.post('/auth/register', { email, password, name, role }),
 
   /** Login with email and password */
   login: (email, password, role = null) =>
     api.post('/auth/login', { email, password, ...(role ? { role } : {}) }),
 
-  /** Switch active role between buyer and seller */
-  switchRole: (targetRole = null) =>
-    api.post('/auth/switch-role', { target_role: targetRole }),
+  /** Switch active workspace between resident and partner (partner requires approval) */
+  switchRole: (targetRole = null) => api.post('/auth/switch-role', { target_role: targetRole }),
 
   /** Refresh JWT */
-  refresh: (refreshToken) =>
-    api.post('/auth/refresh', { refresh_token: refreshToken }),
+  refresh: (refreshToken) => api.post('/auth/refresh', { refresh_token: refreshToken }),
 
   /** Get current authenticated user */
   me: () => api.get('/auth/me'),
@@ -124,35 +122,34 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 };
 
-
-
 // ── Sellers API ────────────────────────────────────────────────────────────
 export const sellersAPI = {
   /** List all approved sellers */
-  list: (skip = 0, limit = 20) =>
-    api.get('/sellers/', { params: { skip, limit } }),
+  list: (skip = 0, limit = 20) => api.get('/partners/', { params: { skip, limit } }),
 
   /** Get a specific seller profile */
-  get: (sellerId) => api.get(`/sellers/${sellerId}`),
+  get: (sellerId) => api.get(`/partners/${sellerId}`),
 
   /** Get current authenticated seller profile */
-  getMe: () => api.get('/sellers/me'),
+  getMe: () => api.get('/partners/me'),
 
   /** Toggle store open/closed status */
-  setOpenStatus: (isOpen) =>
-    api.patch('/sellers/me/open', { is_open: isOpen }),
+  setOpenStatus: (isOpen) => api.patch('/partners/me/open', { is_open: isOpen }),
 
   /** Update own seller profile (bio, photo, upi_id, upi_account_name) */
-  updateProfile: (data) => api.put('/sellers/me', data),
+  updateProfile: (data) => api.put('/partners/me', data),
 
   /** Register as a seller */
-  register: (data) => api.post('/sellers/register', data),
+  register: (data) => api.post('/partners/register', data),
+
+  /** Partner application state for the current user (any role) */
+  getApplication: () => api.get('/partners/me/application'),
 
   /** Upload seller avatar photo */
   uploadPhoto: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post('/sellers/me/photo', formData, {
+    return api.post('/partners/me/photo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
@@ -161,7 +158,7 @@ export const sellersAPI = {
   uploadBanner: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post('/sellers/me/banner', formData, {
+    return api.post('/partners/me/banner', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
@@ -170,14 +167,13 @@ export const sellersAPI = {
   uploadPhotos: (files) => {
     const formData = new FormData();
     Array.from(files).forEach((file) => formData.append('files', file));
-    return api.post('/sellers/me/photos', formData, {
+    return api.post('/partners/me/photos', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 
   /** Delete a photo from kitchen gallery */
-  deletePhoto: (photoUrl) =>
-    api.delete('/sellers/me/photos', { params: { photo_url: photoUrl } }),
+  deletePhoto: (photoUrl) => api.delete('/partners/me/photos', { params: { photo_url: photoUrl } }),
 };
 
 // ── Partners API (Alias to Sellers API for modern terminology) ───────────
@@ -191,7 +187,7 @@ export const menusAPI = {
 
   /** Get menus for a seller */
   bySeller: (sellerId, category = null, search = null, availableOnly = false) =>
-    api.get(`/menus/sellers/${sellerId}`, {
+    api.get(`/menus/partners/${sellerId}`, {
       params: { category, search, available_only: availableOnly },
     }),
 
@@ -228,7 +224,6 @@ export const menusAPI = {
   delete: (menuId) => api.delete(`/menus/${menuId}`),
 };
 
-
 // ── Orders API ─────────────────────────────────────────────────────────────
 export const ordersAPI = {
   /** Place a new order / pre-order */
@@ -242,8 +237,7 @@ export const ordersAPI = {
   get: (orderId) => api.get(`/orders/${orderId}`),
 
   /** Update order status (seller) */
-  updateStatus: (orderId, status) =>
-    api.put(`/orders/${orderId}/status`, { status }),
+  updateStatus: (orderId, status) => api.put(`/orders/${orderId}/status`, { status }),
 
   /** Cancel order (buyer) */
   cancel: (orderId) => api.delete(`/orders/${orderId}`),
@@ -266,10 +260,8 @@ export const suggestionsAPI = {
   upvote: (suggestionId) => api.post(`/suggestions/${suggestionId}/upvote`),
 
   /** Chef claims suggestion and launches pre-order batch or links existing item */
-  claim: (suggestionId, data) =>
-    api.post(`/suggestions/${suggestionId}/claim`, data),
+  claim: (suggestionId, data) => api.post(`/suggestions/${suggestionId}/claim`, data),
 };
-
 
 // ── Payments & Financial Ledger API ─────────────────────────────────────────
 export const paymentsAPI = {
@@ -281,8 +273,7 @@ export const paymentsAPI = {
     api.post(`/payments/orders/${orderId}/submit-utr`, { utr_number: utrNumber }),
 
   /** Seller confirms receipt of direct UPI payment in bank account */
-  confirmReceived: (orderId) =>
-    api.post(`/payments/orders/${orderId}/confirm-received`),
+  confirmReceived: (orderId) => api.post(`/payments/orders/${orderId}/confirm-received`),
 
   /** Get chef's SaaS pass quota, free orders remaining, and balance */
   getMaintenanceStatus: () => api.get('/payments/maintenance/status'),
@@ -305,8 +296,7 @@ export const paymentsAPI = {
   getBalance: () => api.get('/payments/balance/me'),
 
   /** Get seller's ledger transaction history */
-  getLedger: (skip = 0, limit = 20) =>
-    api.get('/payments/ledger/me', { params: { skip, limit } }),
+  getLedger: (skip = 0, limit = 20) => api.get('/payments/ledger/me', { params: { skip, limit } }),
 };
 
 // ── In-Building Delivery API ────────────────────────────────────────────────
@@ -354,7 +344,7 @@ export const ratingsAPI = {
 
   /** Get seller ratings */
   bySeller: (sellerId, skip = 0, limit = 20) =>
-    api.get(`/ratings/sellers/${sellerId}`, { params: { skip, limit } }),
+    api.get(`/ratings/partners/${sellerId}`, { params: { skip, limit } }),
 };
 
 // ── AI / Multimodal ──────────────────────────────────────────────────────────
@@ -382,25 +372,20 @@ export const adminAPI = {
     api.get('/admin/partners/pending', { params: { skip, limit } }),
 
   /** Approve a pending partner registration */
-  approvePartner: (partnerId) =>
-    api.post(`/admin/partners/${partnerId}/approve`),
+  approvePartner: (partnerId) => api.post(`/admin/partners/${partnerId}/approve`),
 
   /** Reject a pending partner registration */
-  rejectPartner: (partnerId) =>
-    api.post(`/admin/partners/${partnerId}/reject`),
+  rejectPartner: (partnerId) => api.post(`/admin/partners/${partnerId}/reject`),
 
   /** List registered residents */
-  getResidents: (skip = 0, limit = 50) =>
-    api.get('/admin/residents', { params: { skip, limit } }),
+  getResidents: (skip = 0, limit = 50) => api.get('/admin/residents', { params: { skip, limit } }),
 
   /** Activate or deactivate user account */
   setUserStatus: (userId, isActive) =>
     api.patch(`/admin/users/${userId}/status`, { is_active: isActive }),
 
   /** Issue full refund for an order */
-  refundOrder: (orderId) =>
-    api.post(`/admin/orders/${orderId}/refund`),
+  refundOrder: (orderId) => api.post(`/admin/orders/${orderId}/refund`),
 };
 
 export default api;
-

@@ -1,14 +1,6 @@
 import React from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-} from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Button, Chip } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -62,9 +54,7 @@ export default function PartnerOverview() {
 
     try {
       await ordersAPI.updateStatus(orderId, nextStatus);
-      setOrders?.((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
-      );
+      setOrders?.((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
       setActionSuccess?.(`Order #${orderId} marked as ${nextStatus.toUpperCase()}! 🚀`);
     } catch (err) {
       setError?.(getErrorMessage(err, 'Failed to update order status.'));
@@ -76,9 +66,13 @@ export default function PartnerOverview() {
       {/* Top Quick KPI Strip */}
       <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Total Revenue Earned</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Total Revenue Earned
+              </Typography>
               <Typography variant="h4" fontWeight="bold" color="#2EC4B6" mt={0.5}>
                 ₹{balance?.total_earned?.toLocaleString() || 0}
               </Typography>
@@ -90,9 +84,13 @@ export default function PartnerOverview() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Active Orders Now</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Active Orders Now
+              </Typography>
               <Typography variant="h4" fontWeight="bold" color="#E05A2B" mt={0.5}>
                 {activeOrders.length}
               </Typography>
@@ -104,9 +102,13 @@ export default function PartnerOverview() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Customer Rating</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Customer Rating
+              </Typography>
               <Box display="flex" alignItems="center" gap={0.8} mt={0.5}>
                 <Typography variant="h4" fontWeight="bold" color="#F6BD60">
                   {sellerProfile?.punctuality_rating?.toFixed(1) || '4.9'}
@@ -114,18 +116,26 @@ export default function PartnerOverview() {
                 <StarIcon sx={{ color: '#F6BD60', fontSize: 28 }} />
               </Box>
               <Typography variant="caption" color="text.secondary">
-                {sellerProfile?.total_orders_completed || orders.filter((o) => o.status === 'completed').length} completed orders
+                {sellerProfile?.total_orders_completed ||
+                  orders.filter((o) => o.status === 'completed').length}{' '}
+                completed orders
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Card
+            sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+          >
             <CardContent>
-              <Typography variant="caption" color="text.secondary">On-Time Fulfillment</Typography>
+              <Typography variant="caption" color="text.secondary">
+                On-Time Fulfillment
+              </Typography>
               <Typography variant="h4" fontWeight="bold" color="#4caf50" mt={0.5}>
-                {sellerProfile?.on_time_delivery_rate ? `${sellerProfile.on_time_delivery_rate.toFixed(0)}%` : '98%'}
+                {sellerProfile?.on_time_delivery_rate
+                  ? `${sellerProfile.on_time_delivery_rate.toFixed(0)}%`
+                  : '98%'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Avg. prep {sellerProfile?.avg_delivery_minutes || 25} mins
@@ -139,7 +149,14 @@ export default function PartnerOverview() {
       <Grid container spacing={3} mb={4}>
         {/* Pre-Order Batch Prep Sheet */}
         <Grid item xs={12} md={7}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+          <Card
+            sx={{
+              bgcolor: '#191928',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              height: '100%',
+            }}
+          >
             <CardContent>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -188,7 +205,14 @@ export default function PartnerOverview() {
 
         {/* SaaS Pass & Direct UPI Quota Card */}
         <Grid item xs={12} md={5}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+          <Card
+            sx={{
+              bgcolor: '#191928',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              height: '100%',
+            }}
+          >
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -201,7 +225,9 @@ export default function PartnerOverview() {
                   size="small"
                   label={sellerProfile?.upi_id ? '🟢 Direct UPI' : '⚠️ Missing UPI'}
                   sx={{
-                    bgcolor: sellerProfile?.upi_id ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)',
+                    bgcolor: sellerProfile?.upi_id
+                      ? 'rgba(76, 175, 80, 0.15)'
+                      : 'rgba(255, 152, 0, 0.15)',
                     color: sellerProfile?.upi_id ? '#4caf50' : '#ff9800',
                     fontWeight: 'bold',
                   }}
@@ -210,13 +236,18 @@ export default function PartnerOverview() {
 
               <Box display="flex" justifyContent="space-between" mb={2}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Remaining Free Orders:</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Remaining Free Orders:
+                  </Typography>
                   <Typography variant="h5" fontWeight="bold" color="#2EC4B6">
-                    {maintenanceStatus?.free_orders_remaining ?? 50} / {maintenanceStatus?.free_orders_total ?? 50}
+                    {maintenanceStatus?.free_orders_remaining ?? 50} /{' '}
+                    {maintenanceStatus?.free_orders_total ?? 50}
                   </Typography>
                 </Box>
                 <Box textAlign="right">
-                  <Typography variant="caption" color="text.secondary">Maintenance Balance:</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Maintenance Balance:
+                  </Typography>
                   <Typography variant="h5" fontWeight="bold" color="#F6BD60">
                     ₹{maintenanceStatus?.maintenance_balance?.toFixed(2) ?? '0.00'}
                   </Typography>
@@ -238,7 +269,12 @@ export default function PartnerOverview() {
                   variant="outlined"
                   size="small"
                   onClick={() => setOpenTopupDialog?.(true)}
-                  sx={{ borderColor: '#4caf50', color: '#4caf50', textTransform: 'none', fontWeight: 'bold' }}
+                  sx={{
+                    borderColor: '#4caf50',
+                    color: '#4caf50',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                  }}
                 >
                   ⚡ Top Up Wallet
                 </Button>
@@ -248,7 +284,11 @@ export default function PartnerOverview() {
                   size="small"
                   component={Link}
                   to="/partner/finances"
-                  sx={{ borderColor: 'rgba(255,255,255,0.2)', color: '#fff', textTransform: 'none' }}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    color: '#fff',
+                    textTransform: 'none',
+                  }}
                 >
                   Manage UPI
                 </Button>
@@ -278,7 +318,14 @@ export default function PartnerOverview() {
         </Box>
 
         {activeOrders.length === 0 ? (
-          <Box textAlign="center" py={5} color="text.secondary" bgcolor="#191928" borderRadius={3} border="1px dashed rgba(255,255,255,0.1)">
+          <Box
+            textAlign="center"
+            py={5}
+            color="text.secondary"
+            bgcolor="#191928"
+            borderRadius={3}
+            border="1px dashed rgba(255,255,255,0.1)"
+          >
             <Typography variant="body1">No orders currently awaiting kitchen prep.</Typography>
             <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
               Keep your kitchen open to receive fresh dinner and lunch orders from residents.
@@ -288,7 +335,16 @@ export default function PartnerOverview() {
           <Grid container spacing={2.5}>
             {activeOrders.slice(0, 4).map((order) => (
               <Grid item xs={12} sm={6} md={3} key={order.id}>
-                <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Card
+                  sx={{
+                    bgcolor: '#191928',
+                    borderRadius: 3,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
                   <CardContent sx={{ flexGrow: 1, p: 2 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Typography variant="subtitle2" fontWeight="bold">
@@ -302,14 +358,14 @@ export default function PartnerOverview() {
                             order.status === 'ready'
                               ? 'rgba(246, 189, 96, 0.2)'
                               : order.status === 'accepted'
-                              ? 'rgba(46, 196, 182, 0.2)'
-                              : 'rgba(224, 90, 43, 0.2)',
+                                ? 'rgba(46, 196, 182, 0.2)'
+                                : 'rgba(224, 90, 43, 0.2)',
                           color:
                             order.status === 'ready'
                               ? '#F6BD60'
                               : order.status === 'accepted'
-                              ? '#2EC4B6'
-                              : '#E05A2B',
+                                ? '#2EC4B6'
+                                : '#E05A2B',
                           fontWeight: 'bold',
                           fontSize: '0.65rem',
                           height: 20,
@@ -339,8 +395,8 @@ export default function PartnerOverview() {
                           order.status === 'pending'
                             ? '#E05A2B'
                             : order.status === 'accepted'
-                            ? '#F6BD60'
-                            : '#2EC4B6',
+                              ? '#F6BD60'
+                              : '#2EC4B6',
                         color: order.status === 'pending' ? '#fff' : '#000',
                         fontWeight: 'bold',
                         textTransform: 'none',
@@ -350,8 +406,8 @@ export default function PartnerOverview() {
                       {order.status === 'pending'
                         ? 'Accept Order'
                         : order.status === 'accepted'
-                        ? 'Mark Ready'
-                        : 'Mark Completed'}
+                          ? 'Mark Ready'
+                          : 'Mark Completed'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -373,7 +429,13 @@ export default function PartnerOverview() {
               variant="outlined"
               startIcon={<AddCircleOutlineIcon />}
               onClick={handleOpenCreateMenu}
-              sx={{ p: 1.5, borderColor: '#E05A2B', color: '#E05A2B', textTransform: 'none', fontWeight: 'bold' }}
+              sx={{
+                p: 1.5,
+                borderColor: '#E05A2B',
+                color: '#E05A2B',
+                textTransform: 'none',
+                fontWeight: 'bold',
+              }}
             >
               + Cook New Dish
             </Button>
@@ -385,7 +447,12 @@ export default function PartnerOverview() {
               startIcon={<RestaurantIcon />}
               component={Link}
               to="/partner/menu"
-              sx={{ p: 1.5, borderColor: 'rgba(255,255,255,0.2)', color: '#fff', textTransform: 'none' }}
+              sx={{
+                p: 1.5,
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                textTransform: 'none',
+              }}
             >
               Manage {menuItems.length} Dishes
             </Button>
@@ -397,7 +464,12 @@ export default function PartnerOverview() {
               startIcon={<DeliveryDiningIcon />}
               component={Link}
               to="/partner/orders"
-              sx={{ p: 1.5, borderColor: 'rgba(255,255,255,0.2)', color: '#fff', textTransform: 'none' }}
+              sx={{
+                p: 1.5,
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                textTransform: 'none',
+              }}
             >
               View Orders Pipeline
             </Button>

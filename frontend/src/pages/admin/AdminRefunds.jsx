@@ -66,7 +66,12 @@ export default function AdminRefunds() {
       fetchOrders();
       refreshAdminData?.();
     } catch (err) {
-      setError?.(getErrorMessage(err, 'Failed to issue refund. Payment may already be refunded or not yet captured.'));
+      setError?.(
+        getErrorMessage(
+          err,
+          'Failed to issue refund. Payment may already be refunded or not yet captured.'
+        )
+      );
     } finally {
       setProcessingRefund(false);
     }
@@ -95,7 +100,14 @@ export default function AdminRefunds() {
       </Box>
 
       {/* Direct Order Lookup Card */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 4 }}>
+      <Card
+        sx={{
+          bgcolor: '#191928',
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.08)',
+          mb: 4,
+        }}
+      >
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" alignItems="center" gap={1.5} mb={2}>
             <CurrencyExchangeIcon sx={{ color: '#ff5252', fontSize: 28 }} />
@@ -132,7 +144,9 @@ export default function AdminRefunds() {
       </Card>
 
       {/* Orders Audit Table */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <Card
+        sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <CardContent sx={{ p: 0 }}>
           <Box p={2.5} pb={1.5}>
             <Typography variant="h6" fontWeight="bold">
@@ -154,7 +168,15 @@ export default function AdminRefunds() {
             <TableContainer component={Paper} sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ '& th': { color: 'text.secondary', borderColor: 'rgba(255,255,255,0.08)', fontWeight: 'bold' } }}>
+                  <TableRow
+                    sx={{
+                      '& th': {
+                        color: 'text.secondary',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        fontWeight: 'bold',
+                      },
+                    }}
+                  >
                     <TableCell>Order ID</TableCell>
                     <TableCell>Created Time</TableCell>
                     <TableCell>Items Summary</TableCell>
@@ -167,7 +189,10 @@ export default function AdminRefunds() {
                   {orders.map((order) => {
                     const isRefunded = order.status === 'refunded' || order.status === 'cancelled';
                     return (
-                      <TableRow key={order.id} sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}>
+                      <TableRow
+                        key={order.id}
+                        sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}
+                      >
                         <TableCell>
                           <Typography variant="body2" fontWeight="bold">
                             #{order.id}
@@ -175,12 +200,16 @@ export default function AdminRefunds() {
                         </TableCell>
                         <TableCell>
                           <Typography variant="caption" color="text.secondary">
-                            {order.created_at ? new Date(order.created_at).toLocaleString() : 'Recent'}
+                            {order.created_at
+                              ? new Date(order.created_at).toLocaleString()
+                              : 'Recent'}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" noWrap sx={{ maxWidth: 260 }}>
-                            {(order.items || []).map((it) => `${it.quantity}x ${it.name}`).join(', ') || 'Food items'}
+                            {(order.items || [])
+                              .map((it) => `${it.quantity}x ${it.name}`)
+                              .join(', ') || 'Food items'}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -192,14 +221,14 @@ export default function AdminRefunds() {
                                 order.status === 'completed' || order.status === 'delivered'
                                   ? 'rgba(46,196,182,0.15)'
                                   : isRefunded
-                                  ? 'rgba(255,82,82,0.15)'
-                                  : 'rgba(246,189,96,0.15)',
+                                    ? 'rgba(255,82,82,0.15)'
+                                    : 'rgba(246,189,96,0.15)',
                               color:
                                 order.status === 'completed' || order.status === 'delivered'
                                   ? '#2EC4B6'
                                   : isRefunded
-                                  ? '#ff5252'
-                                  : '#F6BD60',
+                                    ? '#ff5252'
+                                    : '#F6BD60',
                               fontWeight: 'bold',
                               fontSize: '0.7rem',
                             }}
@@ -244,19 +273,24 @@ export default function AdminRefunds() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" mb={1.5}>
-            Are you sure you want to issue a full payment refund for <strong>Order #{confirmOrder?.id}</strong>?
+            Are you sure you want to issue a full payment refund for{' '}
+            <strong>Order #{confirmOrder?.id}</strong>?
           </Typography>
           <Box bgcolor="#1F1F35" p={1.5} borderRadius={2}>
             <Typography variant="caption" color="text.secondary" display="block">
               Refund Amount: <strong>₹{confirmOrder?.total_price}</strong>
             </Typography>
             <Typography variant="caption" color="text.secondary" display="block">
-              This action will mark the payment as refunded and create a debit ledger entry for the partner.
+              This action will mark the payment as refunded and create a debit ledger entry for the
+              partner.
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setConfirmOrder(null)} sx={{ color: '#aaa', textTransform: 'none' }}>
+          <Button
+            onClick={() => setConfirmOrder(null)}
+            sx={{ color: '#aaa', textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button

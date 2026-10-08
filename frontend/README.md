@@ -18,6 +18,7 @@ The frontend application provides a seamless, warm culinary interface for apartm
 ## 2. Route Directory & Modular Sub-Pages
 
 ### 🏡 Resident Space
+
 | Route | Component | Purpose |
 | :--- | :--- | :--- |
 | `/` | `BuyerDashboard.jsx` | Main home marketplace, time-of-day greeting, search, category pills, verified neighbor chef cards. |
@@ -28,6 +29,7 @@ The frontend application provides a seamless, warm culinary interface for apartm
 | `/login` | `LoginPage` (`App.jsx`) | Universal OTP & password authentication, smart workspace router. |
 
 ### 🍳 Partner Workspace (Home Chef Subpages)
+
 | Route | Subpage Component | Purpose |
 | :--- | :--- | :--- |
 | `/partner` | `PartnerOverview.jsx` | Kitchen health score, punctuality metrics, batch prep sheet, and live order alerts. |
@@ -39,6 +41,7 @@ The frontend application provides a seamless, warm culinary interface for apartm
 > *Note: Legacy route `/seller/dashboard` automatically redirects to `/partner` for complete backward compatibility.*
 
 ### 🛡️ Society Admin Console Subpages
+
 | Route | Subpage Component | Purpose |
 | :--- | :--- | :--- |
 | `/admin` | `AdminOverview.jsx` | Society GMV KPIs, net gross volume, and daily fulfillment analytics. |
@@ -66,6 +69,7 @@ The frontend application provides a seamless, warm culinary interface for apartm
 ## 4. Local Development
 
 ### Prerequisites
+
 - Node.js `20.x` or `24.x`
 - npm `10.x+`
 
@@ -132,6 +136,7 @@ npm test -- --watchAll=false src/__tests__/admin-subpages.test.jsx
 ## 6. Docker & Nginx Production Setup
 
 The frontend is packaged using a multi-stage `Dockerfile`:
+
 1. **Stage 1 (Builder)**: `node:24-alpine` builds the static production bundle via `npm run build`.
 2. **Stage 2 (Server)**: `nginx:1.25-alpine` serves static assets with Brotli/Gzip compression, immutable asset caching, and fallback SPA routing (`try_files $uri $uri/ /index.html;`) so nested routes like `/partner/menu` and `/admin/approvals` resolve correctly on browser reload.
 

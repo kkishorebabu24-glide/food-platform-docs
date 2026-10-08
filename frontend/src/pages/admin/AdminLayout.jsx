@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import {
-  Outlet,
-  useLocation,
-  Link,
-} from 'react-router-dom';
+import { Outlet, useLocation, Link } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -50,7 +46,7 @@ export default function AdminLayout({ currentUser }) {
       }
       const pendingList = Array.isArray(pendingRes?.data)
         ? pendingRes.data
-        : (pendingRes?.data?.partners || pendingRes?.data?.pending_partners || []);
+        : pendingRes?.data?.partners || pendingRes?.data?.pending_partners || [];
       setPendingCount(pendingList.length);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to fetch admin overview data.'));
@@ -68,7 +64,8 @@ export default function AdminLayout({ currentUser }) {
   let activeTab = 0;
   if (currentPath.includes('/admin/approvals')) activeTab = 1;
   else if (currentPath.includes('/admin/residents')) activeTab = 2;
-  else if (currentPath.includes('/admin/refunds') || currentPath.includes('/admin/disputes')) activeTab = 3;
+  else if (currentPath.includes('/admin/refunds') || currentPath.includes('/admin/disputes'))
+    activeTab = 3;
 
   const contextValue = {
     analytics,
@@ -145,8 +142,16 @@ export default function AdminLayout({ currentUser }) {
       </Box>
 
       {/* Global Alerts */}
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
-      {actionSuccess && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>{actionSuccess}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {actionSuccess && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>
+          {actionSuccess}
+        </Alert>
+      )}
 
       {/* Admin Navigation Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.08)', mb: 3.5 }}>
@@ -181,7 +186,11 @@ export default function AdminLayout({ currentUser }) {
           />
           <Tab
             icon={
-              <Badge badgeContent={pendingCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+              <Badge
+                badgeContent={pendingCount}
+                color="error"
+                sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}
+              >
                 <HowToRegIcon fontSize="small" />
               </Badge>
             }
@@ -208,7 +217,9 @@ export default function AdminLayout({ currentUser }) {
       </Box>
 
       {/* Sub-Page Content */}
-      {loading && !analytics && (location.pathname === '/admin' || location.pathname === '/admin/') ? (
+      {loading &&
+      !analytics &&
+      (location.pathname === '/admin' || location.pathname === '/admin/') ? (
         <Box display="flex" justifyContent="center" py={8}>
           <CircularProgress sx={{ color: '#E05A2B' }} />
         </Box>

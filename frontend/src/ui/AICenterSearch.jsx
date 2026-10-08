@@ -18,7 +18,6 @@ export default function AICenterSearch() {
   const [result, setResult] = useState(null);
   const [streaming, setStreaming] = useState(false);
   const esRef = useRef(null);
-  
 
   const handleSearch = async () => {
     const file = inputRef.current?.files?.[0];
@@ -42,7 +41,9 @@ export default function AICenterSearch() {
 
     // Clean up previous EventSource if any
     if (esRef.current) {
-      try { esRef.current.close(); } catch (_) {}
+      try {
+        esRef.current.close();
+      } catch (_) {}
       esRef.current = null;
     }
 
@@ -79,22 +80,52 @@ export default function AICenterSearch() {
     es.onerror = (err) => {
       setStreaming(false);
       setResult({ error: 'Streaming connection error' });
-      try { es.close(); } catch (_) {}
+      try {
+        es.close();
+      } catch (_) {}
       esRef.current = null;
     };
   };
 
   return (
     <Box>
-      <Paper elevation={3} sx={{ display: 'flex', alignItems: 'center', mx: 'auto', maxWidth: 960, px: 2, py: 1.2, borderRadius: 3, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))' }}>
+      <Paper
+        elevation={3}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mx: 'auto',
+          maxWidth: 960,
+          px: 2,
+          py: 1.2,
+          borderRadius: 3,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+        }}
+      >
         <Avatar sx={{ bgcolor: '#25312a', mr: 1 }}>PP</Avatar>
-        <InputBase value={text} onChange={(e) => setText(e.target.value)} sx={{ ml: 1, flex: 1, color: '#fff' }} placeholder="Describe your mood, type, or upload a fridge photo..." />
+        <InputBase
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          sx={{ ml: 1, flex: 1, color: '#fff' }}
+          placeholder="Describe your mood, type, or upload a fridge photo..."
+        />
         <input type="file" ref={inputRef} style={{ display: 'none' }} id="ai-file" />
         <label htmlFor="ai-file">
-          <IconButton component="span" sx={{ color: '#A3B18A' }}><ImageIcon /></IconButton>
+          <IconButton component="span" sx={{ color: '#A3B18A' }}>
+            <ImageIcon />
+          </IconButton>
         </label>
-        <IconButton sx={{ color: '#FFD166' }}><MicIcon /></IconButton>
-        <Button onClick={handleSearch} variant="contained" sx={{ bgcolor: '#FF6B35', ml: 1 }} startIcon={<SearchIcon />}>Search</Button>
+        <IconButton sx={{ color: '#FFD166' }}>
+          <MicIcon />
+        </IconButton>
+        <Button
+          onClick={handleSearch}
+          variant="contained"
+          sx={{ bgcolor: '#FF6B35', ml: 1 }}
+          startIcon={<SearchIcon />}
+        >
+          Search
+        </Button>
       </Paper>
       {streaming && (
         <Paper sx={{ mt: 2, p: 2, maxWidth: 960, mx: 'auto' }} elevation={2}>

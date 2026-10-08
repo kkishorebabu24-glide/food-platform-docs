@@ -57,6 +57,7 @@ export default function AdminResidents() {
 
   useEffect(() => {
     fetchResidents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleToggleStatus = (user, currentActive) => {
@@ -156,7 +157,9 @@ export default function AdminResidents() {
       </Box>
 
       {/* Member Table */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <Card
+        sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <CardContent sx={{ p: 0 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" py={8}>
@@ -173,7 +176,15 @@ export default function AdminResidents() {
             <TableContainer component={Paper} sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ '& th': { color: 'text.secondary', borderColor: 'rgba(255,255,255,0.08)', fontWeight: 'bold' } }}>
+                  <TableRow
+                    sx={{
+                      '& th': {
+                        color: 'text.secondary',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        fontWeight: 'bold',
+                      },
+                    }}
+                  >
                     <TableCell>Member Name</TableCell>
                     <TableCell>Flat Unit</TableCell>
                     <TableCell>Email Address</TableCell>
@@ -188,11 +199,23 @@ export default function AdminResidents() {
                     const isAdmin = member.role === 'admin';
 
                     return (
-                      <TableRow key={member.id} sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}>
+                      <TableRow
+                        key={member.id}
+                        sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}
+                      >
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1.5}>
-                            <Avatar sx={{ width: 36, height: 36, bgcolor: isPartner ? '#E05A2B' : isAdmin ? '#2EC4B6' : '#5C6BC0', fontSize: '0.9rem' }}>
-                              {member.name?.[0]?.toUpperCase() || member.email?.[0]?.toUpperCase() || 'U'}
+                            <Avatar
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                bgcolor: isPartner ? '#E05A2B' : isAdmin ? '#2EC4B6' : '#5C6BC0',
+                                fontSize: '0.9rem',
+                              }}
+                            >
+                              {member.name?.[0]?.toUpperCase() ||
+                                member.email?.[0]?.toUpperCase() ||
+                                'U'}
                             </Avatar>
                             <Box>
                               <Typography variant="body2" fontWeight="bold">
@@ -221,18 +244,12 @@ export default function AdminResidents() {
                               isAdmin ? '🛡️ Admin' : isPartner ? '🍳 Home Chef' : '🛒 Resident'
                             }
                             sx={{
-                              bgcolor:
-                                isAdmin
-                                  ? 'rgba(46,196,182,0.15)'
-                                  : isPartner
+                              bgcolor: isAdmin
+                                ? 'rgba(46,196,182,0.15)'
+                                : isPartner
                                   ? 'rgba(224,90,43,0.15)'
                                   : 'rgba(255,255,255,0.08)',
-                              color:
-                                isAdmin
-                                  ? '#2EC4B6'
-                                  : isPartner
-                                  ? '#E05A2B'
-                                  : '#fff',
+                              color: isAdmin ? '#2EC4B6' : isPartner ? '#E05A2B' : '#fff',
                               fontWeight: 'bold',
                               fontSize: '0.75rem',
                             }}
@@ -268,13 +285,16 @@ export default function AdminResidents() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            Are you sure you want to <strong>{targetNextStatus ? 'activate' : 'deactivate'}</strong> account for{' '}
-            <strong>{statusConfirmUser?.name || statusConfirmUser?.email}</strong>?
+            Are you sure you want to <strong>{targetNextStatus ? 'activate' : 'deactivate'}</strong>{' '}
+            account for <strong>{statusConfirmUser?.name || statusConfirmUser?.email}</strong>?
             {!targetNextStatus && ' Deactivated members cannot sign in or place food orders.'}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setStatusConfirmUser(null)} sx={{ color: '#aaa', textTransform: 'none' }}>
+          <Button
+            onClick={() => setStatusConfirmUser(null)}
+            sx={{ color: '#aaa', textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button

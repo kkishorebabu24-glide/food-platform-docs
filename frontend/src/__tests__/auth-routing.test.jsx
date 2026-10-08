@@ -32,6 +32,3 @@ describe('Authentication & Landing Experience', () => {
     expect(screen.getByRole('button', { name: /Send Verification Code/i })).toBeInTheDocument();
   });
 });
-
-
-

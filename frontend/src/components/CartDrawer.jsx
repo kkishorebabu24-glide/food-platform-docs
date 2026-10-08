@@ -28,9 +28,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
-import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { ordersAPI, getErrorMessage } from '../services/api';
 import DirectUPIPaymentModal from './DirectUPIPaymentModal';
@@ -107,16 +105,12 @@ export default function CartDrawer({
     (g) => savedUser && String(g.sellerId) === String(savedUser.id)
   );
 
-  const grandTotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
+  const grandTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const handleCheckout = async () => {
     if (cartItems.length === 0 || hasSelfOrder) return;
     setLoading(true);
     setError(null);
-
 
     try {
       const createdOrders = [];
@@ -179,12 +173,7 @@ export default function CartDrawer({
     >
       {/* Top Header */}
       <Box>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <ShoppingBagOutlinedIcon sx={{ color: '#E05A2B', fontSize: 28 }} />
             <Typography variant="h6" fontWeight="bold">
@@ -222,11 +211,10 @@ export default function CartDrawer({
             {chefGroupList.map((group) => {
               const conf = getChefState(group.sellerId);
               const hasPreorder = group.items.some((it) => it.is_preorder_only);
-              const isSelfGroup = Boolean(savedUser && String(group.sellerId) === String(savedUser.id));
-              const chefSubtotal = group.items.reduce(
-                (sum, it) => sum + it.price * it.quantity,
-                0
+              const isSelfGroup = Boolean(
+                savedUser && String(group.sellerId) === String(savedUser.id)
               );
+              const chefSubtotal = group.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
 
               return (
                 <Card
@@ -241,13 +229,23 @@ export default function CartDrawer({
                 >
                   <CardContent sx={{ p: 2.5 }}>
                     {/* Chef Title & Kitchen Header */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5} flexWrap="wrap" gap={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1.5}
+                      flexWrap="wrap"
+                      gap={1}
+                    >
                       <Box>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ color: '#fff' }}>
                           🍳 {group.sellerName}
                         </Typography>
                         {group.sellerFlat && (
-                          <Typography variant="caption" sx={{ color: '#2EC4B6', fontWeight: 'bold' }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: '#2EC4B6', fontWeight: 'bold' }}
+                          >
                             📍 Resident Flat {group.sellerFlat}
                           </Typography>
                         )}
@@ -257,19 +255,27 @@ export default function CartDrawer({
                           <Chip
                             label="⚠️ Your Kitchen"
                             size="small"
-                            sx={{ bgcolor: 'rgba(246, 189, 96, 0.2)', color: '#F6BD60', fontWeight: 'bold', fontSize: 11 }}
+                            sx={{
+                              bgcolor: 'rgba(246, 189, 96, 0.2)',
+                              color: '#F6BD60',
+                              fontWeight: 'bold',
+                              fontSize: 11,
+                            }}
                           />
                         )}
                         <Chip
                           label={`₹${chefSubtotal}`}
                           size="small"
-                          sx={{ bgcolor: 'rgba(224, 90, 43, 0.2)', color: '#E05A2B', fontWeight: 'bold' }}
+                          sx={{
+                            bgcolor: 'rgba(224, 90, 43, 0.2)',
+                            color: '#E05A2B',
+                            fontWeight: 'bold',
+                          }}
                         />
                       </Box>
                     </Box>
 
                     <Divider sx={{ borderColor: 'rgba(255,255,255,0.06)', mb: 1.5 }} />
-
 
                     {/* Item List for this Chef */}
                     <List disablePadding>
@@ -313,7 +319,11 @@ export default function CartDrawer({
                               <RemoveIcon fontSize="small" />
                             </IconButton>
 
-                            <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 20, textAlign: 'center' }}>
+                            <Typography
+                              variant="body2"
+                              fontWeight="bold"
+                              sx={{ minWidth: 20, textAlign: 'center' }}
+                            >
                               {item.quantity}
                             </Typography>
 
@@ -336,17 +346,28 @@ export default function CartDrawer({
 
                     {/* Fulfillment Option (Delivery vs. Pickup) provided by this Chef */}
                     <Box mt={2} bgcolor="#161622" p={1.5} borderRadius={2}>
-                      <Typography variant="caption" fontWeight="bold" sx={{ color: '#F6BD60', display: 'block', mb: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        fontWeight="bold"
+                        sx={{ color: '#F6BD60', display: 'block', mb: 0.5 }}
+                      >
                         Fulfillment Option for {group.sellerName}:
                       </Typography>
                       <RadioGroup
                         row
                         value={conf.deliveryType}
-                        onChange={(e) => updateChefState(group.sellerId, 'deliveryType', e.target.value)}
+                        onChange={(e) =>
+                          updateChefState(group.sellerId, 'deliveryType', e.target.value)
+                        }
                       >
                         <FormControlLabel
                           value="doorstep"
-                          control={<Radio size="small" sx={{ color: '#2EC4B6', '&.Mui-checked': { color: '#2EC4B6' } }} />}
+                          control={
+                            <Radio
+                              size="small"
+                              sx={{ color: '#2EC4B6', '&.Mui-checked': { color: '#2EC4B6' } }}
+                            />
+                          }
                           label={
                             <Typography variant="caption" fontWeight="bold" sx={{ color: '#eee' }}>
                               🚪 Doorstep Delivery
@@ -355,7 +376,12 @@ export default function CartDrawer({
                         />
                         <FormControlLabel
                           value="self_pickup"
-                          control={<Radio size="small" sx={{ color: '#F6BD60', '&.Mui-checked': { color: '#F6BD60' } }} />}
+                          control={
+                            <Radio
+                              size="small"
+                              sx={{ color: '#F6BD60', '&.Mui-checked': { color: '#F6BD60' } }}
+                            />
+                          }
                           label={
                             <Typography variant="caption" fontWeight="bold" sx={{ color: '#eee' }}>
                               🚶 Self-Pickup {group.sellerFlat ? `(Flat ${group.sellerFlat})` : ''}
@@ -375,12 +401,16 @@ export default function CartDrawer({
                           <Select
                             value={conf.deliverySlot}
                             label="📅 Delivery / Pickup Slot"
-                            onChange={(e) => updateChefState(group.sellerId, 'deliverySlot', e.target.value)}
+                            onChange={(e) =>
+                              updateChefState(group.sellerId, 'deliverySlot', e.target.value)
+                            }
                             sx={{
                               color: '#fff',
                               bgcolor: '#161622',
                               fontSize: 13,
-                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(255,255,255,0.1)',
+                              },
                             }}
                           >
                             {Object.entries(SLOT_LABELS).map(([key, label]) => (
@@ -441,7 +471,8 @@ export default function CartDrawer({
                 fontWeight: 'bold',
               }}
             >
-              ⚠️ You cannot order dishes from your own kitchen. Please remove them to place your order.
+              ⚠️ You cannot order dishes from your own kitchen. Please remove them to place your
+              order.
             </Alert>
           )}
 
@@ -454,7 +485,12 @@ export default function CartDrawer({
               size="small"
               onClick={onClearCart}
               startIcon={<DeleteOutlineIcon fontSize="small" />}
-              sx={{ color: '#aaa', textTransform: 'none', fontSize: 12, '&:hover': { color: '#ff6b6b' } }}
+              sx={{
+                color: '#aaa',
+                textTransform: 'none',
+                fontSize: 12,
+                '&:hover': { color: '#ff6b6b' },
+              }}
             >
               Clear Basket
             </Button>
@@ -519,7 +555,6 @@ export default function CartDrawer({
               `Place Order • ₹${grandTotal}`
             )}
           </Button>
-
         </Box>
       )}
 

@@ -50,15 +50,20 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import StarIcon from '@mui/icons-material/Star';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { authAPI, sellersAPI, menusAPI, getErrorMessage } from './services/api';
+import {
+  hasAllowedRole,
+  homePathForRole,
+  isAdminRole,
+  isPartnerRole,
+  normalizeRole,
+} from './utils/roles';
 
 import DishImageModal, { getDishImageUrl } from './components/DishImageModal';
 import MenuPage from './pages/Menu';
 import OrdersPage from './pages/Orders';
 import ProfilePage from './pages/Profile';
-import SellerDashboardPage from './pages/SellerDashboard';
 import BuyerDashboardPage from './pages/BuyerDashboard';
 import SuggestionsBoard from './pages/SuggestionsBoard';
 import CartDrawer from './components/CartDrawer';
@@ -85,10 +90,10 @@ import AdminRefunds from './pages/admin/AdminRefunds';
 const theme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: '#E05A2B', dark: '#C9481C', light: '#FF7D4D' },       // Warm Terracotta
+    primary: { main: '#E05A2B', dark: '#C9481C', light: '#FF7D4D' }, // Warm Terracotta
     forest: { main: '#1B4332', light: '#2D6A4F', contrastText: '#FFFFFF' }, // Dark Forest Green
-    secondary: { main: '#F6BD60' },     // Honey Saffron
-    success: { main: '#2D6A4F' },       // Deep Forest Mint
+    secondary: { main: '#F6BD60' }, // Honey Saffron
+    success: { main: '#2D6A4F' }, // Deep Forest Mint
     background: { default: '#0F0F1A', paper: '#181828' },
   },
   typography: {
@@ -165,7 +170,11 @@ function Navbar({ cartCount, onOpenCart }) {
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
 
   const handleLogout = async () => {
-    try { await authAPI.logout(); } catch (_) { /* ignore */ }
+    try {
+      await authAPI.logout();
+    } catch (_) {
+      /* ignore */
+    }
     logout();
     navigate('/login');
   };
@@ -173,30 +182,46 @@ function Navbar({ cartCount, onOpenCart }) {
   const handleSwitchRole = async (targetRole) => {
     try {
       const updated = await switchRole(targetRole);
-      if (updated.role === 'seller' || updated.role === 'partner') {
-        navigate('/partner');
-      } else {
-        navigate('/buyer');
-      }
+      navigate(homePathForRole(updated.role));
     } catch (err) {
+      const detail = err?.response?.data?.detail;
       console.error('Failed to switch role', err);
+      if (err?.response?.status === 403) {
+        window.alert(
+          detail || 'Partner workspace is available once your partner application is approved.'
+        );
+      }
     }
   };
 
   return (
-    <AppBar position="sticky" sx={{ background: 'rgba(22,22,34,0.95)', backdropFilter: 'blur(10px)' }}>
+    <AppBar
+      position="sticky"
+      sx={{ background: 'rgba(22,22,34,0.95)', backdropFilter: 'blur(10px)' }}
+    >
       <Toolbar>
         <RestaurantIcon sx={{ color: 'primary.main', mr: 1 }} />
-        <Typography variant="h6" component={Link} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit', fontWeight: 700 }}>
+        <Typography
+          variant="h6"
+          component={Link}
+          to="/"
+          sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit', fontWeight: 700 }}
+        >
           Society Food
         </Typography>
 
         {user ? (
           <>
             {/* Admin Navigation */}
-            {user.role === 'admin' ? (
+            {isAdminRole(user.role) ? (
               <>
-                <Button component={Link} to="/admin" color="inherit" size="small" sx={{ mr: 1, color: '#2EC4B6', fontWeight: 'bold' }}>
+                <Button
+                  component={Link}
+                  to="/admin"
+                  color="inherit"
+                  size="small"
+                  sx={{ mr: 1, color: '#2EC4B6', fontWeight: 'bold' }}
+                >
                   Admin Console
                 </Button>
                 <Button component={Link} to="/partner" color="inherit" size="small" sx={{ mr: 1 }}>
@@ -205,11 +230,18 @@ function Navbar({ cartCount, onOpenCart }) {
                 <Button component={Link} to="/orders" color="inherit" size="small" sx={{ mr: 1 }}>
                   Orders
                 </Button>
-                <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
+                <Button
+                  component={Link}
+                  to="/suggestions"
+                  color="inherit"
+                  size="small"
+                  sx={{ mr: 1, color: '#F6BD60' }}
+                  startIcon={<LocalFireDepartmentIcon />}
+                >
                   Cravings
                 </Button>
               </>
-            ) : (user.role === 'seller' || user.role === 'partner') ? (
+            ) : isPartnerRole(user.role) ? (
               /* Seller / Partner Navigation */
               <>
                 <Button component={Link} to="/partner" color="inherit" size="small" sx={{ mr: 1 }}>
@@ -218,14 +250,28 @@ function Navbar({ cartCount, onOpenCart }) {
                 <Button component={Link} to="/orders" color="inherit" size="small" sx={{ mr: 1 }}>
                   Orders
                 </Button>
-                <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
+                <Button
+                  component={Link}
+                  to="/suggestions"
+                  color="inherit"
+                  size="small"
+                  sx={{ mr: 1, color: '#F6BD60' }}
+                  startIcon={<LocalFireDepartmentIcon />}
+                >
                   Cravings
                 </Button>
               </>
             ) : (
               /* Buyer / Resident Mode Navigation */
               <>
-                <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
+                <Button
+                  component={Link}
+                  to="/suggestions"
+                  color="inherit"
+                  size="small"
+                  sx={{ mr: 1, color: '#F6BD60' }}
+                  startIcon={<LocalFireDepartmentIcon />}
+                >
                   Cravings
                 </Button>
                 <Button component={Link} to="/orders" color="inherit" size="small" sx={{ mr: 1 }}>
@@ -242,7 +288,7 @@ function Navbar({ cartCount, onOpenCart }) {
             </IconButton>
 
             {/* Role Switcher Button */}
-            {user.role === 'admin' ? (
+            {isAdminRole(user.role) ? (
               <Button
                 size="small"
                 component={Link}
@@ -262,32 +308,44 @@ function Navbar({ cartCount, onOpenCart }) {
             ) : (
               <Button
                 size="small"
-                onClick={() => handleSwitchRole((user.role === 'seller' || user.role === 'partner') ? 'buyer' : 'seller')}
+                onClick={() => handleSwitchRole(isPartnerRole(user.role) ? 'resident' : 'partner')}
                 sx={{
                   mr: 1.5,
                   textTransform: 'none',
                   fontWeight: 'bold',
-                  bgcolor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.15)' : 'rgba(224,90,43,0.15)',
-                  color: (user.role === 'seller' || user.role === 'partner') ? '#2EC4B6' : '#E05A2B',
+                  bgcolor: isPartnerRole(user.role)
+                    ? 'rgba(46,196,182,0.15)'
+                    : 'rgba(224,90,43,0.15)',
+                  color: isPartnerRole(user.role) ? '#2EC4B6' : '#E05A2B',
                   border: '1px solid',
-                  borderColor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.3)' : 'rgba(224,90,43,0.3)',
+                  borderColor: isPartnerRole(user.role)
+                    ? 'rgba(46,196,182,0.3)'
+                    : 'rgba(224,90,43,0.3)',
                   '&:hover': {
-                    bgcolor: (user.role === 'seller' || user.role === 'partner') ? 'rgba(46,196,182,0.25)' : 'rgba(224,90,43,0.25)',
+                    bgcolor: isPartnerRole(user.role)
+                      ? 'rgba(46,196,182,0.25)'
+                      : 'rgba(224,90,43,0.25)',
                   },
                 }}
               >
-                {(user.role === 'seller' || user.role === 'partner') ? '🛒 Switch to Buyer Mode' : '🍳 Switch to Chef Mode'}
+                {isPartnerRole(user.role) ? '🛒 Switch to Buyer Mode' : '🍳 Switch to Chef Mode'}
               </Button>
             )}
 
             {/* User Info Chip with Interactive Popover */}
             <Chip
               avatar={
-                <Avatar sx={{ bgcolor: user.role === 'seller' ? '#2EC4B6' : '#E05A2B', color: '#fff', fontWeight: 'bold' }}>
+                <Avatar
+                  sx={{
+                    bgcolor: isPartnerRole(user.role) ? '#2EC4B6' : '#E05A2B',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                  }}
+                >
                   {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </Avatar>
               }
-              label={`${user.name || user.email?.split('@')[0]} (${user.role || 'buyer'})`}
+              label={`${user.name || user.email?.split('@')[0]} (${normalizeRole(user.role)})`}
               size="small"
               onClick={(e) => setUserMenuAnchor(e.currentTarget)}
               sx={{
@@ -320,7 +378,14 @@ function Navbar({ cartCount, onOpenCart }) {
               }}
             >
               <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
-                <Avatar sx={{ bgcolor: user.role === 'seller' ? '#2EC4B6' : '#E05A2B', width: 44, height: 44, fontWeight: 'bold' }}>
+                <Avatar
+                  sx={{
+                    bgcolor: isPartnerRole(user.role) ? '#2EC4B6' : '#E05A2B',
+                    width: 44,
+                    height: 44,
+                    fontWeight: 'bold',
+                  }}
+                >
                   {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </Avatar>
                 <Box sx={{ overflow: 'hidden' }}>
@@ -337,27 +402,27 @@ function Navbar({ cartCount, onOpenCart }) {
 
               <Box display="flex" flexDirection="column" gap={1} mb={2}>
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">Active Mode:</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Active Mode:
+                  </Typography>
                   <Chip
                     size="small"
                     label={
-                      user.role === 'admin'
+                      isAdminRole(user.role)
                         ? '🛡️ Society Admin'
-                        : (user.role === 'seller' || user.role === 'partner')
-                        ? '🍳 Home Chef'
-                        : '🛒 Resident Buyer'
+                        : isPartnerRole(user.role)
+                          ? '🍳 Home Chef'
+                          : '🛒 Resident Buyer'
                     }
                     sx={{
-                      bgcolor:
-                        user.role === 'admin'
-                          ? 'rgba(46,196,182,0.15)'
-                          : (user.role === 'seller' || user.role === 'partner')
+                      bgcolor: isAdminRole(user.role)
+                        ? 'rgba(46,196,182,0.15)'
+                        : isPartnerRole(user.role)
                           ? 'rgba(224,90,43,0.15)'
                           : 'rgba(255,255,255,0.08)',
-                      color:
-                        user.role === 'admin'
-                          ? '#2EC4B6'
-                          : (user.role === 'seller' || user.role === 'partner')
+                      color: isAdminRole(user.role)
+                        ? '#2EC4B6'
+                        : isPartnerRole(user.role)
                           ? '#E05A2B'
                           : '#fff',
                       fontWeight: 'bold',
@@ -367,18 +432,27 @@ function Navbar({ cartCount, onOpenCart }) {
                 </Box>
 
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">Flat / Unit:</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Flat / Unit:
+                  </Typography>
                   <Typography variant="caption" fontWeight="bold" color="#F6BD60">
                     {user.flat_number ? `Flat #${user.flat_number}` : 'Society Resident'}
                   </Typography>
                 </Box>
 
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">Status:</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Status:
+                  </Typography>
                   <Chip
                     size="small"
                     label="✅ Verified Resident"
-                    sx={{ bgcolor: 'rgba(46,196,182,0.15)', color: '#2EC4B6', fontSize: '0.7rem', height: 20 }}
+                    sx={{
+                      bgcolor: 'rgba(46,196,182,0.15)',
+                      color: '#2EC4B6',
+                      fontSize: '0.7rem',
+                      height: 20,
+                    }}
                   />
                 </Box>
               </Box>
@@ -386,7 +460,14 @@ function Navbar({ cartCount, onOpenCart }) {
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mb: 2 }} />
 
               {/* Workspace Shortcuts */}
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" display="block" mb={1} sx={{ letterSpacing: '0.5px' }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight="bold"
+                display="block"
+                mb={1}
+                sx={{ letterSpacing: '0.5px' }}
+              >
                 WORKSPACE SWITCHER
               </Typography>
               <Button
@@ -396,11 +477,17 @@ function Navbar({ cartCount, onOpenCart }) {
                 to="/"
                 onClick={() => setUserMenuAnchor(null)}
                 size="small"
-                sx={{ mb: 1, color: '#2EC4B6', borderColor: 'rgba(46,196,182,0.4)', textTransform: 'none', fontWeight: 'bold' }}
+                sx={{
+                  mb: 1,
+                  color: '#2EC4B6',
+                  borderColor: 'rgba(46,196,182,0.4)',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                }}
               >
                 🏡 Resident Space
               </Button>
-              {(user.role === 'seller' || user.role === 'partner' || user.role === 'admin' || user.role === 'super_admin') && (
+              {(isPartnerRole(user.role) || isAdminRole(user.role)) && (
                 <Button
                   fullWidth
                   variant="outlined"
@@ -408,12 +495,18 @@ function Navbar({ cartCount, onOpenCart }) {
                   to="/partner"
                   onClick={() => setUserMenuAnchor(null)}
                   size="small"
-                  sx={{ mb: 1, color: '#E05A2B', borderColor: 'rgba(224,90,43,0.4)', textTransform: 'none', fontWeight: 'bold' }}
+                  sx={{
+                    mb: 1,
+                    color: '#E05A2B',
+                    borderColor: 'rgba(224,90,43,0.4)',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                  }}
                 >
                   🍳 Kitchen Hub (Partner)
                 </Button>
               )}
-              {(user.role === 'admin' || user.role === 'super_admin') && (
+              {isAdminRole(user.role) && (
                 <Button
                   fullWidth
                   variant="outlined"
@@ -421,7 +514,13 @@ function Navbar({ cartCount, onOpenCart }) {
                   to="/admin"
                   onClick={() => setUserMenuAnchor(null)}
                   size="small"
-                  sx={{ mb: 1, color: '#F6BD60', borderColor: 'rgba(246,189,96,0.4)', textTransform: 'none', fontWeight: 'bold' }}
+                  sx={{
+                    mb: 1,
+                    color: '#F6BD60',
+                    borderColor: 'rgba(246,189,96,0.4)',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                  }}
                 >
                   🛡️ Society Admin Console
                 </Button>
@@ -435,7 +534,13 @@ function Navbar({ cartCount, onOpenCart }) {
                 to="/profile"
                 onClick={() => setUserMenuAnchor(null)}
                 size="small"
-                sx={{ mb: 1, color: '#fff', borderColor: 'rgba(255,255,255,0.2)', textTransform: 'none', fontWeight: 'bold' }}
+                sx={{
+                  mb: 1,
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                }}
               >
                 👤 View Full Profile & Services
               </Button>
@@ -461,7 +566,14 @@ function Navbar({ cartCount, onOpenCart }) {
           </>
         ) : (
           <>
-            <Button component={Link} to="/suggestions" color="inherit" size="small" sx={{ mr: 1, color: '#F6BD60' }} startIcon={<LocalFireDepartmentIcon />}>
+            <Button
+              component={Link}
+              to="/suggestions"
+              color="inherit"
+              size="small"
+              sx={{ mr: 1, color: '#F6BD60' }}
+              startIcon={<LocalFireDepartmentIcon />}
+            >
               Cravings
             </Button>
             <Button color="primary" variant="outlined" component={Link} to="/login" size="small">
@@ -473,7 +585,6 @@ function Navbar({ cartCount, onOpenCart }) {
     </AppBar>
   );
 }
-
 
 // ── Login Page ───────────────────────────────────────────────────────────────
 function LoginPage() {
@@ -497,17 +608,12 @@ function LoginPage() {
   const getSmartRedirect = (userData) => {
     const next = params.get('next');
     if (next && next.startsWith('/') && !next.startsWith('/login')) {
-      if (next.startsWith('/seller/dashboard') || next.startsWith('/seller')) return '/partner';
+      if (next.startsWith('/seller')) return '/partner';
       return next;
     }
     const userRole = userData?.role;
-    if (userRole === 'admin' || userRole === 'super_admin') {
-      return '/admin';
-    }
-    if (userRole === 'partner' || userRole === 'seller') {
-      return '/partner';
-    }
-    return '/';
+    const home = homePathForRole(userRole);
+    return home === '/buyer' ? '/' : home;
   };
 
   // ── 1. Passwordless OTP Authentication Flow ──────────────────────────────
@@ -584,7 +690,6 @@ function LoginPage() {
     }
   };
 
-
   return (
     <Box
       sx={{
@@ -617,8 +722,8 @@ function LoginPage() {
             {tab === 0
               ? 'Passwordless sign in with verification code'
               : tab === 1
-              ? 'Sign in with your email & password'
-              : 'Connect with home cooks and neighbors'}
+                ? 'Sign in with your email & password'
+                : 'Connect with home cooks and neighbors'}
           </Typography>
         </Box>
 
@@ -642,8 +747,16 @@ function LoginPage() {
           </Tabs>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {info && <Alert severity="info" sx={{ mb: 2 }}>{info}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {info && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {info}
+          </Alert>
+        )}
 
         {tab === 0 ? (
           /* Instant OTP Flow */
@@ -679,7 +792,15 @@ function LoginPage() {
                 onChange={(e) => setOtp(e.target.value)}
                 fullWidth
                 required
-                inputProps={{ maxLength: 6, style: { textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: 'bold' } }}
+                inputProps={{
+                  maxLength: 6,
+                  style: {
+                    textAlign: 'center',
+                    letterSpacing: '6px',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                  },
+                }}
                 placeholder="123456"
                 sx={{ mb: 3 }}
               />
@@ -690,7 +811,12 @@ function LoginPage() {
                 size="large"
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={18} /> : null}
-                sx={{ bgcolor: '#E05A2B', fontWeight: 'bold', mb: 1.5, '&:hover': { bgcolor: '#c9481c' } }}
+                sx={{
+                  bgcolor: '#E05A2B',
+                  fontWeight: 'bold',
+                  mb: 1.5,
+                  '&:hover': { bgcolor: '#c9481c' },
+                }}
               >
                 {loading ? 'Verifying...' : 'Verify Code & Sign In'}
               </Button>
@@ -736,8 +862,8 @@ function LoginPage() {
             </Typography>
             <Box sx={{ mb: 3, display: 'flex', gap: 1.5 }}>
               {[
-                { id: 'buyer', label: '🛒 Resident Buyer' },
-                { id: 'seller', label: '🍳 Home Chef' },
+                { id: 'resident', label: '🛒 Resident' },
+                { id: 'partner', label: '🍳 Home Chef (Partner)' },
               ].map((r) => (
                 <Button
                   key={r.id}
@@ -837,13 +963,18 @@ export function ChefCard({ seller, matchingDishes = [] }) {
   const touchStartX = React.useRef(null);
 
   // Compute photos list: custom photos -> banner -> matching dishes -> avatar -> fallback
-  const photos = (seller.photos && seller.photos.length > 0)
-    ? seller.photos
-    : (seller.banner_url
-      ? [seller.banner_url]
-      : (matchingDishes && matchingDishes.length > 0
-        ? matchingDishes.map((d) => d.image_url).filter(Boolean)
-        : (seller.photo_url ? [seller.photo_url] : ['https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80'])));
+  const photos =
+    seller.photos && seller.photos.length > 0
+      ? seller.photos
+      : seller.banner_url
+        ? [seller.banner_url]
+        : matchingDishes && matchingDishes.length > 0
+          ? matchingDishes.map((d) => d.image_url).filter(Boolean)
+          : seller.photo_url
+            ? [seller.photo_url]
+            : [
+                'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80',
+              ];
 
   const safePhotoIdx = photoIdx % (photos.length || 1);
   const currentPhoto = photos[safePhotoIdx] || photos[0];
@@ -1025,7 +1156,13 @@ export function ChefCard({ seller, matchingDishes = [] }) {
 
         {/* Overlapping Chef Avatar */}
         <Avatar
-          src={seller.photo_url ? (seller.photo_url.startsWith('/') ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${seller.photo_url}` : seller.photo_url) : undefined}
+          src={
+            seller.photo_url
+              ? seller.photo_url.startsWith('/')
+                ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${seller.photo_url}`
+                : seller.photo_url
+              : undefined
+          }
           sx={{
             position: 'absolute',
             bottom: 12,
@@ -1063,7 +1200,11 @@ export function ChefCard({ seller, matchingDishes = [] }) {
           </Typography>
         )}
 
-        <Typography variant="body2" color="rgba(255,255,255,0.75)" sx={{ mb: 2, minHeight: 38, lineHeight: 1.4 }}>
+        <Typography
+          variant="body2"
+          color="rgba(255,255,255,0.75)"
+          sx={{ mb: 2, minHeight: 38, lineHeight: 1.4 }}
+        >
           {seller.bio || 'Authentic home cook preparing fresh food for neighbors.'}
         </Typography>
 
@@ -1072,11 +1213,18 @@ export function ChefCard({ seller, matchingDishes = [] }) {
           <Chip
             size="small"
             label={`⚡ ${seller.on_time_delivery_rate ?? 100}% on-time`}
-            sx={{ bgcolor: 'rgba(46, 196, 182, 0.15)', color: '#2EC4B6', fontWeight: 'bold', fontSize: 11 }}
+            sx={{
+              bgcolor: 'rgba(46, 196, 182, 0.15)',
+              color: '#2EC4B6',
+              fontWeight: 'bold',
+              fontSize: 11,
+            }}
           />
           <Chip
             size="small"
-            icon={<DeliveryDiningIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />}
+            icon={
+              <DeliveryDiningIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />
+            }
             label="Doorstep Delivery"
             sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: '#ddd', fontSize: 11 }}
           />
@@ -1084,8 +1232,22 @@ export function ChefCard({ seller, matchingDishes = [] }) {
 
         {/* Matching Dishes Snippets when Search is Active */}
         {matchingDishes && matchingDishes.length > 0 && (
-          <Box sx={{ mt: 1.5, p: 1.2, bgcolor: 'rgba(224, 90, 43, 0.08)', borderRadius: 2, border: '1px solid rgba(224, 90, 43, 0.2)' }}>
-            <Typography variant="caption" fontWeight="bold" color="#E05A2B" display="block" mb={0.5}>
+          <Box
+            sx={{
+              mt: 1.5,
+              p: 1.2,
+              bgcolor: 'rgba(224, 90, 43, 0.08)',
+              borderRadius: 2,
+              border: '1px solid rgba(224, 90, 43, 0.2)',
+            }}
+          >
+            <Typography
+              variant="caption"
+              fontWeight="bold"
+              color="#E05A2B"
+              display="block"
+              mb={0.5}
+            >
               🔥 Special Dishes Matching Search:
             </Typography>
             <Box display="flex" gap={0.8} flexWrap="wrap">
@@ -1158,7 +1320,6 @@ export function SellersPage({ onAddToCart }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [selectedFilter, setSelectedFilter] = useState('all');
 
   // Multi-Select Filters
   const [filters, setFilters] = useState({
@@ -1188,18 +1349,21 @@ export function SellersPage({ onAddToCart }) {
   const user = authContext ? authContext.user : null;
 
   // Fallback: some flows may not have context hydrated yet — read localStorage
-  const currentUser = user || (() => {
-    try {
-      const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
-    } catch (_) {
-      return null;
-    }
-  })();
+  const currentUser =
+    user ||
+    (() => {
+      try {
+        const raw = localStorage.getItem('user');
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    })();
 
   const loadSellers = () => {
     setLoading(true);
-    sellersAPI.list()
+    sellersAPI
+      .list()
       .then((res) => {
         setSellers(res.data?.sellers || []);
       })
@@ -1223,7 +1387,8 @@ export function SellersPage({ onAddToCart }) {
     }
 
     const timer = setTimeout(() => {
-      menusAPI.search(searchQuery.trim())
+      menusAPI
+        .search(searchQuery.trim())
         .then((res) => {
           const items = res.data?.items || [];
           setMatchedDishes(items);
@@ -1286,8 +1451,10 @@ export function SellersPage({ onAddToCart }) {
     })
     .sort((a, b) => {
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-      if (sortBy === 'punctual') return (b.on_time_delivery_rate ?? 100) - (a.on_time_delivery_rate ?? 100);
-      if (sortBy === 'speed') return (a.avg_delivery_minutes ?? 25) - (b.avg_delivery_minutes ?? 25);
+      if (sortBy === 'punctual')
+        return (b.on_time_delivery_rate ?? 100) - (a.on_time_delivery_rate ?? 100);
+      if (sortBy === 'speed')
+        return (a.avg_delivery_minutes ?? 25) - (b.avg_delivery_minutes ?? 25);
       // 'recommended'
       const scoreA = (a.rating || 4.0) * ((a.on_time_delivery_rate ?? 100) / 100);
       const scoreB = (b.rating || 4.0) * ((b.on_time_delivery_rate ?? 100) / 100);
@@ -1296,9 +1463,11 @@ export function SellersPage({ onAddToCart }) {
 
   // Matching chefs for autocomplete
   const matchingChefs = searchQuery.trim()
-    ? sellers.filter((s) =>
-        s.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (s.flat_number && String(s.flat_number).toLowerCase().includes(searchQuery.toLowerCase().trim()))
+    ? sellers.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+          (s.flat_number &&
+            String(s.flat_number).toLowerCase().includes(searchQuery.toLowerCase().trim()))
       )
     : [];
 
@@ -1309,7 +1478,8 @@ export function SellersPage({ onAddToCart }) {
           🍽️ Society Home Chefs & Kitchens
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Discover verified home cooks, daily kitchens, and special weekend bakers in your community.
+          Discover verified home cooks, daily kitchens, and special weekend bakers in your
+          community.
         </Typography>
       </Box>
 
@@ -1331,7 +1501,14 @@ export function SellersPage({ onAddToCart }) {
             ),
             endAdornment: searchQuery ? (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => { setSearchQuery(''); setAutocompleteOpen(false); }} sx={{ color: '#aaa' }}>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setAutocompleteOpen(false);
+                  }}
+                  sx={{ color: '#aaa' }}
+                >
                   <ClearIcon fontSize="small" />
                 </IconButton>
               </InputAdornment>
@@ -1371,10 +1548,19 @@ export function SellersPage({ onAddToCart }) {
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="caption" fontWeight="bold" color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+              <Typography
+                variant="caption"
+                fontWeight="bold"
+                color="text.secondary"
+                sx={{ textTransform: 'uppercase' }}
+              >
                 Instant Search Suggestions
               </Typography>
-              <IconButton size="small" onClick={() => setAutocompleteOpen(false)} sx={{ color: '#aaa' }}>
+              <IconButton
+                size="small"
+                onClick={() => setAutocompleteOpen(false)}
+                sx={{ color: '#aaa' }}
+              >
                 <ClearIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -1382,7 +1568,15 @@ export function SellersPage({ onAddToCart }) {
             {/* Chefs Group */}
             {matchingChefs.length > 0 && (
               <Box mb={2}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#F6BD60" mb={1} display="flex" alignItems="center" gap={1}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight="bold"
+                  color="#F6BD60"
+                  mb={1}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
                   👨‍🍳 Home Chefs & Kitchens ({matchingChefs.length})
                 </Typography>
                 <Box display="flex" flexDirection="column" gap={0.8}>
@@ -1419,7 +1613,15 @@ export function SellersPage({ onAddToCart }) {
                           )}
                         </Box>
                       </Box>
-                      <Chip label={`⭐ ${chef.rating?.toFixed(1) || 'New'}`} size="small" sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 'bold' }} />
+                      <Chip
+                        label={`⭐ ${chef.rating?.toFixed(1) || 'New'}`}
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(246, 189, 96, 0.15)',
+                          color: '#F6BD60',
+                          fontWeight: 'bold',
+                        }}
+                      />
                     </Box>
                   ))}
                 </Box>
@@ -1429,7 +1631,15 @@ export function SellersPage({ onAddToCart }) {
             {/* Special Dishes Group */}
             {matchedDishes.length > 0 && (
               <Box>
-                <Typography variant="subtitle2" fontWeight="bold" color="#E05A2B" mb={1} display="flex" alignItems="center" gap={1}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight="bold"
+                  color="#E05A2B"
+                  mb={1}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
                   🍽️ Special Dishes Matching &ldquo;{searchQuery}&rdquo; ({matchedDishes.length})
                 </Typography>
                 <Box display="flex" flexDirection="column" gap={0.8}>
@@ -1463,7 +1673,8 @@ export function SellersPage({ onAddToCart }) {
                             {dish.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            by <strong>{dish.seller_name}</strong> {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
+                            by <strong>{dish.seller_name}</strong>{' '}
+                            {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
                           </Typography>
                         </Box>
                       </Box>
@@ -1480,12 +1691,25 @@ export function SellersPage({ onAddToCart }) {
       </Box>
 
       {/* Modern Two-Tier Filter & Sort Toolbar */}
-      <Box sx={{ mb: 4, p: 2, bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <Box
+        sx={{
+          mb: 4,
+          p: 2,
+          bgcolor: '#191928',
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
         <Grid container spacing={2} alignItems="center">
           {/* Tier 1: Multi-Select Filter Chips */}
           <Grid item xs={12} md={7}>
             <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mr: 0.5, textTransform: 'uppercase' }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight="bold"
+                sx={{ mr: 0.5, textTransform: 'uppercase' }}
+              >
                 Filter:
               </Typography>
               <Chip
@@ -1572,8 +1796,19 @@ export function SellersPage({ onAddToCart }) {
 
           {/* Tier 2: Dedicated Sort By Selector */}
           <Grid item xs={12} md={5}>
-            <Box display="flex" gap={1} flexWrap="wrap" alignItems="center" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mr: 0.5, textTransform: 'uppercase' }}>
+            <Box
+              display="flex"
+              gap={1}
+              flexWrap="wrap"
+              alignItems="center"
+              justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight="bold"
+                sx={{ mr: 0.5, textTransform: 'uppercase' }}
+              >
                 Sort By:
               </Typography>
               {[
@@ -1631,11 +1866,17 @@ export function SellersPage({ onAddToCart }) {
         </Box>
       )}
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Empty State */}
       {!loading && !error && filteredSellers.length === 0 && matchedDishes.length === 0 && (
-        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3, bgcolor: '#191928', color: '#fff' }}>
+        <Paper
+          sx={{ p: 6, textAlign: 'center', borderRadius: 3, bgcolor: '#191928', color: '#fff' }}
+        >
           <StoreIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
             {searchQuery || hasActiveFilters
@@ -1657,17 +1898,17 @@ export function SellersPage({ onAddToCart }) {
               'Be the first to register as a chef in your residential building!'
             )}
           </Typography>
-          {!searchQuery && !hasActiveFilters && (
-            currentUser && currentUser.role === 'seller' ? (
-              <Button variant="contained" component={Link} to="/seller/dashboard">
+          {!searchQuery &&
+            !hasActiveFilters &&
+            (currentUser && isPartnerRole(currentUser.role) ? (
+              <Button variant="contained" component={Link} to="/partner">
                 Your Seller Dashboard
               </Button>
             ) : (
-              <Button variant="contained" component={Link} to={`/login?role=seller&next=/seller/dashboard`}>
+              <Button variant="contained" component={Link} to={`/login?role=partner&next=/partner`}>
                 Register as Seller
               </Button>
-            )
-          )}
+            ))}
         </Paper>
       )}
 
@@ -1676,10 +1917,7 @@ export function SellersPage({ onAddToCart }) {
         <Grid container spacing={3}>
           {filteredSellers.map((seller) => (
             <Grid item xs={12} sm={6} md={4} key={seller.id}>
-              <ChefCard
-                seller={seller}
-                matchingDishes={matchedSellersMap[seller.id] || []}
-              />
+              <ChefCard seller={seller} matchingDishes={matchedSellersMap[seller.id] || []} />
             </Grid>
           ))}
         </Grid>
@@ -1720,7 +1958,13 @@ export function SellersPage({ onAddToCart }) {
                     component="img"
                     src={getDishImageUrl(dish)}
                     alt={dish.name}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 0.3s',
+                      '&:hover': { transform: 'scale(1.05)' },
+                    }}
                   />
                   <Box
                     sx={{
@@ -1734,13 +1978,25 @@ export function SellersPage({ onAddToCart }) {
                     <Chip
                       size="small"
                       label={dish.category === 'veg' ? '🟢 Veg' : '🔴 Non-Veg'}
-                      sx={{ bgcolor: dish.category === 'veg' ? 'rgba(46, 196, 182, 0.9)' : 'rgba(224, 90, 43, 0.9)', color: '#fff', fontWeight: 'bold' }}
+                      sx={{
+                        bgcolor:
+                          dish.category === 'veg'
+                            ? 'rgba(46, 196, 182, 0.9)'
+                            : 'rgba(224, 90, 43, 0.9)',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                      }}
                     />
                   </Box>
                 </Box>
 
                 <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    mb={0.5}
+                  >
                     <Typography variant="h6" fontWeight="bold">
                       {dish.name}
                     </Typography>
@@ -1750,11 +2006,16 @@ export function SellersPage({ onAddToCart }) {
                   </Box>
 
                   <Typography variant="body2" color="text.secondary" mb={1.5}>
-                    by <strong>{dish.seller_name}</strong> {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
+                    by <strong>{dish.seller_name}</strong>{' '}
+                    {dish.seller_flat ? `(Flat #${dish.seller_flat})` : ''}
                   </Typography>
 
                   {dish.description && (
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)" sx={{ lineHeight: 1.4, mb: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="rgba(255,255,255,0.7)"
+                      sx={{ lineHeight: 1.4, mb: 1 }}
+                    >
                       {dish.description}
                     </Typography>
                   )}
@@ -1779,7 +2040,12 @@ export function SellersPage({ onAddToCart }) {
                         onAddToCart(dish, dish.seller_id, dish.seller_name, dish.seller_flat);
                       }
                     }}
-                    sx={{ bgcolor: '#E05A2B', fontWeight: 'bold', textTransform: 'none', '&:hover': { bgcolor: '#c9481c' } }}
+                    sx={{
+                      bgcolor: '#E05A2B',
+                      fontWeight: 'bold',
+                      textTransform: 'none',
+                      '&:hover': { bgcolor: '#c9481c' },
+                    }}
                   >
                     Add to Basket
                   </Button>
@@ -1835,8 +2101,8 @@ function HomePage() {
         Homemade food from your neighbours
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4, maxWidth: 500 }}>
-        Connect with home cooks in your residential society. Discover fresh,
-        authentic meals and support your community.
+        Connect with home cooks in your residential society. Discover fresh, authentic meals and
+        support your community.
       </Typography>
       <Divider sx={{ width: 60, mb: 4, borderColor: 'primary.main' }} />
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -1850,12 +2116,7 @@ function HomePage() {
           Browse Sellers
         </Button>
         {!user && (
-          <Button
-            variant="outlined"
-            size="large"
-            component={Link}
-            to="/login"
-          >
+          <Button variant="outlined" size="large" component={Link} to="/login">
             Login / Register
           </Button>
         )}
@@ -1870,15 +2131,47 @@ function PrivateRoute({ children, allowedRoles }) {
   const location = useLocation();
 
   if (!user) {
-    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+    return (
+      <Navigate
+        to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    );
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'seller' ? '/seller/dashboard' : '/buyer'} replace />;
+  if (allowedRoles && !hasAllowedRole(user.role, allowedRoles)) {
+    return <Navigate to={homePathForRole(user.role)} replace />;
   }
 
   return children;
 }
+
+Navbar.propTypes = {
+  cartCount: PropTypes.number,
+  onOpenCart: PropTypes.func,
+};
+
+const sellerShape = PropTypes.shape({
+  id: PropTypes.number,
+  name: PropTypes.string,
+  bio: PropTypes.string,
+  flat_number: PropTypes.string,
+  photo_url: PropTypes.string,
+  banner_url: PropTypes.string,
+  photos: PropTypes.arrayOf(PropTypes.string),
+  rating: PropTypes.number,
+  is_open: PropTypes.bool,
+  on_time_delivery_rate: PropTypes.number,
+});
+
+ChefCard.propTypes = {
+  seller: sellerShape.isRequired,
+  matchingDishes: PropTypes.array,
+};
+
+SellersPage.propTypes = {
+  onAddToCart: PropTypes.func,
+};
 
 PrivateRoute.propTypes = {
   children: PropTypes.node,
@@ -1897,9 +2190,7 @@ function AppContent() {
     setCartItems((prev) => {
       const existing = prev.find((it) => it.id === item.id);
       if (existing) {
-        return prev.map((it) =>
-          it.id === item.id ? { ...it, quantity: it.quantity + 1 } : it
-        );
+        return prev.map((it) => (it.id === item.id ? { ...it, quantity: it.quantity + 1 } : it));
       }
       return [
         ...prev,
@@ -1931,7 +2222,6 @@ function AppContent() {
 
   const totalCartCount = cartItems.reduce((sum, it) => sum + it.quantity, 0);
 
-
   return (
     <>
       <Navbar cartCount={totalCartCount} onOpenCart={() => setCartOpen(true)} />
@@ -1942,24 +2232,14 @@ function AppContent() {
           path="/sellers"
           element={
             <PrivateRoute>
-              <SellersPage />
               <SellersPage onAddToCart={handleAddToCart} />
             </PrivateRoute>
           }
         />
-        <Route
-          path="/menu/:sellerId"
-          element={<MenuPage onAddToCart={handleAddToCart} />}
-        />
-        <Route
-          path="/menus/:sellerId"
-          element={<MenuPage onAddToCart={handleAddToCart} />}
-        />
+        <Route path="/menu/:sellerId" element={<MenuPage onAddToCart={handleAddToCart} />} />
+        <Route path="/menus/:sellerId" element={<MenuPage onAddToCart={handleAddToCart} />} />
 
-        <Route
-          path="/suggestions"
-          element={<SuggestionsBoard currentUser={user} />}
-        />
+        <Route path="/suggestions" element={<SuggestionsBoard currentUser={user} />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route
           path="/orders"
@@ -1989,7 +2269,7 @@ function AppContent() {
         <Route
           path="/partner"
           element={
-            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+            <PrivateRoute allowedRoles={['partner', 'admin']}>
               <PartnerLayout currentUser={user} />
             </PrivateRoute>
           }
@@ -2023,8 +2303,8 @@ function AppContent() {
         <Route
           path="/seller/dashboard"
           element={
-            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
-              <SellerDashboardPage currentUser={user} />
+            <PrivateRoute allowedRoles={['partner', 'admin']}>
+              <Navigate to="/partner" replace />
             </PrivateRoute>
           }
         />
@@ -2033,7 +2313,7 @@ function AppContent() {
         <Route
           path="/seller/dashboard/menus"
           element={
-            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+            <PrivateRoute allowedRoles={['partner', 'admin']}>
               <Navigate to="/partner/menu" replace />
             </PrivateRoute>
           }
@@ -2041,14 +2321,13 @@ function AppContent() {
         <Route
           path="/seller/dashboard/orders"
           element={
-            <PrivateRoute allowedRoles={['seller', 'partner', 'admin']}>
+            <PrivateRoute allowedRoles={['partner', 'admin']}>
               <Navigate to="/partner/orders" replace />
             </PrivateRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
 
       {/* Global Slide-Out Multi-Chef Cart Drawer */}
       <CartDrawer
@@ -2086,13 +2365,7 @@ function AppContent() {
           >
             <IconButton
               component={Link}
-              to={
-                user.role === 'admin' || user.role === 'super_admin'
-                  ? '/admin'
-                  : (user.role === 'seller' || user.role === 'partner')
-                  ? '/partner'
-                  : '/'
-              }
+              to={isAdminRole(user.role) ? '/admin' : isPartnerRole(user.role) ? '/partner' : '/'}
               aria-label="Mobile Navigation Home"
               sx={{
                 flexDirection: 'column',
@@ -2108,7 +2381,9 @@ function AppContent() {
               }}
             >
               <HomeIcon fontSize="small" />
-              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>Home</Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>
+                Home
+              </Typography>
             </IconButton>
 
             <IconButton
@@ -2122,7 +2397,9 @@ function AppContent() {
               }}
             >
               <LocalFireDepartmentIcon fontSize="small" />
-              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>Cravings</Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>
+                Cravings
+              </Typography>
             </IconButton>
 
             <IconButton
@@ -2136,7 +2413,9 @@ function AppContent() {
               }}
             >
               <DeliveryDiningIcon fontSize="small" />
-              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>Orders</Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>
+                Orders
+              </Typography>
             </IconButton>
 
             <IconButton
@@ -2148,10 +2427,15 @@ function AppContent() {
                 py: 0.5,
               }}
             >
-              <Badge badgeContent={cartItems.reduce((acc, item) => acc + item.quantity, 0)} color="error">
+              <Badge
+                badgeContent={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+                color="error"
+              >
                 <ShoppingBagOutlinedIcon fontSize="small" />
               </Badge>
-              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>Cart</Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>
+                Cart
+              </Typography>
             </IconButton>
 
             <IconButton
@@ -2165,14 +2449,15 @@ function AppContent() {
               }}
             >
               <PersonOutlineIcon fontSize="small" />
-              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>Profile</Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', mt: 0.2, fontWeight: 600 }}>
+                Profile
+              </Typography>
             </IconButton>
           </Paper>
         </>
       )}
 
       <Footer />
-
     </>
   );
 }
@@ -2191,4 +2476,3 @@ function App() {
 }
 
 export default App;
-

@@ -30,7 +30,11 @@ pytestmark = pytest.mark.skipif(
 
 
 def _alembic(*args: str) -> None:
-    env = {**os.environ, "DATABASE_URL": MIGRATION_DB_URL, "PYTHONPATH": str(BACKEND_DIR)}
+    env = {
+        **os.environ,
+        "DATABASE_URL": MIGRATION_DB_URL,
+        "PYTHONPATH": str(BACKEND_DIR),
+    }
     result = subprocess.run(
         [sys.executable, "-m", "alembic", *args],
         cwd=BACKEND_DIR,
@@ -161,7 +165,8 @@ def test_full_migration_cycle_preserves_data(engine):
     }
     assert _scalar_map(engine, "SELECT id, review_status::text FROM ratings") == {1: "published"}
     assert _scalar_map(
-        engine, "SELECT id, partner_id || ':' || resident_id || ':' || partner_flat FROM deliveries"
+        engine,
+        "SELECT id, partner_id || ':' || resident_id || ':' || partner_flat FROM deliveries",
     ) == {1: "2:1:B-201"}
 
     from app.db.models import Delivery, Menu, Order, PartnerProfile, Payment, Rating, User

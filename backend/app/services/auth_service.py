@@ -20,11 +20,13 @@ def register_user(
     email: str,
     name: str,
     password: str,
-    role: str = "resident",
 ) -> User:
     """
-    Register a new user with a hashed password.
-    Raises HTTP 409 if email already exists.
+    Register a new resident with a hashed password.
+
+    Every self-registered account starts as a resident; the partner role is only
+    reachable through an admin-approved partner application and privileged roles
+    are never self-assignable. Raises HTTP 409 if the email already exists.
     """
     existing = db.query(User).filter(User.email == email).first()
     if existing:
@@ -33,13 +35,10 @@ def register_user(
             detail="An account with this email already exists.",
         )
 
-    role_map = {"seller": "partner", "buyer": "resident"}
-    normalized_role = role_map.get(role, role)
-
     user = User(
         email=email,
         name=name,
-        role=UserRole(normalized_role),
+        role=UserRole.resident,
         hashed_password=hash_password(password),
         status=UserStatus.pending_verification,
         is_active=True,
@@ -102,11 +101,14 @@ def find_or_create_user(
     db: Session,
     email: str,
     name: str,
-    role: str,
+    role: str = UserRole.resident.value,
 ) -> tuple[User, bool]:
     """
-    Find an existing user by email or create a new one (used by seed scripts).
+    Find an existing user by email or create a new one.
     Returns (user, created).
+
+    Callers handling untrusted input (OTP sign-in) must leave ``role`` at the
+    resident default; privileged roles are intended for seed scripts only.
     """
     user = db.query(User).filter(User.email == email).first()
     if user:
@@ -123,3 +125,28 @@ def find_or_create_user(
     db.commit()
     db.refresh(user)
     return user, True
+
+
+def apply_workspace_preference(db: Session, user: User, requested_role: str | None) -> User:
+    """
+    Honour a resident/partner workspace preference sent at sign-in.
+
+    Admins and super-admins are never re-roled, and the partner workspace is only
+    granted to users with an approved, active partner profile. Requests that are
+    not permitted are ignored (the user keeps their current role) so sign-in
+    never fails because of a stale UI preference.
+    """
+    from app.api.dependencies import is_approved_partner
+
+    if not requested_role or user.role in (UserRole.admin, UserRole.super_admin):
+        return user
+    if requested_role == UserRole.partner.value and not is_approved_partner(user):
+        return user
+    if requested_role not in (UserRole.resident.value, UserRole.partner.value):
+        return user
+    if user.role.value != requested_role:
+        user.role = UserRole(requested_role)
+        user.updated_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(user)
+    return user

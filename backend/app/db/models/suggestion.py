@@ -3,15 +3,9 @@
 from datetime import date
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import (
-    Date,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import Date
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -34,9 +28,7 @@ class DishSuggestion(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Resident who posted the dish suggestion
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # Suggested dish name (e.g. "Hyderabadi Dum Biryani")
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -70,9 +62,7 @@ class DishSuggestion(TimestampMixin, Base):
     )
 
     # Pre-order menu item created by the chef from this suggestion (optional)
-    created_menu_id: Mapped[int | None] = mapped_column(
-        ForeignKey("menus.id"), nullable=True
-    )
+    created_menu_id: Mapped[int | None] = mapped_column(ForeignKey("menus.id"), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
@@ -96,20 +86,14 @@ class DishUpvote(TimestampMixin, Base):
     """Upvote record linking a user to a dish suggestion."""
 
     __tablename__ = "dish_upvotes"
-    __table_args__ = (
-        UniqueConstraint("user_id", "suggestion_id", name="uq_user_dish_suggestion"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "suggestion_id", name="uq_user_dish_suggestion"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     suggestion_id: Mapped[int] = mapped_column(
         ForeignKey("dish_suggestions.id"), index=True, nullable=False
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship("User")
-    suggestion: Mapped["DishSuggestion"] = relationship(
-        "DishSuggestion", back_populates="upvotes"
-    )
+    suggestion: Mapped["DishSuggestion"] = relationship("DishSuggestion", back_populates="upvotes")

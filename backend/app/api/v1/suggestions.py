@@ -9,7 +9,6 @@ Public / Authenticated:
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
@@ -17,12 +16,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user, get_db, require_role
 from app.core.security import decode_token
 from app.db.models import User
-from app.schemas.suggestion import (
-    SuggestionClaimRequest,
-    SuggestionCreateRequest,
-    SuggestionResponse,
-    UpvoteResponse,
-)
+from app.schemas.suggestion import SuggestionClaimRequest, SuggestionCreateRequest, UpvoteResponse
 from app.services import suggestion_service
 
 logger = logging.getLogger(__name__)
@@ -54,7 +48,7 @@ async def list_suggestions(
             payload = decode_token(token)
             current_user_id = int(payload.get("sub", 0))
         except Exception:
-            pass
+            logger.debug("Ignoring invalid optional bearer token on suggestions list")
 
     return suggestion_service.list_suggestions(
         db,
@@ -85,7 +79,6 @@ async def list_matched_suggestions(
     return {"suggestions": matched, "total": len(matched)}
 
 
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_suggestion(
     request: SuggestionCreateRequest,
@@ -93,9 +86,7 @@ async def create_suggestion(
     db: Session = DB_DEPENDENCY,
 ):
     """Propose a new dish suggestion to the society community (authenticated)."""
-    suggestion = suggestion_service.create_suggestion(
-        db, user_id=current_user.id, request=request
-    )
+    suggestion = suggestion_service.create_suggestion(db, user_id=current_user.id, request=request)
     return {
         "id": suggestion.id,
         "title": suggestion.title,

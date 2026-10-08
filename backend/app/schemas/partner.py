@@ -50,4 +50,3 @@ class PartnerDetailResponse(PartnerResponse):
 
     email: str
     maintenance_balance: float = 0.0
-

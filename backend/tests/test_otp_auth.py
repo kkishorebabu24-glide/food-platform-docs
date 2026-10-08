@@ -3,15 +3,18 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.security import store_otp
 from app.db.models import User
-from app.db.models.enums import UserRole, UserStatus
+from app.db.models.enums import UserStatus
 
 
 def test_request_otp_email(client: TestClient):
     response = client.post(
         "/api/v1/auth/otp/request",
-        json={"email": "resident1@societyfood.com", "role": "resident", "channel": "email"},
+        json={
+            "email": "resident1@societyfood.com",
+            "role": "resident",
+            "channel": "email",
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -31,7 +34,12 @@ def test_verify_otp_auto_provisions_new_resident(client: TestClient, db: Session
 
     verify_res = client.post(
         "/api/v1/auth/otp/verify",
-        json={"email": email, "otp": otp, "name": "Resident Ramesh", "role": "resident"},
+        json={
+            "email": email,
+            "otp": otp,
+            "name": "Resident Ramesh",
+            "role": "resident",
+        },
     )
     assert verify_res.status_code == 200
     data = verify_res.json()
@@ -143,4 +151,3 @@ def test_request_otp_rate_limiting(client: TestClient):
     )
     assert excess_res.status_code == 429
     assert "Too many OTP requests" in excess_res.json()["detail"]
-

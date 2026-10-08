@@ -1,10 +1,11 @@
 """Menu model — food items offered by a partner."""
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import JSON, Boolean
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -63,7 +64,6 @@ class Menu(TimestampMixin, Base):
     # List of allowed delivery slots: e.g. ["lunch_today", "dinner_today", "weekend_special"]
     available_slots: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-
     # Maximum portion batch size per slot (0 = unlimited)
     max_batch_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
@@ -71,10 +71,7 @@ class Menu(TimestampMixin, Base):
     min_lead_time_hours: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    partner: Mapped["PartnerProfile"] = relationship(
-        "PartnerProfile", back_populates="menus"
-    )
-
+    partner: Mapped["PartnerProfile"] = relationship("PartnerProfile", back_populates="menus")
 
     def __init__(self, **kwargs):
         if "seller_id" in kwargs and "partner_id" not in kwargs:

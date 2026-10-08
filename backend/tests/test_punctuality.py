@@ -1,11 +1,11 @@
 """Tests for automated punctuality and reliability rating service."""
 
-from datetime import datetime, timezone, timedelta, date
-from fastapi.testclient import TestClient
+from datetime import date, datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 
-from app.db.models import User, PartnerProfile, Order, Delivery
-from app.db.models.enums import UserRole, PartnerApplicationStatus, OrderStatus, DeliverySlot, DeliveryType
+from app.db.models import Delivery, Order, PartnerProfile, User
+from app.db.models.enums import OrderStatus, PartnerApplicationStatus, PartnerStatus, UserRole
 from app.services.punctuality_service import (
     calculate_order_is_on_time,
     update_partner_punctuality_on_order_completed,
@@ -60,13 +60,19 @@ def test_calculate_order_is_on_time_preorder(db: Session):
 
 
 def test_update_partner_punctuality_flow(db: Session):
-    partner_user = User(name="Punctual Chef", email="punctual@test.com", role=UserRole.partner, is_active=True)
+    partner_user = User(
+        name="Punctual Chef",
+        email="punctual@test.com",
+        role=UserRole.partner,
+        is_active=True,
+    )
     db.add(partner_user)
     db.commit()
     partner_prof = PartnerProfile(
         id=partner_user.id,
         bio="Fast Chef",
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
         on_time_delivery_rate=100.0,
         punctuality_rating=5.0,
     )
@@ -92,4 +98,3 @@ def test_update_partner_punctuality_flow(db: Session):
     assert updated_prof.total_orders_completed == 1
     assert updated_prof.on_time_delivery_rate == 100.0
     assert updated_prof.punctuality_rating == 5.0
-

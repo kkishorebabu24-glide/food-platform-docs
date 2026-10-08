@@ -187,10 +187,16 @@ def _enum(name: str, values: Sequence[str]) -> postgresql.ENUM:
 def _timestamps() -> list[sa.Column]:
     return [
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
         ),
     ]
 
@@ -201,7 +207,12 @@ def upgrade() -> None:
 
     # Expanded lifecycles
     _rebuild_enum(
-        "orderstatus", "orders", "status", ORDER_STATUSES, ORDER_UPGRADE_MAP, fallback="placed"
+        "orderstatus",
+        "orders",
+        "status",
+        ORDER_STATUSES,
+        ORDER_UPGRADE_MAP,
+        fallback="placed",
     )
     _rebuild_enum(
         "paymentstatus",
@@ -273,7 +284,8 @@ def upgrade() -> None:
             sa.Column(
                 "category",
                 _enum(
-                    "menucategory", ("veg", "non_veg", "snacks", "desserts", "beverages", "other")
+                    "menucategory",
+                    ("veg", "non_veg", "snacks", "desserts", "beverages", "other"),
                 ),
                 nullable=False,
             ),
@@ -291,7 +303,12 @@ def upgrade() -> None:
                 sa.ForeignKey("partner_profiles.id"),
                 nullable=True,
             ),
-            sa.Column("created_menu_id", sa.Integer(), sa.ForeignKey("menus.id"), nullable=True),
+            sa.Column(
+                "created_menu_id",
+                sa.Integer(),
+                sa.ForeignKey("menus.id"),
+                nullable=True,
+            ),
             *_timestamps(),
         )
         op.create_index("ix_dish_suggestions_id", "dish_suggestions", ["id"])

@@ -44,7 +44,11 @@ def upgrade() -> None:
         sa.Column(
             "verification_status",
             sa.Enum(
-                "pending", "verified", "rejected", name="verificationstatus", create_constraint=True
+                "pending",
+                "verified",
+                "rejected",
+                name="verificationstatus",
+                create_constraint=True,
             ),
             nullable=False,
         ),
@@ -130,7 +134,10 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_payouts_id"), "payouts", ["id"], unique=False)
     op.create_index(
-        op.f("ix_payouts_provider_payout_id"), "payouts", ["provider_payout_id"], unique=False
+        op.f("ix_payouts_provider_payout_id"),
+        "payouts",
+        ["provider_payout_id"],
+        unique=False,
     )
     op.create_index(op.f("ix_payouts_seller_id"), "payouts", ["seller_id"], unique=False)
     op.create_table(
@@ -145,7 +152,11 @@ def upgrade() -> None:
         sa.Column(
             "approval_status",
             sa.Enum(
-                "pending", "approved", "rejected", name="approvalstatus", create_constraint=True
+                "pending",
+                "approved",
+                "rejected",
+                name="approvalstatus",
+                create_constraint=True,
             ),
             nullable=False,
         ),
@@ -237,10 +248,16 @@ def upgrade() -> None:
     op.create_index(op.f("ix_payments_id"), "payments", ["id"], unique=False)
     op.create_index(op.f("ix_payments_order_id"), "payments", ["order_id"], unique=True)
     op.create_index(
-        op.f("ix_payments_provider_order_id"), "payments", ["provider_order_id"], unique=False
+        op.f("ix_payments_provider_order_id"),
+        "payments",
+        ["provider_order_id"],
+        unique=False,
     )
     op.create_index(
-        op.f("ix_payments_provider_payment_id"), "payments", ["provider_payment_id"], unique=False
+        op.f("ix_payments_provider_payment_id"),
+        "payments",
+        ["provider_payment_id"],
+        unique=False,
     )
     op.create_index(op.f("ix_payments_seller_id"), "payments", ["seller_id"], unique=False)
     op.create_table(
@@ -313,7 +330,10 @@ def upgrade() -> None:
         op.f("ix_ledger_entries_order_id"), "ledger_entries", ["order_id"], unique=False
     )
     op.create_index(
-        op.f("ix_ledger_entries_payment_id"), "ledger_entries", ["payment_id"], unique=False
+        op.f("ix_ledger_entries_payment_id"),
+        "ledger_entries",
+        ["payment_id"],
+        unique=False,
     )
     op.create_index(op.f("ix_ledger_entries_user_id"), "ledger_entries", ["user_id"], unique=False)
     # ### end Alembic commands ###

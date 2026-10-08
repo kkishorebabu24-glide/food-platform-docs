@@ -2,29 +2,31 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel
 
 
 class PaymentInitiateResponse(BaseModel):
     """Response after initiating a Razorpay order."""
+
     razorpay_order_id: str
-    amount: int           # Amount in paise (INR)
+    amount: int  # Amount in paise (INR)
     currency: str
     key_id: str
-    payment_id: int       # Internal DB Payment.id
+    payment_id: int  # Internal DB Payment.id
     order_id: int
 
 
 class PaymentCaptureRequest(BaseModel):
     """Request body for confirming a Razorpay payment from the frontend."""
-    provider_payment_id: str   # razorpay_payment_id from Razorpay callback
-    provider_signature: str    # razorpay_signature from Razorpay callback
+
+    provider_payment_id: str  # razorpay_payment_id from Razorpay callback
+    provider_signature: str  # razorpay_signature from Razorpay callback
 
 
 class DirectUPIInitiateResponse(BaseModel):
     """Response when generating a Direct P2PM UPI payment intent."""
+
     order_id: int
     amount: Decimal
     currency: str = "INR"
@@ -36,11 +38,13 @@ class DirectUPIInitiateResponse(BaseModel):
 
 class SubmitUTRRequest(BaseModel):
     """Request body for resident submitting 12-digit UPI UTR number."""
+
     utr_number: str
 
 
 class PaymentResponse(BaseModel):
     """Full payment detail response."""
+
     id: int
     order_id: int
     resident_id: int
@@ -63,6 +67,7 @@ class PaymentResponse(BaseModel):
 
 class PartnerMaintenanceStatusResponse(BaseModel):
     """SaaS Pass quota and platform maintenance status for a partner."""
+
     partner_id: int
     free_orders_remaining: int
     free_orders_total: int
@@ -76,12 +81,14 @@ class PartnerMaintenanceStatusResponse(BaseModel):
 
 class MaintenanceTopupRequest(BaseModel):
     """Request body for partner topping up maintenance credits."""
+
     amount: Decimal
     utr_number: str
 
 
 class LedgerEntryResponse(BaseModel):
     """A single partner ledger entry."""
+
     id: int
     order_id: int
     entry_type: str
@@ -95,6 +102,7 @@ class LedgerEntryResponse(BaseModel):
 
 class PartnerBalanceResponse(BaseModel):
     """Partner's current ledger balance."""
+
     partner_id: int
     balance: Decimal
     currency: str = "INR"

@@ -13,10 +13,10 @@ from app.db.models.delivery import Delivery
 from app.db.models.ledger import LedgerEntry
 from app.db.models.menu import Menu
 from app.db.models.order import Order
+from app.db.models.partner_profile import PartnerProfile
 from app.db.models.payment import Payment
 from app.db.models.payout import Payout
 from app.db.models.rating import Rating
-from app.db.models.partner_profile import PartnerProfile
 from app.db.models.suggestion import DishSuggestion, DishUpvote
 from app.db.models.user import User
 
@@ -37,5 +37,3 @@ __all__ = [
     "SellerProfile",
     "User",
 ]
-
-

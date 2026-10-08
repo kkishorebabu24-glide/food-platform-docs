@@ -2,10 +2,11 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import DateTime
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -36,12 +37,8 @@ class Payment(TimestampMixin, Base):
     order_id: Mapped[int] = mapped_column(
         ForeignKey("orders.id"), unique=True, index=True, nullable=False
     )
-    resident_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
-    partner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    resident_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # Amount charged to the resident (exact decimal, INR rupees)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -55,23 +52,15 @@ class Payment(TimestampMixin, Base):
     )
 
     # Payment gateway / rail identifier (direct_upi, razorpay)
-    provider: Mapped[str] = mapped_column(
-        String(50), default="direct_upi", nullable=False
-    )
+    provider: Mapped[str] = mapped_column(String(50), default="direct_upi", nullable=False)
 
     # Identifiers (populated progressively through the flow)
-    provider_order_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, index=True
-    )
-    provider_payment_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, index=True
-    )
+    provider_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    provider_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     provider_signature: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Direct P2PM UPI identifiers
-    utr_number: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, index=True
-    )
+    utr_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     partner_confirmed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -80,9 +69,7 @@ class Payment(TimestampMixin, Base):
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Timestamp when payment was successfully captured / confirmed
-    captured_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     order: Mapped["Order"] = relationship("Order", back_populates="payment")

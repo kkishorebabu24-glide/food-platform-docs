@@ -2,12 +2,13 @@
 
 import io
 from decimal import Decimal
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
 from app.db.models import Menu, SellerProfile, User
-from app.db.models.enums import ApprovalStatus, MenuCategory, UserRole
+from app.db.models.enums import ApprovalStatus, MenuCategory, SellerStatus, UserRole
 
 
 def test_seller_avatar_and_banner_upload(client: TestClient, db: Session):
@@ -27,6 +28,7 @@ def test_seller_avatar_and_banner_upload(client: TestClient, db: Session):
         bio="Traditional Rajasthani Thalis",
         upi_id="sunita@okhdfc",
         approval_status=ApprovalStatus.approved,
+        partner_status=SellerStatus.active,
         is_open=True,
     )
     db.add(seller_prof)
@@ -93,6 +95,7 @@ def test_seller_multi_photos_and_delete(client: TestClient, db: Session):
         bio="Baking & Desserts",
         upi_id="anand@okicici",
         approval_status=ApprovalStatus.approved,
+        partner_status=SellerStatus.active,
         is_open=True,
         photos=[],
     )
@@ -103,8 +106,14 @@ def test_seller_multi_photos_and_delete(client: TestClient, db: Session):
     seller_headers = {"Authorization": f"Bearer {seller_token}"}
 
     # 2. Upload multiple gallery photos
-    img1 = ("files", ("dish1.jpg", io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x01" * 80), "image/jpeg"))
-    img2 = ("files", ("dish2.png", io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x02" * 80), "image/png"))
+    img1 = (
+        "files",
+        ("dish1.jpg", io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x01" * 80), "image/jpeg"),
+    )
+    img2 = (
+        "files",
+        ("dish2.png", io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x02" * 80), "image/png"),
+    )
 
     upload_res = client.post(
         "/api/v1/sellers/me/photos",
@@ -153,6 +162,7 @@ def test_public_dish_search_endpoint(client: TestClient, db: Session):
         bio="Authentic Maharashtrian delicacies",
         upi_id="kavita@okhdfc",
         approval_status=ApprovalStatus.approved,
+        partner_status=SellerStatus.active,
         is_open=True,
         rating=4.9,
     )
@@ -173,6 +183,7 @@ def test_public_dish_search_endpoint(client: TestClient, db: Session):
         bio="Royal Hyderabadi Dum Biryani and Kebabs",
         upi_id="tariq@okaxis",
         approval_status=ApprovalStatus.approved,
+        partner_status=SellerStatus.active,
         is_open=True,
         rating=4.8,
     )

@@ -45,5 +45,3 @@ class TimestampMixin:
 
 class Base(DeclarativeBase):
     """Project-wide SQLAlchemy declarative base."""
-
-    pass

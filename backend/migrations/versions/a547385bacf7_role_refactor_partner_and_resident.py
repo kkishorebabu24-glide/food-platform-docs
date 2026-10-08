@@ -77,7 +77,13 @@ APPROVAL_DOWNGRADE_MAP = {
 }
 
 PARTNER_STATUSES = ("pending", "active", "suspended", "blocked", "inactive")
-USER_STATUSES = ("pending_verification", "active", "suspended", "blocked", "deactivated")
+USER_STATUSES = (
+    "pending_verification",
+    "active",
+    "suspended",
+    "blocked",
+    "deactivated",
+)
 VERIFICATION_STATUSES = ("pending", "verified", "rejected")
 
 
@@ -190,7 +196,11 @@ def upgrade() -> None:
     # 2. users.role: buyer/seller -> resident/partner, add super_admin
     if set(_enum_values("userrole")) != set(NEW_ROLES):
         _rebuild_enum(
-            "userrole", [("users", "role")], NEW_ROLES, ROLE_UPGRADE_MAP, fallback="resident"
+            "userrole",
+            [("users", "role")],
+            NEW_ROLES,
+            ROLE_UPGRADE_MAP,
+            fallback="resident",
         )
 
     # 3. users.verification_status -> users.status (5-state lifecycle)

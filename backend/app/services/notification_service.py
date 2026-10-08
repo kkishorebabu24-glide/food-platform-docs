@@ -25,12 +25,15 @@ logger = logging.getLogger(__name__)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _is_email_configured() -> bool:
     """Return True only when SMTP credentials are present."""
     return bool(settings.SMTP_USERNAME and settings.SMTP_PASSWORD)
 
 
-def _build_message(to_email: str, subject: str, body_html: str, body_text: str | None = None) -> MIMEMultipart:
+def _build_message(
+    to_email: str, subject: str, body_html: str, body_text: str | None = None
+) -> MIMEMultipart:
     """Build a standard multipart/alternative MIME email with plain text and HTML."""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = Header(subject, "utf-8")
@@ -41,6 +44,7 @@ def _build_message(to_email: str, subject: str, body_html: str, body_text: str |
     if not body_text:
         # Fallback text representation
         import re
+
         body_text = re.sub(r"<[^>]+>", " ", body_html).strip()
 
     msg.attach(MIMEText(body_text, "plain", "utf-8"))
@@ -77,6 +81,7 @@ async def _send(to_email: str, subject: str, body_html: str, body_text: str | No
 
 # ── OTP Authentication Notifications ──────────────────────────────────────────
 
+
 async def send_otp_email(to_email: str, otp: str) -> None:
     """Send a 6-digit login OTP to a resident or chef (called via BackgroundTask)."""
     subject = f"🔐 {otp} is your Society Food verification code"
@@ -95,14 +100,14 @@ async def send_otp_email(to_email: str, otp: str) -> None:
           <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Society Food</h1>
           <p style="margin: 6px 0 0; font-size: 14px; opacity: 0.9;">Fresh Homemade Food in Your Community</p>
         </div>
-        
+
         <!-- Content -->
         <div style="padding: 32px 28px;">
           <h2 style="margin: 0 0 12px; font-size: 18px; color: #1e1e24;">Your Verification Code</h2>
           <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: #555566;">
             Use the following one-time password (OTP) to securely log in to your Society Food account.
           </p>
-          
+
           <!-- OTP Box -->
           <div style="background: #FFF4EF; border: 2px dashed #FF6B35; border-radius: 10px; padding: 20px; text-align: center; margin: 24px 0;">
             <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #E05A2B; display: inline-block;">
@@ -127,7 +132,6 @@ async def send_otp_email(to_email: str, otp: str) -> None:
     await _send(to_email, subject, body_html, body_text)
 
 
-
 async def send_otp_whatsapp(phone: str, otp: str) -> None:
     """
     Deliver OTP via WhatsApp (called via BackgroundTask).
@@ -140,8 +144,8 @@ async def send_otp_whatsapp(phone: str, otp: str) -> None:
     logger.info("WhatsApp OTP dispatched → %s (OTP: %s)", phone, otp)
 
 
-
 # ── Order Notifications ───────────────────────────────────────────────────────
+
 
 async def send_order_placed_email(
     partner_email: str,
@@ -183,14 +187,26 @@ async def send_order_status_email(
 ) -> None:
     """Notify resident when their order status changes (called via BackgroundTask)."""
     status_labels = {
-        "accepted":  ("✅ Order Accepted", "Your order has been accepted and is being prepared."),
-        "ready":     ("🍱 Food is Ready!", f"Your food is ready for pickup at Flat {partner_flat or 'the partner'}."),
-        "completed": ("🎉 Order Completed", "Your order has been marked as completed. Enjoy your meal!"),
-        "cancelled": ("❌ Order Cancelled", "Unfortunately your order has been cancelled by the partner."),
+        "accepted": (
+            "✅ Order Accepted",
+            "Your order has been accepted and is being prepared.",
+        ),
+        "ready": (
+            "🍱 Food is Ready!",
+            f"Your food is ready for pickup at Flat {partner_flat or 'the partner'}.",
+        ),
+        "completed": (
+            "🎉 Order Completed",
+            "Your order has been marked as completed. Enjoy your meal!",
+        ),
+        "cancelled": (
+            "❌ Order Cancelled",
+            "Unfortunately your order has been cancelled by the partner.",
+        ),
     }
     label, message = status_labels.get(
         new_status,
-        (f"Order #{order_id} Update", f"Your order status changed to: {new_status}")
+        (f"Order #{order_id} Update", f"Your order status changed to: {new_status}"),
     )
     subject = f"{label} — Order #{order_id}"
     body = f"""
@@ -206,6 +222,7 @@ async def send_order_status_email(
 
 
 # ── Delivery Notifications ────────────────────────────────────────────────────
+
 
 async def send_delivery_dispatched_email(
     resident_email: str,

@@ -38,14 +38,10 @@ class LedgerEntry(TimestampMixin, Base):
     )
 
     # The user (partner) whose balance this entry affects
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # The related order (nullable for general maintenance top-ups)
-    order_id: Mapped[int | None] = mapped_column(
-        ForeignKey("orders.id"), index=True, nullable=True
-    )
+    order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), index=True, nullable=True)
 
     # Type of accounting entry
     entry_type: Mapped[LedgerEntryType] = mapped_column(
@@ -63,8 +59,6 @@ class LedgerEntry(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(String(500), nullable=False)
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    payment: Mapped["Payment"] = relationship(
-        "Payment", back_populates="ledger_entries"
-    )
+    payment: Mapped["Payment"] = relationship("Payment", back_populates="ledger_entries")
     user: Mapped["User"] = relationship("User")
     order: Mapped["Order"] = relationship("Order")

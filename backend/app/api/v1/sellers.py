@@ -99,19 +99,24 @@ async def upload_my_photo(
 
 @router.post("/me/banner")
 async def upload_my_banner(
-    file: UploadFile | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
+    file: UploadFile
+    | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
     preset_url: str | None = Query(default=None, description="Curated banner preset URL"),
     current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """Upload seller kitchen banner or select a curated preset banner URL."""
-    banner_url = await partner_service.upload_partner_banner(db, current_user.id, file=file, preset_url=preset_url)
+    banner_url = await partner_service.upload_partner_banner(
+        db, current_user.id, file=file, preset_url=preset_url
+    )
     return {"banner_url": banner_url, "message": "Kitchen banner updated successfully."}
 
 
 @router.post("/me/photos")
 async def upload_my_photos(
-    files: list[UploadFile] = File(..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"),
+    files: list[UploadFile] = File(
+        ..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"
+    ),
     current_user: User = SELLER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
@@ -135,7 +140,8 @@ async def delete_my_photo(
 async def get_my_orders(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    status_filter: str | None = Query(
+    status_filter: str
+    | None = Query(
         default=None,
         alias="status",
         description="Filter by order status: placed, accepted, preparing, ready, delivered, cancelled",
@@ -207,4 +213,3 @@ async def get_seller(seller_id: int, db: Session = DB_DEPENDENCY):
         "is_approved": partner.is_approved,
         "is_open": partner.is_open,
     }
-

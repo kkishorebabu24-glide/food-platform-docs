@@ -16,10 +16,8 @@ import logging
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.db.models.enums import UserRole, PartnerApplicationStatus, UserStatus
-from app.db.models.partner_profile import PartnerProfile
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_current_user, get_db, is_approved_partner
 from app.core.config import settings
 from app.core.security import (
     check_otp_request_rate_limit,
@@ -31,6 +29,7 @@ from app.core.security import (
     verify_otp,
 )
 from app.db.models import User
+from app.db.models.enums import UserRole
 from app.schemas.auth import (
     LoginRequest,
     OTPRequest,
@@ -41,10 +40,9 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
     UserInfo,
-    ROLE_NORMALIZATION_MAP,
+    normalize_requested_role,
 )
 from app.services import auth_service, notification_service
-
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +58,14 @@ async def register(request: RegisterRequest, db: Session = DB_DEPENDENCY):
 
     - Hashes the password with bcrypt before storing
     - Returns 409 if the email is already registered
-    - Account starts with 'pending' status
+    - Account starts as a resident with 'pending_verification' status; becoming a
+      partner requires an admin-approved application (POST /api/v1/partners/register)
     """
     user = auth_service.register_user(
         db,
         email=str(request.email),
         name=request.name,
         password=request.password,
-        role=request.role,
     )
     logger.info("New user registered: %s (role=%s)", user.email, user.role)
     return {
@@ -90,38 +88,17 @@ async def login(request: LoginRequest, db: Session = DB_DEPENDENCY):
     """
     user = auth_service.authenticate_user(db, str(request.email), request.password)
 
-    # If the user explicitly selects a role upon login, update active role (protect admin / super_admin from demotion)
-    if request.role and user.role not in (UserRole.admin, UserRole.super_admin):
-        norm_role = ROLE_NORMALIZATION_MAP.get(request.role, request.role)
-        if norm_role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != norm_role:
-            user.role = UserRole(norm_role)
-            if user.role == UserRole.partner:
-                existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
-                if not existing_profile:
-                    new_profile = PartnerProfile(
-                        id=user.id,
-                        is_open=True,
-                        application_status=PartnerApplicationStatus.approved,
-                        rating=0.0,
-                        review_count=0,
-                        on_time_delivery_rate=100.0,
-                        avg_delivery_minutes=25,
-                    )
-                    db.add(new_profile)
-            db.commit()
-            db.refresh(user)
-
+    user = auth_service.apply_workspace_preference(db, user, request.role)
 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id, user.role)
-
 
     logger.info("User logged in: %s (role=%s)", user.email, user.role)
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # nosec B106 - OAuth token type, not a secret
         user=UserInfo(
             id=user.id,
             email=user.email,
@@ -160,7 +137,7 @@ async def refresh_token(request: RefreshRequest, db: Session = DB_DEPENDENCY):
         )
 
     new_access_token = create_access_token(user.id, user.role)
-    return RefreshResponse(access_token=new_access_token, token_type="bearer")
+    return RefreshResponse(access_token=new_access_token, token_type="bearer")  # nosec B106
 
 
 @router.get("/me")
@@ -186,43 +163,55 @@ async def switch_role(
     db: Session = DB_DEPENDENCY,
 ):
     """
-    Switch active role between resident and partner for the current authenticated user.
-    Auto-provisions a PartnerProfile if switching to partner for the first time.
-    Re-issues access & refresh tokens with the new role.
+    Switch the active workspace between resident and partner.
+
+    - Admin and super-admin accounts cannot switch (prevents self-demotion).
+    - The partner workspace requires an admin-approved, active partner profile;
+      apply via POST /api/v1/partners/register.
+    - Re-issues access & refresh tokens with the new role.
     """
+    if current_user.role in (UserRole.admin, UserRole.super_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin accounts cannot switch workspace.",
+        )
+    try:
+        desired_role = normalize_requested_role(target_role)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    if desired_role is None:
+        desired_role = (
+            UserRole.resident.value
+            if current_user.role == UserRole.partner
+            else UserRole.partner.value
+        )
+    if desired_role == UserRole.partner.value and not is_approved_partner(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Partner workspace requires an approved partner application. "
+                "Apply via POST /api/v1/partners/register."
+            ),
+        )
 
-    desired_role = target_role if target_role in (UserRole.resident.value, UserRole.partner.value) else (
-        "resident" if current_user.role == UserRole.partner else "partner"
-    )
-
-    current_user.role = UserRole(desired_role)
-    if current_user.role == UserRole.partner:
-        existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == current_user.id).first()
-        if not existing_profile:
-            new_profile = PartnerProfile(
-                id=current_user.id,
-                is_open=True,
-                application_status=PartnerApplicationStatus.approved,
-                rating=0.0,
-                review_count=0,
-                on_time_delivery_rate=100.0,
-                avg_delivery_minutes=25,
-            )
-            db.add(new_profile)
-
-    db.commit()
-    db.refresh(current_user)
-
+    if current_user.role.value != desired_role:
+        current_user.role = UserRole(desired_role)
+        db.commit()
+        db.refresh(current_user)
 
     access_token = create_access_token(current_user.id, current_user.role)
     refresh_token = create_refresh_token(current_user.id, current_user.role)
 
-    logger.info("User switched active role: %s (new_role=%s)", current_user.email, current_user.role)
+    logger.info(
+        "User switched active role: %s (new_role=%s)",
+        current_user.email,
+        current_user.role,
+    )
 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # nosec B106 - OAuth token type, not a secret
         user=UserInfo(
             id=current_user.id,
             email=current_user.email,
@@ -235,13 +224,10 @@ async def switch_role(
     )
 
 
-
 @router.post("/logout")
 async def logout():
     """Logout — client must delete the token. (Stateless JWT — no server-side invalidation.)"""
-    return {
-        "message": "Logged out successfully. Please delete the token on the client side."
-    }
+    return {"message": "Logged out successfully. Please delete the token on the client side."}
 
 
 @router.patch("/me/password")
@@ -337,45 +323,22 @@ async def verify_otp_route(
             detail="Invalid or expired OTP. Please check the code and try again.",
         )
 
-    # Find or auto-provision resident user
-    display_name = request.name.strip() if request.name and request.name.strip() else str(request.email).split("@")[0]
-    user, _ = auth_service.find_or_create_user(
-        db,
-        email=str(request.email),
-        name=display_name,
-        role=request.role,
+    # Find or auto-provision a resident user (never a privileged role)
+    display_name = (
+        request.name.strip()
+        if request.name and request.name.strip()
+        else str(request.email).split("@")[0]
     )
-
-    # If the resident selected a role (e.g. resident or partner) upon OTP verification, adopt active role (protect admin / super_admin)
-    if request.role and user.role not in (UserRole.admin, UserRole.super_admin):
-        norm_role = ROLE_NORMALIZATION_MAP.get(request.role, request.role)
-        if norm_role in (UserRole.resident.value, UserRole.partner.value) and user.role.value != norm_role:
-            user.role = UserRole(norm_role)
-            if user.role == UserRole.partner:
-                existing_profile = db.query(PartnerProfile).filter(PartnerProfile.id == user.id).first()
-                if not existing_profile:
-                    new_profile = PartnerProfile(
-                        id=user.id,
-                        is_open=True,
-                        application_status=PartnerApplicationStatus.approved,
-                        rating=0.0,
-                        review_count=0,
-                        on_time_delivery_rate=100.0,
-                        avg_delivery_minutes=25,
-                    )
-                    db.add(new_profile)
-            db.commit()
-            db.refresh(user)
-
+    user, _ = auth_service.find_or_create_user(db, email=str(request.email), name=display_name)
 
     if not user.is_active:
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account has been deactivated. Please contact support.",
         )
 
     auth_service.mark_user_verified(db, user)
+    user = auth_service.apply_workspace_preference(db, user, request.role)
 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id, user.role)
@@ -385,7 +348,7 @@ async def verify_otp_route(
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # nosec B106 - OAuth token type, not a secret
         user=UserInfo(
             id=user.id,
             email=user.email,
@@ -396,4 +359,3 @@ async def verify_otp_route(
             is_verified=user.is_verified,
         ),
     )
-

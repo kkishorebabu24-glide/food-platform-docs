@@ -26,11 +26,11 @@ from app.db.models import User
 from app.schemas.payment import (
     DirectUPIInitiateResponse,
     MaintenanceTopupRequest,
+    PartnerBalanceResponse,
+    PartnerMaintenanceStatusResponse,
     PaymentCaptureRequest,
     PaymentInitiateResponse,
     PaymentResponse,
-    PartnerBalanceResponse,
-    PartnerMaintenanceStatusResponse,
     SubmitUTRRequest,
 )
 from app.services import ledger_service, payment_service
@@ -46,6 +46,7 @@ PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 
 
 # ── Direct P2PM UPI & SaaS Pass Routes ────────────────────────────────────────
+
 
 @router.post(
     "/orders/{order_id}/direct-upi",
@@ -124,9 +125,7 @@ async def get_my_maintenance_status(
     Return the authenticated chef's SaaS pass quota, free orders remaining,
     maintenance balance, and platform recharge details.
     """
-    status_data = payment_service.get_partner_maintenance_status(
-        db, partner_id=current_user.id
-    )
+    status_data = payment_service.get_partner_maintenance_status(db, partner_id=current_user.id)
     return PartnerMaintenanceStatusResponse(**status_data)
 
 
@@ -171,9 +170,7 @@ async def initiate_payment(
     Returns Razorpay checkout data. The frontend uses this to open
     the Razorpay JS checkout widget.
     """
-    data = payment_service.create_payment_order(
-        db, order_id=order_id, resident_id=current_user.id
-    )
+    data = payment_service.create_payment_order(db, order_id=order_id, resident_id=current_user.id)
     return PaymentInitiateResponse(**data)
 
 
@@ -250,9 +247,7 @@ async def get_my_ledger(
     db: Session = DB_DEPENDENCY,
 ):
     """Return the authenticated partner's ledger entries."""
-    return ledger_service.get_partner_ledger(
-        db, partner_id=current_user.id, skip=skip, limit=limit
-    )
+    return ledger_service.get_partner_ledger(db, partner_id=current_user.id, skip=skip, limit=limit)
 
 
 @router.get("/balance/me", response_model=PartnerBalanceResponse)

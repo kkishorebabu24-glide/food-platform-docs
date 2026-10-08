@@ -5,11 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
 from app.db.models import DishSuggestion, Menu, PartnerProfile, User
-from app.db.models.enums import PartnerApplicationStatus, MenuCategory, SuggestionStatus, UserRole
-from app.services.matching_service import (
-    calculate_craving_partner_match,
-    get_matched_cravings_for_partner,
+from app.db.models.enums import (
+    MenuCategory,
+    PartnerApplicationStatus,
+    PartnerStatus,
+    SuggestionStatus,
+    UserRole,
 )
+from app.services.matching_service import calculate_craving_partner_match
 
 
 def test_matching_pure_veg_incompatibility(db: Session):
@@ -17,7 +20,14 @@ def test_matching_pure_veg_incompatibility(db: Session):
     chef = User(name="Pure Veg Chef", email="vegchef@test.com", role=UserRole.partner)
     db.add(chef)
     db.commit()
-    profile = PartnerProfile(id=chef.id, bio="100% Pure Jain & Satvik Food", is_open=True, rating=4.8)
+    profile = PartnerProfile(
+        id=chef.id,
+        bio="100% Pure Jain & Satvik Food",
+        is_open=True,
+        rating=4.8,
+        application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
+    )
     menu_dal = Menu(partner_id=chef.id, name="Dal Tadka", category=MenuCategory.veg, price=120)
     db.add_all([profile, menu_dal])
     db.commit()
@@ -42,8 +52,20 @@ def test_matching_high_compatibility(db: Session):
     chef = User(name="Chef Meera", email="meerachef@test.com", role=UserRole.partner)
     db.add(chef)
     db.commit()
-    profile = PartnerProfile(id=chef.id, bio="Specialist in Hyderabadi Biryani & curries", is_open=True, rating=4.9)
-    menu_biryani = Menu(partner_id=chef.id, name="Hyderabadi Chicken Biryani", category=MenuCategory.non_veg, price=240)
+    profile = PartnerProfile(
+        id=chef.id,
+        bio="Specialist in Hyderabadi Biryani & curries",
+        is_open=True,
+        rating=4.9,
+        application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
+    )
+    menu_biryani = Menu(
+        partner_id=chef.id,
+        name="Hyderabadi Chicken Biryani",
+        category=MenuCategory.non_veg,
+        price=240,
+    )
     db.add_all([profile, menu_biryani])
     db.commit()
 
@@ -66,11 +88,27 @@ def test_matching_high_compatibility(db: Session):
 
 def test_get_matched_cravings_endpoint(client: TestClient, db: Session):
     # 1. Setup chef
-    chef = User(name="Snack Chef", email="snackchef@test.com", role=UserRole.partner, is_active=True)
+    chef = User(
+        name="Snack Chef",
+        email="snackchef@test.com",
+        role=UserRole.partner,
+        is_active=True,
+    )
     db.add(chef)
     db.commit()
-    profile = PartnerProfile(id=chef.id, bio="Authentic Mumbai Vada Pav and Gujarati snacks", is_open=True)
-    menu_snack = Menu(partner_id=chef.id, name="Mumbai Vada Pav", category=MenuCategory.snacks, price=40)
+    profile = PartnerProfile(
+        id=chef.id,
+        bio="Authentic Mumbai Vada Pav and Gujarati snacks",
+        is_open=True,
+        application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
+    )
+    menu_snack = Menu(
+        partner_id=chef.id,
+        name="Mumbai Vada Pav",
+        category=MenuCategory.snacks,
+        price=40,
+    )
     db.add_all([profile, menu_snack])
     db.commit()
 
@@ -78,7 +116,12 @@ def test_get_matched_cravings_endpoint(client: TestClient, db: Session):
     chef_headers = {"Authorization": f"Bearer {token}"}
 
     # 2. Resident creates snack craving
-    resident = User(name="Craving Resident", email="resident_snack@test.com", role=UserRole.resident, is_active=True)
+    resident = User(
+        name="Craving Resident",
+        email="resident_snack@test.com",
+        role=UserRole.resident,
+        is_active=True,
+    )
     db.add(resident)
     db.commit()
     resident_token = create_access_token(resident.id, "resident")
@@ -102,11 +145,27 @@ def test_get_matched_cravings_endpoint(client: TestClient, db: Session):
 
 def test_claim_suggestion_with_existing_menu_item(client: TestClient, db: Session):
     # Setup chef with dish
-    chef = User(name="Dosa Chef", email="dosachef@test.com", role=UserRole.partner, is_active=True)
+    chef = User(
+        name="Dosa Chef",
+        email="dosachef@test.com",
+        role=UserRole.partner,
+        is_active=True,
+    )
     db.add(chef)
     db.commit()
-    profile = PartnerProfile(id=chef.id, bio="South Indian Tiffin", is_open=True)
-    menu_dosa = Menu(partner_id=chef.id, name="Ghee Roast Masala Dosa", category=MenuCategory.veg, price=110)
+    profile = PartnerProfile(
+        id=chef.id,
+        bio="South Indian Tiffin",
+        is_open=True,
+        application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
+    )
+    menu_dosa = Menu(
+        partner_id=chef.id,
+        name="Ghee Roast Masala Dosa",
+        category=MenuCategory.veg,
+        price=110,
+    )
     db.add_all([profile, menu_dosa])
     db.commit()
 
@@ -114,7 +173,12 @@ def test_claim_suggestion_with_existing_menu_item(client: TestClient, db: Sessio
     chef_headers = {"Authorization": f"Bearer {chef_token}"}
 
     # Setup suggestion
-    resident = User(name="Dosa Lover", email="dosalover@test.com", role=UserRole.resident, is_active=True)
+    resident = User(
+        name="Dosa Lover",
+        email="dosalover@test.com",
+        role=UserRole.resident,
+        is_active=True,
+    )
     db.add(resident)
     db.commit()
     resident_token = create_access_token(resident.id, "resident")
@@ -146,4 +210,3 @@ def test_claim_suggestion_with_existing_menu_item(client: TestClient, db: Sessio
     assert claimed_item["partner_name"] == "Dosa Chef"
     assert claimed_item["menu_name"] == "Ghee Roast Masala Dosa"
     assert claimed_item["menu_price"] == 110.0
-

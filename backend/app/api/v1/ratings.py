@@ -50,6 +50,4 @@ async def get_partner_ratings(
     db: Session = DB_DEPENDENCY,
 ):
     """Get paginated ratings and aggregate summary for a partner (public)."""
-    return rating_service.get_partner_ratings(
-        db, partner_id=partner_id, skip=skip, limit=limit
-    )
+    return rating_service.get_partner_ratings(db, partner_id=partner_id, skip=skip, limit=limit)

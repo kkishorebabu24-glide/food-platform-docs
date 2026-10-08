@@ -1,16 +1,16 @@
 """Multimodal AI API routes for dish analysis and intelligent meal advisory."""
 
 from typing import Any
+
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_db
-from app.db.models import User, Menu
+from app.db.models import Menu, User
 from app.services import ai_service
 
 router = APIRouter(prefix="/api/v1/ai", tags=["Multimodal AI"])
-
 
 
 class DishAnalysisRequest(BaseModel):
@@ -49,7 +49,7 @@ def get_meal_advice(
     """
     Conversational AI meal advisor: matches resident requests with available neighbor menus.
     """
-    active_menus = db.query(Menu).filter(Menu.is_available == True).limit(10).all()
+    active_menus = db.query(Menu).filter(Menu.is_available.is_(True)).limit(10).all()
     serialized_menus = [
         {"id": m.id, "name": m.name, "category": m.category, "price": float(m.price)}
         for m in active_menus

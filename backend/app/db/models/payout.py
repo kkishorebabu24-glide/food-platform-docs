@@ -4,8 +4,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import DateTime
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -30,9 +31,7 @@ class Payout(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # The partner receiving the payout
-    partner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # Amount to be transferred (in INR)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -48,27 +47,19 @@ class Payout(TimestampMixin, Base):
     upi_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Payment gateway used for this payout
-    provider: Mapped[str] = mapped_column(
-        String(50), default="razorpay", nullable=False
-    )
+    provider: Mapped[str] = mapped_column(String(50), default="razorpay", nullable=False)
 
     # Razorpay Payouts API identifier
-    provider_payout_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, index=True
-    )
+    provider_payout_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
 
     # Reason for failure (if any)
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # When the payout was dispatched to Razorpay
-    initiated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    initiated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # When Razorpay confirmed the transfer
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     partner: Mapped["User"] = relationship("User", foreign_keys=[partner_id])

@@ -1,7 +1,8 @@
 """Tests for Multimodal AI endpoints."""
 
 from fastapi.testclient import TestClient
-from app.db.models import User, Menu
+
+from app.db.models import Menu, User
 from app.db.models.enums import UserRole
 
 
@@ -22,14 +23,21 @@ def test_analyze_dish_endpoint(client: TestClient, resident_headers: dict):
 
 
 def test_meal_advisor_endpoint(client: TestClient, resident_headers: dict, db):
-    partner_user = User(name="Test Chef", email="chefai@test.com", role=UserRole.partner, is_active=True)
+    partner_user = User(
+        name="Test Chef", email="chefai@test.com", role=UserRole.partner, is_active=True
+    )
     db.add(partner_user)
     db.commit()
 
-    menu = Menu(partner_id=partner_user.id, name="Dal Tadka", category="veg", price=120.0, is_available=True)
+    menu = Menu(
+        partner_id=partner_user.id,
+        name="Dal Tadka",
+        category="veg",
+        price=120.0,
+        is_available=True,
+    )
     db.add(menu)
     db.commit()
-
 
     payload = {
         "prompt": "I want something healthy and light for dinner",

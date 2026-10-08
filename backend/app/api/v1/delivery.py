@@ -20,9 +20,9 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_db, require_role
 from app.db.models import User
+from app.db.models.enums import OrderStatus
 from app.services import delivery_service, notification_service
 from app.services.websocket_manager import get_manager
-from app.db.models.enums import OrderStatus
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,18 @@ PARTNER_OR_ADMIN_DEPENDENCY = Depends(require_role("partner", "admin"))
 )
 async def create_delivery(
     order_id: int,
-    estimated_minutes: int | None = Body(
-        default=None, embed=True,
+    estimated_minutes: int
+    | None = Body(
+        default=None,
+        embed=True,
         description="Partner's estimate of delivery time in minutes (e.g. 10)",
-        ge=1, le=120,
+        ge=1,
+        le=120,
     ),
-    notes: str | None = Body(
-        default=None, embed=True,
+    notes: str
+    | None = Body(
+        default=None,
+        embed=True,
         description="Optional note to resident (e.g. 'Leaving food at door')",
         max_length=300,
     ),
@@ -80,8 +85,9 @@ async def create_delivery(
 @router.patch("/{delivery_id}/status")
 async def update_delivery_status(
     delivery_id: int,
-    new_status: str = Body(..., embed=True,
-        description="New status: dispatched, delivered, or failed"),
+    new_status: str = Body(
+        ..., embed=True, description="New status: dispatched, delivered, or failed"
+    ),
     notes: str | None = Body(default=None, embed=True, max_length=300),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
@@ -175,9 +181,11 @@ async def get_delivery_for_order(
 
     # Access control: only resident, partner, or admin can view
     if current_user.role not in ("admin",) and current_user.id not in (
-        delivery.resident_id, delivery.partner_id
+        delivery.resident_id,
+        delivery.partner_id,
     ):
         from fastapi import HTTPException
+
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this delivery.",

@@ -1,8 +1,6 @@
 """Pytest configuration and shared fixtures."""
 
-import os
 from collections.abc import Generator
-from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,26 +8,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies import get_db
-from app.core.config import settings
 from app.core.security import create_access_token, hash_password
 from app.db.base import Base
 from app.db.models import User
-from app.db.models.enums import UserRole
+from app.db.models.enums import PartnerApplicationStatus, PartnerStatus, UserRole
+from app.db.models.partner_profile import PartnerProfile
 from app.main import app
 
 # Use in-memory SQLite for tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @pytest.fixture(scope="session")
 def setup_db():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
 
 @pytest.fixture
 def db(setup_db) -> Generator[Session, None, None]:
@@ -43,6 +41,7 @@ def db(setup_db) -> Generator[Session, None, None]:
     transaction.rollback()
     connection.close()
 
+
 @pytest.fixture
 def client(db: Session) -> Generator[TestClient, None, None]:
     def override_get_db():
@@ -52,6 +51,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
 
 @pytest.fixture
 def test_resident(db: Session) -> User:
@@ -67,13 +67,16 @@ def test_resident(db: Session) -> User:
     db.refresh(user)
     return user
 
+
 @pytest.fixture
 def resident_token(test_resident: User) -> str:
     return create_access_token(test_resident.id, str(test_resident.role))
 
+
 @pytest.fixture
 def resident_headers(resident_token: str) -> dict:
     return {"Authorization": f"Bearer {resident_token}"}
+
 
 @pytest.fixture
 def test_partner(db: Session) -> User:
@@ -86,14 +89,24 @@ def test_partner(db: Session) -> User:
     )
     db.add(user)
     db.commit()
+    db.add(
+        PartnerProfile(
+            id=user.id,
+            is_open=True,
+            application_status=PartnerApplicationStatus.approved,
+            partner_status=PartnerStatus.active,
+        )
+    )
+    db.commit()
     db.refresh(user)
     return user
+
 
 @pytest.fixture
 def partner_token(test_partner: User) -> str:
     return create_access_token(test_partner.id, str(test_partner.role))
 
+
 @pytest.fixture
 def partner_headers(partner_token: str) -> dict:
     return {"Authorization": f"Bearer {partner_token}"}
-

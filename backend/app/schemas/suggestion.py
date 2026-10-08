@@ -1,7 +1,6 @@
 """Dish Suggestion request/response schemas — Community Cravings Marketplace."""
 
 from datetime import date, datetime
-from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -75,7 +74,6 @@ class SuggestionResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
-
 
 
 class UpvoteResponse(BaseModel):

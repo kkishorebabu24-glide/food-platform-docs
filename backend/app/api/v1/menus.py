@@ -18,9 +18,9 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db, require_role
 from app.db.models import User
+from app.db.models.enums import UserRole
 from app.schemas.menu import AvailabilityRequest, MenuCreateRequest, MenuUpdateRequest
 from app.services import menu_service
-from app.db.models.enums import UserRole
 
 router = APIRouter(prefix="/api/v1/menus", tags=["menus"])
 
@@ -33,7 +33,9 @@ async def search_menus(
     q: str | None = Query(default=None, description="Search query across dishes and descriptions"),
     category: str | None = Query(default=None, description="Filter by category"),
     veg_only: bool = Query(default=False, description="Filter pure veg only"),
-    available_only: bool = Query(default=True, description="Only return available items from open kitchens"),
+    available_only: bool = Query(
+        default=True, description="Only return available items from open kitchens"
+    ),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     db: Session = DB_DEPENDENCY,
@@ -54,14 +56,12 @@ async def search_menus(
 async def get_partner_menus(
     partner_id: int,
     available_only: bool = Query(default=True, description="Only return available items"),
-    category: str | None = Query(
+    category: str
+    | None = Query(
         default=None,
-        description="Filter by category: veg, non_veg, snacks, desserts, beverages"
+        description="Filter by category: veg, non_veg, snacks, desserts, beverages",
     ),
-    search: str | None = Query(
-        default=None,
-        description="Case-insensitive search on item name"
-    ),
+    search: str | None = Query(default=None, description="Case-insensitive search on item name"),
     db: Session = DB_DEPENDENCY,
 ):
     """Get menu items for a given partner (public). Supports category and name filters."""
@@ -118,9 +118,7 @@ async def update_menu_item(
 ):
     """Update a menu item. Partners can only update their own items."""
     owner_id = current_user.id if current_user.role == UserRole.partner else None
-    menu_service.update_menu_item(
-        db, menu_id=menu_id, request=request, owner_id=owner_id
-    )
+    menu_service.update_menu_item(db, menu_id=menu_id, request=request, owner_id=owner_id)
     return {"message": "Menu item updated.", "id": menu_id}
 
 
@@ -154,7 +152,6 @@ async def toggle_availability(
     return {"id": item.id, "is_available": item.is_available, "quantity": item.quantity}
 
 
-
 @router.post("/{menu_id}/image")
 async def upload_image(
     menu_id: int,
@@ -169,9 +166,7 @@ async def upload_image(
     Returns the updated menu item with the new image_url.
     """
     owner_id = current_user.id if current_user.role == UserRole.partner else None
-    item = await menu_service.upload_menu_image(
-        db, menu_id=menu_id, file=file, owner_id=owner_id
-    )
+    item = await menu_service.upload_menu_image(db, menu_id=menu_id, file=file, owner_id=owner_id)
     return {
         "id": item.id,
         "name": item.name,

@@ -40,24 +40,35 @@ def upgrade() -> None:
             op.alter_column("menus", name, existing_type=col_type, nullable=False)
         else:
             op.add_column(
-                "menus", sa.Column(name, col_type, nullable=False, server_default=default)
+                "menus",
+                sa.Column(name, col_type, nullable=False, server_default=default),
             )
     op.add_column("payments", sa.Column("utr_number", sa.String(length=50), nullable=True))
     op.add_column(
-        "payments", sa.Column("seller_confirmed_at", sa.DateTime(timezone=True), nullable=True)
+        "payments",
+        sa.Column("seller_confirmed_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index(op.f("ix_payments_utr_number"), "payments", ["utr_number"], unique=False)
     op.add_column(
-        "seller_profiles", sa.Column("upi_account_name", sa.String(length=255), nullable=True)
-    )
-    op.add_column(
         "seller_profiles",
-        sa.Column("is_upi_verified", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("upi_account_name", sa.String(length=255), nullable=True),
     )
     op.add_column(
         "seller_profiles",
         sa.Column(
-            "free_orders_remaining", sa.Integer(), nullable=False, server_default=sa.text("50")
+            "is_upi_verified",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
+        ),
+    )
+    op.add_column(
+        "seller_profiles",
+        sa.Column(
+            "free_orders_remaining",
+            sa.Integer(),
+            nullable=False,
+            server_default=sa.text("50"),
         ),
     )
     op.add_column(
@@ -72,7 +83,10 @@ def upgrade() -> None:
     op.add_column(
         "seller_profiles",
         sa.Column(
-            "lifetime_orders_count", sa.Integer(), nullable=False, server_default=sa.text("0")
+            "lifetime_orders_count",
+            sa.Integer(),
+            nullable=False,
+            server_default=sa.text("0"),
         ),
     )
 

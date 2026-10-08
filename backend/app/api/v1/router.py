@@ -12,14 +12,14 @@ from app.api.v1 import (
     ai,
     auth,
     buyers,
-    residents,
     delivery,
     menus,
     orders,
+    partners,
     payments,
     payouts,
     ratings,
-    partners,
+    residents,
     sellers,
     suggestions,
 )
@@ -40,5 +40,3 @@ router.include_router(payouts.router)
 router.include_router(delivery.router)
 router.include_router(suggestions.router)
 router.include_router(ai.router)
-
-

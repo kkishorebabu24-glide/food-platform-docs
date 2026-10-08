@@ -1,12 +1,20 @@
 """Unit and integration tests for Direct P2PM UPI and SaaS Pass Maintenance Model."""
 
 from decimal import Decimal
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
-from app.db.models import Menu, Order, Payment, PartnerProfile, User
-from app.db.models.enums import PartnerApplicationStatus, LedgerEntryType, MenuCategory, OrderStatus, PaymentStatus, UserRole
+from app.db.models import Menu, Order, PartnerProfile, Payment, User
+from app.db.models.enums import (
+    MenuCategory,
+    OrderStatus,
+    PartnerApplicationStatus,
+    PartnerStatus,
+    PaymentStatus,
+    UserRole,
+)
 
 
 def test_direct_upi_flow_and_saas_quota(client: TestClient, db: Session):
@@ -29,6 +37,7 @@ def test_direct_upi_flow_and_saas_quota(client: TestClient, db: Session):
         free_orders_remaining=50,
         maintenance_balance=Decimal("0.00"),
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
         is_open=True,
     )
     db.add(partner_prof)
@@ -61,7 +70,14 @@ def test_direct_upi_flow_and_saas_quota(client: TestClient, db: Session):
         partner_id=partner_user.id,
         total_price=Decimal("240.00"),
         status=OrderStatus.placed,
-        items=[{"menu_id": menu.id, "name": "Idli Vada Combo", "quantity": 2, "price": 120.0}],
+        items=[
+            {
+                "menu_id": menu.id,
+                "name": "Idli Vada Combo",
+                "quantity": 2,
+                "price": 120.0,
+            }
+        ],
     )
     db.add(order)
     db.commit()
@@ -134,6 +150,7 @@ def test_saas_pass_exhaustion_and_topup(client: TestClient, db: Session):
         free_orders_remaining=0,  # Quota exhausted
         maintenance_balance=Decimal("10.00"),  # Has ₹10 balance
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
         is_open=True,
     )
     db.add(partner_prof)
@@ -222,6 +239,7 @@ def test_availability_toggle_guards(client: TestClient, db: Session):
         upi_id=None,
         is_open=False,
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
     )
     db.add(partner_prof)
     db.commit()

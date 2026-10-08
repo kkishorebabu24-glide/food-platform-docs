@@ -57,9 +57,7 @@ async def list_all_payouts(
     db: Session = DB_DEPENDENCY,
 ):
     """List all payouts across all partners (admin only)."""
-    return payout_service.list_all_payouts(
-        db, status_filter=status_filter, skip=skip, limit=limit
-    )
+    return payout_service.list_all_payouts(db, status_filter=status_filter, skip=skip, limit=limit)
 
 
 @router.post(
@@ -74,9 +72,7 @@ async def initiate_payout(
     db: Session = DB_DEPENDENCY,
 ):
     """Initiate a payout for a partner (admin only)."""
-    payout = payout_service.initiate_payout(
-        db, partner_id=partner_id, amount=request.amount
-    )
+    payout = payout_service.initiate_payout(db, partner_id=partner_id, amount=request.amount)
     return PayoutResponse.model_validate(payout)
 
 

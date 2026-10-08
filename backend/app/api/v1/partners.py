@@ -56,6 +56,28 @@ async def register_partner(
     }
 
 
+@router.get("/me/application")
+async def get_my_partner_application(
+    current_user: User = GET_USER_DEPENDENCY,
+    db: Session = DB_DEPENDENCY,
+):
+    """Return the caller's partner application state (any authenticated user)."""
+    profile = current_user.partner_profile
+    if not profile:
+        return {
+            "has_application": False,
+            "application_status": None,
+            "partner_status": None,
+        }
+    return {
+        "has_application": True,
+        "partner_id": profile.id,
+        "application_status": profile.application_status.value,
+        "partner_status": profile.partner_status.value,
+        "is_approved": profile.is_approved,
+    }
+
+
 @router.get("/me")
 async def get_my_partner_profile(
     current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
@@ -80,6 +102,8 @@ async def get_my_partner_profile(
         "review_count": partner.review_count,
         "flat_number": user.flat_number,
         "is_approved": partner.is_approved,
+        "application_status": partner.application_status.value,
+        "partner_status": partner.partner_status.value,
         "is_open": partner.is_open,
     }
 
@@ -108,19 +132,24 @@ async def upload_my_photo(
 
 @router.post("/me/banner")
 async def upload_my_banner(
-    file: UploadFile | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
+    file: UploadFile
+    | None = File(default=None, description="Kitchen banner image (JPEG, PNG, WebP — max 5 MB)"),
     preset_url: str | None = Query(default=None, description="Curated banner preset URL"),
     current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
     """Upload partner kitchen banner or select a curated preset banner URL."""
-    banner_url = await partner_service.upload_partner_banner(db, current_user.id, file=file, preset_url=preset_url)
+    banner_url = await partner_service.upload_partner_banner(
+        db, current_user.id, file=file, preset_url=preset_url
+    )
     return {"banner_url": banner_url, "message": "Kitchen banner updated successfully."}
 
 
 @router.post("/me/photos")
 async def upload_my_photos(
-    files: list[UploadFile] = File(..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"),
+    files: list[UploadFile] = File(
+        ..., description="Gallery photos (JPEG, PNG, WebP — max 5 MB each)"
+    ),
     current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
@@ -144,8 +173,12 @@ async def delete_my_photo(
 async def get_my_orders(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
-    status_filter: str | None = Query(default=None, alias="status",
-        description="Filter by order status: placed, accepted, preparing, ready, dispatched, in_transit, delivered, cancelled"),
+    status_filter: str
+    | None = Query(
+        default=None,
+        alias="status",
+        description="Filter by order status: placed, accepted, preparing, ready, dispatched, in_transit, delivered, cancelled",
+    ),
     current_user: User = PARTNER_OR_ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):

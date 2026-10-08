@@ -12,7 +12,7 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Payout, PartnerProfile
+from app.db.models import PartnerProfile, Payout
 from app.db.models.enums import PayoutStatus
 from app.services import ledger_service
 
@@ -24,9 +24,7 @@ def initiate_payout(db: Session, partner_id: int, amount: Decimal) -> Payout:
     Initiate a payout for a partner (admin-triggered).
     Validates that the partner has sufficient balance.
     """
-    partner_profile = (
-        db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
-    )
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
     if not partner_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -112,9 +110,7 @@ def fail_payout(db: Session, payout_id: int, reason: str) -> Payout:
     return payout
 
 
-def list_partner_payouts(
-    db: Session, partner_id: int, skip: int = 0, limit: int = 20
-) -> dict:
+def list_partner_payouts(db: Session, partner_id: int, skip: int = 0, limit: int = 20) -> dict:
     """Return paginated payouts for a partner."""
     payouts = (
         db.query(Payout)

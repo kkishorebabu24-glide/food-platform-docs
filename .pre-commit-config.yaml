@@ -35,7 +35,7 @@ repos:
     rev: 6.1.0
     hooks:
       - id: flake8
-        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
+        args: ['--config=backend/setup.cfg']
         exclude: 'migrations|venv'
 
   # Python security
@@ -43,16 +43,17 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        exclude: 'tests|migrations'
+        exclude: 'tests|migrations|scripts|scratch'
+        additional_dependencies: ['pbr', 'bandit[toml]']
 
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.5.1
     hooks:
       - id: mypy
-        additional_dependencies: ['types-requests', 'types-PyYAML']
+        additional_dependencies: ['types-requests', 'types-PyYAML', 'types-redis']
         args: ['--ignore-missing-imports']
-        exclude: 'migrations|tests|venv'
+        exclude: 'migrations|tests|venv|scripts|scratch'
 
   # Commit message validation
   - repo: https://github.com/commitizen-tools/commitizen

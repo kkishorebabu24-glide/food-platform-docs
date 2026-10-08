@@ -6,7 +6,7 @@ Society Food Platform is a peer-to-peer marketplace connecting home food sellers
 
 ### High-Level Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Frontend (React PWA)                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
@@ -56,18 +56,21 @@ Society Food Platform is a peer-to-peer marketplace connecting home food sellers
 ### 1. Frontend (React PWA)
 
 **Technology Stack:**
+
 - React 18+ with Hooks
 - Redux Toolkit for state management
 - Material-UI for components
 - PWA capabilities (offline, installable)
 
 **Components:**
+
 - **Auth**: OTP login, registration
 - **Seller**: Menu manager, order dashboard
 - **Buyer**: Menu browser, order tracker, cart
 - **Admin**: Seller approval, analytics
 
 **Key Features:**
+
 - Mobile-first responsive design
 - Offline support with service workers
 - Real-time WebSocket updates
@@ -76,6 +79,7 @@ Society Food Platform is a peer-to-peer marketplace connecting home food sellers
 ### 2. Backend (FastAPI)
 
 **Technology Stack:**
+
 - FastAPI for API framework
 - SQLAlchemy for ORM
 - PostgreSQL for database
@@ -83,7 +87,8 @@ Society Food Platform is a peer-to-peer marketplace connecting home food sellers
 - Alembic for database migrations
 
 **API Routes:**
-```
+
+```text
 /api/v1/
 ├── auth/
 │   ├── POST /register (OTP)
@@ -118,7 +123,8 @@ Society Food Platform is a peer-to-peer marketplace connecting home food sellers
 ## Data Models
 
 ### User
-```
+
+```text
 id (PK)
 name
 email
@@ -132,7 +138,8 @@ updated_at
 ```
 
 ### Seller Profile
-```
+
+```text
 id (FK to User)
 bio
 photo_url
@@ -146,7 +153,8 @@ updated_at
 ```
 
 ### Menu
-```
+
+```text
 id (PK)
 seller_id (FK)
 name
@@ -159,7 +167,8 @@ updated_at
 ```
 
 ### Order
-```
+
+```text
 id (PK)
 buyer_id (FK to User)
 seller_id (FK to User)
@@ -173,7 +182,8 @@ completed_at
 ```
 
 ### Rating
-```
+
+```text
 id (PK)
 order_id (FK)
 rater_id (FK to User - buyer)
@@ -187,7 +197,7 @@ created_at
 
 ### 1. OTP Authentication Flow
 
-```
+```text
 User (Frontend)
    │
    └─→ POST /api/v1/auth/register
@@ -220,7 +230,7 @@ User (Frontend)
 
 ### 2. Seller Menu Creation Flow
 
-```
+```text
 Seller Dashboard (Frontend)
    │
    └─→ GET /api/v1/sellers/{seller_id}/menus
@@ -249,7 +259,7 @@ Seller Dashboard (Frontend)
 
 ### 3. Order Placement Flow
 
-```
+```text
 Buyer Dashboard (Frontend)
    │
    └─→ GET /api/v1/sellers
@@ -285,7 +295,7 @@ Buyer Dashboard (Frontend)
 
 ### 4. Order Status Update Flow
 
-```
+```text
 Seller Dashboard (Frontend)
    │
    └─→ GET /api/v1/sellers/{seller_id}/orders
@@ -316,7 +326,7 @@ Seller Dashboard (Frontend)
 
 ### 5. Rating Flow
 
-```
+```text
 Buyer Dashboard (Frontend - after order completed)
    │
    └─→ GET /api/v1/orders/{order_id}
@@ -344,6 +354,7 @@ Buyer Dashboard (Frontend - after order completed)
 ## Authentication & Security
 
 ### OTP Strategy
+
 - **Generation**: 6-digit random code
 - **Delivery**: Email (primary), WhatsApp (optional)
 - **Storage**: Redis with 10-minute TTL
@@ -351,12 +362,14 @@ Buyer Dashboard (Frontend - after order completed)
 - **Token**: JWT (access + refresh tokens)
 
 ### JWT Token Flow
+
 - **Access Token**: Short-lived (30 min), includes user_id, role
 - **Refresh Token**: Long-lived (7 days), stored in HTTP-only cookie
 - **Payload**: Sub (user_id), role, exp, iat
 - **Secret**: 256-bit key, rotated regularly
 
 ### Password-less Auth
+
 - No password storage needed for Phase 1
 - OTP-only authentication
 - Future: Add optional password option in Phase 2
@@ -364,7 +377,8 @@ Buyer Dashboard (Frontend - after order completed)
 ## Deployment Architecture
 
 ### Development
-```
+
+```text
 Local Machine
 ├── Docker Compose
 │   ├── PostgreSQL
@@ -375,7 +389,8 @@ Local Machine
 ```
 
 ### Staging
-```
+
+```text
 Cloud Server (AWS/GCP)
 ├── RDS PostgreSQL 14
 ├── ElastiCache Redis 7
@@ -385,7 +400,8 @@ Cloud Server (AWS/GCP)
 ```
 
 ### Production
-```
+
+```text
 Cloud Server (AWS/GCP)
 ├── RDS PostgreSQL (multi-AZ, backup)
 ├── ElastiCache Redis (cluster mode)
@@ -398,6 +414,7 @@ Cloud Server (AWS/GCP)
 ## Performance Considerations
 
 ### Database Indexing
+
 ```sql
 CREATE INDEX idx_seller_menus ON menus(seller_id, is_available);
 CREATE INDEX idx_orders_status ON orders(status, created_at);
@@ -405,12 +422,14 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 ```
 
 ### Caching Strategy
+
 - Menu listings: 1 hour TTL
 - Seller profiles: 30 minutes TTL
 - Ratings: 24 hours TTL
 - Session data: 7 days TTL
 
 ### API Optimization
+
 - Pagination: 20 items per page default
 - Lazy loading for large lists
 - Request compression (gzip)
@@ -419,6 +438,7 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 ## Error Handling
 
 ### Standard Response Format
+
 ```json
 {
   "success": true,
@@ -428,6 +448,7 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 ```
 
 ### Error Responses
+
 ```json
 {
   "success": false,
@@ -441,6 +462,7 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 ```
 
 ### HTTP Status Codes
+
 - 200: OK
 - 201: Created
 - 400: Bad Request
@@ -453,11 +475,13 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 ## Monitoring & Logging
 
 ### Structured Logging
+
 - JSON format with: timestamp, level, module, message
 - Levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 - Centralized logging (ELK stack or CloudWatch)
 
 ### Metrics
+
 - API response times (p50, p95, p99)
 - Database query times
 - Error rates by endpoint
@@ -465,6 +489,7 @@ CREATE INDEX idx_ratings_seller ON ratings(seller_id);
 - Order volume
 
 ### Alerts
+
 - API error rate > 5%
 - Database connection pool exhaustion
 - Redis memory usage > 90%

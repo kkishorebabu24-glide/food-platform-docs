@@ -21,7 +21,6 @@
 | 13. Direct P2PM UPI & SaaS Pass Quotas | 6 | 🟢 Complete | Backend / Frontend |
 | 14. Menu Concurrency Safeguards & Power Tools | 6 | 🟢 Complete | Fullstack |
 
-
 ---
 
 ## Epic 1: Infrastructure ✅ Complete
@@ -48,7 +47,6 @@
 | 2.3 | Passwordless Email & WhatsApp OTP Authentication | P0 | ✅ Done | 4h | Backend / Frontend |
 | 2.4 | JWT token management (Access + Refresh + RBAC) | P0 | ✅ Done | 3h | Backend |
 | 2.5 | Login, Instant OTP & Registration UI with AuthContext | P0 | ✅ Done | 4h | Frontend |
-
 
 ---
 
@@ -229,13 +227,14 @@
 
 ## Phase 1 & v1.2 Full-Stack Platform Summary
 
-**Total Core Tasks**: 79  
-**Completed**: 79 (100%)  
-**In Progress**: 0 (0%)  
-**Planned**: 0 (0%)  
+**Total Core Tasks**: 79
+**Completed**: 79 (100%)
+**In Progress**: 0 (0%)
+**Planned**: 0 (0%)
 
-**Current Platform Version**: `v1.2.1`  
-**Test Suite**: 
+**Current Platform Version**: `v1.2.1`
+**Test Suite**:
+
 - Backend Pytest: **41/41 tests passing (100%)**
 - Frontend Jest & React Testing Library: **27/27 tests across 11 test suites passing (100%)**
 - Staging Stack: Fully deployed and verified on Docker Compose (Frontend `:3000`, Backend `:8000`, PostgreSQL 16)
@@ -245,45 +244,53 @@
 ## Key Milestones
 
 ### Milestone 1: Core Infrastructure ✅
+
 - Git setup, CI/CD, documentation, and Docker Compose
 - Database schemas & Alembic migrations
 - **Status**: Completed
 
 ### Milestone 2: Authentication & User Management ✅
+
 - JWT access + refresh token management, password hashing, and RBAC
 - Async SMTP notification system for order/delivery events
 - **Status**: Completed
 
 ### Milestone 3: Seller & Menu Systems ✅
+
 - Seller onboarding, profile management, and open/closed toggle
 - Menu item CRUD, availability toggle, category filtering, and image upload
 - **Status**: Completed
 
 ### Milestone 4: Order Lifecycle & Real-Time Tracking ✅
+
 - Order creation, transition workflow, and status validation
 - Real-time WebSocket broadcasts to buyers and sellers
 - In-building delivery tracking and flat routing
 - **Status**: Completed
 
 ### Milestone 5: Payments, Ledger & Admin ✅
+
 - Razorpay payment order initiation, capture, and webhooks
 - Double-entry financial ledger and seller payout processing
 - Admin approval, resident verification, and analytics dashboard
 - **Status**: Completed
 
 ### Milestone 6: Pre-Orders & Community Suggestions Marketplace ✅
+
 - Pre-order slot scheduling (`lunch_today`, `dinner_today`, `lunch_tomorrow`, `dinner_tomorrow`)
 - Community Cravings board with resident dish requests, upvotes, and chef batch creation
 - Multi-item cart drawer with itemized eco-packaging and doorstep delivery breakdown
 - **Status**: Completed
 
 ### Milestone 7: Punctuality Engine, AI Routes & Staging Ready (`v1.1.0-beta.1`) ✅
+
 - Automated punctuality calculation engine based on delivery timestamps and slot deadlines
 - Multimodal AI dish nutrition/allergen analysis and meal advisor endpoints
 - Production Docker compose staging stack with pre-flight database migration check
 - **Status**: Completed
 
 ### Milestone 8: Direct P2PM UPI, SaaS Pass & Kitchen Power Tools (`v1.2.1`) ✅
+
 - Direct P2PM UPI payments with dynamic QR code generation and 12-digit UTR verification
 - SaaS Pass maintenance quotas (50 free orders/month + flat ₹5.00/order fee with chef platform credit wallet)
 - Interactive menu item editing (`PUT /api/v1/menus/{id}`) and 1-click "Duplicate / Clone Dish" draft creation
@@ -292,5 +299,3 @@
 - Local device image browsing ($\le 5\text{ MB}$) with thumbnail preview and direct backend upload
 - In-flight cart price concurrency guard protecting against price mismatches on checkout
 - **Status**: Completed
-
-

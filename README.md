@@ -1,13 +1,14 @@
-```
+```text
   _________            .__       __          ___________                .___
  /   _____/____   ____ |__| _____/  |_ ___.__.\_   _____/___   ____   __| _/
- \_____  \/  _ \_/ ___\|  |/ __ \   __<   |  | |    __)/  _ \ /  _ \ / __ | 
- /        (  <_> )  \___|  \  ___/|  |  \___  | |     \(  <_> |  <_> ) /_/ | 
-/_______  /\____/ \___  >__|\___  >__|  / ____| \___  / \____/ \____/\____ | 
-        \/            \/        \/      \/          \/                    \/ 
+ \_____  \/  _ \_/ ___\|  |/ __ \   __<   |  | |    __)/  _ \ /  _ \ / __ |
+ /        (  <_> )  \___|  \  ___/|  |  \___  | |     \(  <_> |  <_> ) /_/ |
+/_______  /\____/ \___  >__|\___  >__|  / ____| \___  / \____/ \____/\____ |
+        \/            \/        \/      \/          \/                    \/
 ```
 
 # Society Food Platform
+>
 > A high-performance, hyperlocal culinary marketplace and apartment community food-sharing network built for residential societies, powered by real-time order tracking, double-entry ledger accounting, and cryptographic multi-tenant security.
 
 ---
@@ -26,18 +27,21 @@
 ## The Developer's Story
 
 ### Project Inspiration
+
 Modern high-rise residential apartment complexes house hundreds—sometimes thousands—of families within a single gated perimeter. Yet, when dinnertime arrives, residents routinely order from distant industrial cloud kitchens and delivery aggregators. These orders arrive lukewarm after battling street traffic, carry steep surge delivery fees, and lack the nutritional warmth of honest home cooking.
 
 At the exact same moment, three floors above or down the hallway, talented resident home chefs prepare regional delicacies, authentic family recipes, and fresh evening snacks for their own households.
 
-**The Society Food Platform** was founded on a simple question: *Why should neighbors order anonymous factory takeout when authentic, wholesome, fresh meals can be cooked and enjoyed right inside our own residential community?* 
+**The Society Food Platform** was founded on a simple question: *Why should neighbors order anonymous factory takeout when authentic, wholesome, fresh meals can be cooked and enjoyed right inside our own residential community?*
 
 We set out to create a trusted, hyper-local peer-to-peer food economy. By removing third-party delivery vehicles, eliminating marketplace commission gouging, and anchoring trust in apartment flat verification, our platform connects passionate resident chefs with hungry neighbors for daily home-cooked meals, weekend specials, and community cravings.
 
 ---
 
 ### Meet the Architecture
+
 The platform is designed as a **Hyperlocal Micro-Marketplace**. Unlike city-wide food apps that prioritize geographic routing algorithms, our technical constraints revolve around **temporal batches, portion caps, and residential trust**:
+
 1. **Zero-Distance Delivery & Pickup**: Orders move across elevator shafts rather than traffic intersections.
 2. **Batch Concurrency**: Home kitchens prepare finite batches (e.g. 10 portions of Hyderabadi Biryani). When the tenth portion is claimed, inventory must instantly lock across all connected client interfaces.
 3. **Multi-Role Workspaces**: Clean role separation between **Resident**, **Home Chef (Partner)**, **Society Admin**, and **Super Admin** with zero database mutation on workspace switching.
@@ -58,32 +62,39 @@ The platform is designed as a **Hyperlocal Micro-Marketplace**. Unlike city-wide
 ### Key Engineering Challenges & Solutions
 
 #### 1. Modular Sub-Pages & Outlet Navigation
+
 - **Challenge**: Monolithic dashboard components caused render bottlenecks and made maintenance cumbersome.
 - **Solution**: Decomposed workspace portals into dedicated subpage modules rendered via React Router `<Outlet />`:
   - **Partner Workspace (`/partner/*`)**: `/partner` (Overview), `/partner/orders`, `/partner/menu`, `/partner/gallery`, `/partner/finances`.
   - **Admin Console (`/admin/*`)**: `/admin` (Overview), `/admin/approvals`, `/admin/residents`, `/admin/refunds`.
 
 #### 2. Profile Action Sub-Menu & Zero Legacy Conventions
+
 - **Challenge**: Onboarding residents as home chefs previously required complex role migrations or risked account demotions.
 - **Solution**: Built an **Account Services & Action Menu** on `/profile` with intuitive navigation cards and a streamlined application modal. Completely eliminated legacy `buyer` and `seller` terminology across all interfaces in favor of `Resident Member`, `Home Chef (Partner)`, and `Society Admin`.
 
 #### 3. Concurrency & Portion Integrity
+
 - **Challenge**: Multiple residents ordering the last available portion of a dinner special simultaneously could cause overselling and chef distress.
 - **Solution**: Implemented atomic stock decrement logic directly in the transactional pipeline [`order_service.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/services/order_service.py). Placing an order validates inventory and decrements stock in real time; when portions reach zero, the item automatically switches to `Sold Out` across the marketplace.
 
 #### 4. Self-Order Prevention & Platform Accounting Safeguards
+
 - **Challenge**: If a chef places orders to their own kitchen while operating in resident mode, double-entry payout balances and escrow ledgers are corrupted.
 - **Solution**: Embedded a strict guard in `create_order` rejecting any transaction where `buyer_id == seller_id` with HTTP 400 (`"Chefs cannot place orders from their own kitchen."`). Replaced action controls on self-menus with non-interactive *"Your Kitchen"* badges.
 
 #### 5. Broken Object Level Authorization (BOLA / IDOR) Defense
+
 - **Challenge**: Numeric IDs for orders (`/api/v1/orders/{id}`) could allow malicious users to inspect or cancel orders belonging to other flats.
 - **Solution**: Reinforced endpoint dependencies in [`orders.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/api/v1/orders.py) ensuring that only the resident who placed the order (`order.buyer_id == current_user.id`), the chef preparing it (`order.seller_id == current_user.id`), or a platform admin can read order details or update delivery status.
 
 #### 6. Cryptographic Passwordless Authentication & Role Protection
+
 - **Challenge**: Standard PRNG functions can be predictable, and login role toggles could accidentally downgrade privileged administrator accounts.
 - **Solution**: Secured [`security.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/core/security.py) with Python's `secrets.choice(string.digits)`, enforced a 5-minute OTP expiry with single-use consumption, and protected `admin` / `super_admin` accounts in [`auth.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/api/v1/auth.py) so they can never be demoted on login or OTP verification.
 
 #### 7. Direct P2PM UPI & Zero-Commission SaaS Pass Model
+
 - **Challenge**: 2-3% payment gateway MDR fees drain resident chef margins on low-ticket home-cooked portions.
 - **Solution**: Engineered a peer-to-peer merchant Direct UPI architecture. Residents scan dynamic chef UPI QR codes with pre-filled amounts and submit 12-digit bank UTRs for instant 1-tap chef confirmation. The platform sustains operations through a SaaS Pass providing 50 free orders/month and a flat ₹5.00/order maintenance fee thereafter via a prepaid platform credit wallet.
 
@@ -92,6 +103,7 @@ The platform is designed as a **Hyperlocal Micro-Marketplace**. Unlike city-wide
 ## System Specifications
 
 ### Technical Component Table
+
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
 | **Backend Framework** | FastAPI (Python) | 3.12 / 0.110+ | Asynchronous REST API, WebSockets, background tasks |
@@ -108,6 +120,7 @@ The platform is designed as a **Hyperlocal Micro-Marketplace**. Unlike city-wide
 ## Architectural Overview & Mermaid Pipelines
 
 ### 1. System Request & Data Pipeline
+
 ```mermaid
 flowchart TD
     A["Resident Client (React PWA)"] -->|"HTTPS / REST"| B["FastAPI Application Gateway"]
@@ -125,6 +138,7 @@ flowchart TD
 ```
 
 ### 2. Order Lifecycle State Machine
+
 ```mermaid
 stateDiagram-v2
     [*] --> Placed: Resident places order (Stock Decremented)
@@ -144,7 +158,7 @@ stateDiagram-v2
 
 ## Project Folder Blueprint
 
-```
+```text
 food-platform-docs/
 ├── backend/
 │   ├── app/
@@ -254,33 +268,38 @@ docker compose -f docker-compose.prod.yml up -d --build
 ## Testing & Quality Assurance Matrix
 
 ### Backend Pytest Suite: **44/44 Passed (100%)**
+
 ```bash
 cd backend
 .\.venv\Scripts\python -m pytest tests/ -v
 ```
+
 All 44 automated backend tests validate auth demotion protection, OTP rate-limiting, portion decrements, BOLA checks, direct UPI calculations, cravings matching, and delivery routing.
 
 ### Frontend Jest Suite: **40/40 Passed Across 14 Suites (100%)**
+
 ```bash
 cd frontend
 npm test -- --watchAll=false
 ```
+
 All 14 suites validate subpage mounting (`partner-subpages.test.jsx`, `admin-subpages.test.jsx`), profile action menu, SaaS pass meters, dish editing, drawer checkout, and persona navigation.
 
 ---
 
 ## Frequently Asked Questions (FAQ)
 
-**Q: Can a resident apply to become a Home Chef?**  
+**Q: Can a resident apply to become a Home Chef?**
 A: Yes! Residents simply open the **Account Services & Action Menu** on their Profile page and tap *"Apply as Home Chef"*. Once approved by the Society Admin, their Kitchen Hub activates immediately.
 
-**Q: How does the Direct UPI model work without payment gateway charges?**  
+**Q: How does the Direct UPI model work without payment gateway charges?**
 A: Residents scan the chef's personalized UPI QR at checkout and submit their bank UTR. Funds settle directly into the chef's bank account with 0% platform commission. The platform maintains services via a prepaid SaaS pass (50 free orders included).
 
-**Q: Can an Administrator account be downgraded on login?**  
+**Q: Can an Administrator account be downgraded on login?**
 A: No. The backend authentication layer strictly protects `admin` and `super_admin` accounts from accidental demotion regardless of client inputs.
 
 ---
 
 ## Licensing
+
 This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.

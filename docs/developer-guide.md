@@ -6,7 +6,7 @@ Complete setup and development instructions for Society Food Platform.
 
 - [Prerequisites](#prerequisites)
 - [Local Development Setup](#local-development-setup)
-- [Database Setup](#database-setup)
+- [Database Setup](#5-database-setup)
 - [Backend Development](#backend-development)
 - [Frontend Development](#frontend-development)
 - [Docker Setup](#docker-setup)
@@ -19,6 +19,7 @@ Complete setup and development instructions for Society Food Platform.
 ## Prerequisites
 
 ### System Requirements
+
 - **Python**: 3.10 or higher
 - **Node.js**: 16 or higher
 - **PostgreSQL**: 14 or higher
@@ -28,6 +29,7 @@ Complete setup and development instructions for Society Food Platform.
 ### Installation
 
 #### Python
+
 ```bash
 # macOS
 brew install python@3.10
@@ -40,6 +42,7 @@ sudo apt-get install python3.10 python3.10-venv
 ```
 
 #### PostgreSQL
+
 ```bash
 # macOS
 brew install postgresql
@@ -52,6 +55,7 @@ sudo apt-get install postgresql postgresql-contrib
 ```
 
 #### Node.js
+
 ```bash
 # macOS
 brew install node
@@ -179,13 +183,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Access:**
-- API: http://localhost:8000
-- Interactive Docs (Swagger): http://localhost:8000/docs
-- Alternative Docs (ReDoc): http://localhost:8000/redoc
+
+- API: <http://localhost:8000>
+- Interactive Docs (Swagger): <http://localhost:8000/docs>
+- Alternative Docs (ReDoc): <http://localhost:8000/redoc>
 
 ### File Structure
 
-```
+```text
 backend/
 ├── app/
 │   ├── __init__.py
@@ -303,7 +308,7 @@ npm start
 
 ### File Structure
 
-```
+```text
 frontend/
 ├── public/
 │   ├── index.html              # HTML entry point
@@ -684,7 +689,8 @@ npm install
 ### CORS Error
 
 Check `.env`:
-```
+
+```text
 CORS_ORIGINS=http://localhost:3000
 ```
 

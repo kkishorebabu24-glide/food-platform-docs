@@ -7,12 +7,14 @@ This project follows **Git Flow** for organized development and releases.
 ### Main Branches
 
 #### `main` - Production Ready
+
 - **Purpose**: Production-ready code only
 - **Protection**: Requires PR review and all CI checks passing
 - **Deployment**: Auto-deploys to production
 - **Creation**: Never created directly; created from release branches
 
 #### `develop` - Integration Branch
+
 - **Purpose**: Development and testing branch
 - **Protection**: Requires PR review and CI checks
 - **Deployment**: Auto-deploys to staging
@@ -21,6 +23,7 @@ This project follows **Git Flow** for organized development and releases.
 ### Supporting Branches
 
 #### `feature/*` - Feature Development
+
 - **Pattern**: `feature/short-description` or `feature/issue-number-description`
 - **Examples**:
   - `feature/seller-menu-crud`
@@ -32,6 +35,7 @@ This project follows **Git Flow** for organized development and releases.
 - **Delete after merge**: Yes
 
 #### `bugfix/*` - Bug Fixes
+
 - **Pattern**: `bugfix/short-description` or `bugfix/issue-number-description`
 - **Examples**:
   - `bugfix/456-order-status-bug`
@@ -40,6 +44,7 @@ This project follows **Git Flow** for organized development and releases.
 - **Target PR**: Pull request to `develop`
 
 #### `hotfix/*` - Production Patches
+
 - **Pattern**: `hotfix/critical-fix-description`
 - **Examples**:
   - `hotfix/security-vulnerability`
@@ -48,6 +53,7 @@ This project follows **Git Flow** for organized development and releases.
 - **Target PR**: Pull request to `main`, then merge back to `develop`
 
 #### `release/*` - Release Preparation
+
 - **Pattern**: `release/v1.0.0` or `release/1.0.0-rc.1`
 - **Examples**:
   - `release/v1.0.0`
@@ -62,7 +68,7 @@ This project follows **Git Flow** for organized development and releases.
 
 ## Workflow Diagram
 
-```
+```text
 main (production) ──────────────────────────────
   ↑                                              │
   │                                              │
@@ -91,12 +97,14 @@ develop (staging) ────────────────────�
 ### Before Creating a PR
 
 1. **Keep your branch updated:**
+
    ```bash
    git fetch origin
    git rebase origin/develop
    ```
 
 2. **Run tests locally:**
+
    ```bash
    # Backend
    cd backend && pytest
@@ -106,6 +114,7 @@ develop (staging) ────────────────────�
    ```
 
 3. **Run linting:**
+
    ```bash
    # Backend
    cd backend && black . && flake8 .
@@ -117,6 +126,7 @@ develop (staging) ────────────────────�
 ### Creating a PR
 
 1. **Push your branch:**
+
    ```bash
    git push origin feature/your-feature
    ```
@@ -133,6 +143,7 @@ develop (staging) ────────────────────�
 ### PR Checklist
 
 Reviewers verify:
+
 - [ ] Code follows project standards
 - [ ] Tests included and passing
 - [ ] Documentation updated

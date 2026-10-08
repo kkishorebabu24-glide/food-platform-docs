@@ -16,8 +16,8 @@
 [![Version: 1.2.1](https://img.shields.io/badge/Version-1.2.1-indigo.svg)](#)
 [![FastAPI: 0.110+](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![React: 18.0+](https://img.shields.io/badge/React-18.0%2B-61DAFB.svg)](https://react.dev)
-[![Pytest: 41/41 Passed](https://img.shields.io/badge/Pytest-41%2F41%20Passed%20(100%25)-success.svg)](#)
-[![Jest: 27/27 Passed](https://img.shields.io/badge/Jest-27%2F27%20Passed%20(100%25)-success.svg)](#)
+[![Pytest: 44/44 Passed](https://img.shields.io/badge/Pytest-44%2F44%20Passed%20(100%25)-success.svg)](#)
+[![Jest: 40/40 Passed Across 14 Suites](https://img.shields.io/badge/Jest-40%2F40%20Passed%20(100%25)-success.svg)](#)
 [![Security: Hardened](https://img.shields.io/badge/Security-Non--Root%20%7C%20BOLA%20Guarded-emerald.svg)](#)
 [![PWA: Ready](https://img.shields.io/badge/PWA-Mobile--First-violet.svg)](#)
 
@@ -40,62 +40,52 @@ We set out to create a trusted, hyper-local peer-to-peer food economy. By removi
 The platform is designed as a **Hyperlocal Micro-Marketplace**. Unlike city-wide food apps that prioritize geographic routing algorithms, our technical constraints revolve around **temporal batches, portion caps, and residential trust**:
 1. **Zero-Distance Delivery & Pickup**: Orders move across elevator shafts rather than traffic intersections.
 2. **Batch Concurrency**: Home kitchens prepare finite batches (e.g. 10 portions of Hyderabadi Biryani). When the tenth portion is claimed, inventory must instantly lock across all connected client interfaces.
-3. **Dual Persona Flow**: A resident can be an avid food buyer for lunch and publish a regional dessert batch as a home chef for dinner.
+3. **Multi-Role Workspaces**: Clean role separation between **Resident**, **Home Chef (Partner)**, **Society Admin**, and **Super Admin** with zero database mutation on workspace switching.
+
+---
+
+### Platform Role Structure & RBAC Matrix
+
+| Role | Access Scope | Core Responsibilities & Workspaces |
+| :--- | :--- | :--- |
+| **Resident Member** | Resident Space | Browse neighbor dishes, order fresh batches, post cravings, track doorstep delivery. |
+| **Home Chef (Partner)** | Kitchen Hub Subpages | Manage daily batches, portion steppers, dish cloning, storefront branding, and Direct UPI revenue. |
+| **Society Admin** | Admin Console Subpages | Supervise community health, verify chef applicant licenses, manage member directory, audit refunds. |
+| **Super Admin** | Multi-Society Governance | Platform-wide telemetry, cross-society provisioning, SaaS pass fee configuration, global dispute oversight. |
 
 ---
 
 ### Key Engineering Challenges & Solutions
 
-#### 1. Concurrency & Portion Integrity
+#### 1. Modular Sub-Pages & Outlet Navigation
+- **Challenge**: Monolithic dashboard components caused render bottlenecks and made maintenance cumbersome.
+- **Solution**: Decomposed workspace portals into dedicated subpage modules rendered via React Router `<Outlet />`:
+  - **Partner Workspace (`/partner/*`)**: `/partner` (Overview), `/partner/orders`, `/partner/menu`, `/partner/gallery`, `/partner/finances`.
+  - **Admin Console (`/admin/*`)**: `/admin` (Overview), `/admin/approvals`, `/admin/residents`, `/admin/refunds`.
+
+#### 2. Profile Action Sub-Menu & Zero Legacy Conventions
+- **Challenge**: Onboarding residents as home chefs previously required complex role migrations or risked account demotions.
+- **Solution**: Built an **Account Services & Action Menu** on `/profile` with intuitive navigation cards and a streamlined application modal. Completely eliminated legacy `buyer` and `seller` terminology across all interfaces in favor of `Resident Member`, `Home Chef (Partner)`, and `Society Admin`.
+
+#### 3. Concurrency & Portion Integrity
 - **Challenge**: Multiple residents ordering the last available portion of a dinner special simultaneously could cause overselling and chef distress.
 - **Solution**: Implemented atomic stock decrement logic directly in the transactional pipeline [`order_service.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/services/order_service.py). Placing an order validates inventory and decrements stock in real time; when portions reach zero, the item automatically switches to `Sold Out` across the marketplace.
 
-#### 2. Self-Order Prevention & Platform Accounting Safeguards
-- **Challenge**: If a chef places orders to their own kitchen while operating in buyer mode, double-entry payout balances, sales volumes, and escrow ledgers are corrupted.
-- **Solution**: Embedded a strict guard in `create_order` rejecting any transaction where `buyer_id == seller_id` with HTTP 400 (`"Chefs cannot place orders from their own kitchen."`). Replaced action controls on self-menus with non-interactive *"Your Kitchen"* badges and added multi-chef cart warnings.
+#### 4. Self-Order Prevention & Platform Accounting Safeguards
+- **Challenge**: If a chef places orders to their own kitchen while operating in resident mode, double-entry payout balances and escrow ledgers are corrupted.
+- **Solution**: Embedded a strict guard in `create_order` rejecting any transaction where `buyer_id == seller_id` with HTTP 400 (`"Chefs cannot place orders from their own kitchen."`). Replaced action controls on self-menus with non-interactive *"Your Kitchen"* badges.
 
-#### 3. Broken Object Level Authorization (BOLA / IDOR) Defense
-- **Challenge**: Numeric IDs for orders (`/api/v1/orders/{id}`) could allow malicious residents to inspect or cancel orders belonging to other flats.
+#### 5. Broken Object Level Authorization (BOLA / IDOR) Defense
+- **Challenge**: Numeric IDs for orders (`/api/v1/orders/{id}`) could allow malicious users to inspect or cancel orders belonging to other flats.
 - **Solution**: Reinforced endpoint dependencies in [`orders.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/api/v1/orders.py) ensuring that only the resident who placed the order (`order.buyer_id == current_user.id`), the chef preparing it (`order.seller_id == current_user.id`), or a platform admin can read order details or update delivery status.
 
-#### 4. Cryptographic Passwordless Authentication (Senior Cybersecurity Audit)
-- **Challenge**: Standard PRNG functions (`random.choices`) can be predictable, exposing one-time login codes to enumeration.
-- **Solution**: Refactored [`security.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/core/security.py) to use Python's cryptographically secure `secrets.choice(string.digits)`, shortened OTP lifetime to 5 minutes, implemented atomic token consumption on verification, and added burst rate-limiting (`max 3 requests / 15 minutes`) to prevent phone/email flooding.
+#### 6. Cryptographic Passwordless Authentication & Role Protection
+- **Challenge**: Standard PRNG functions can be predictable, and login role toggles could accidentally downgrade privileged administrator accounts.
+- **Solution**: Secured [`security.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/core/security.py) with Python's `secrets.choice(string.digits)`, enforced a 5-minute OTP expiry with single-use consumption, and protected `admin` / `super_admin` accounts in [`auth.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/api/v1/auth.py) so they can never be demoted on login or OTP verification.
 
-#### 5. In-Flight Cart Concurrency & Real-Time Price Protection
-- **Challenge**: A home chef might adjust a dish's portion price while a neighbor already has that dish saved in their active cart drawer. Completing checkout with a stale price causes financial disputes or silent buyer overcharging.
-- **Solution**: Implemented an in-flight cart verification guard in [`order_service.py`](file:///c:/Users/91868/Documents/GitHub/food-platform-docs/backend/app/services/order_service.py). Order creation compares client-sent item prices against live database pricing; any mismatch $> ₹0.01$ immediately rejects checkout with HTTP 400 (`"The price of '{menu.name}' has been updated by the chef from ₹X to ₹Y. Please review your cart before completing checkout."`).
-
-#### 6. Direct P2PM UPI & Zero-Commission SaaS Pass Platform Model
-- **Challenge**: 2-3% payment gateway MDR fees drain resident chef margins on low-ticket home-cooked portions, while manual reconciliation creates buyer friction.
-- **Solution**: Engineered a peer-to-peer merchant Direct UPI architecture. Buyers scan dynamic chef UPI QR codes with pre-filled amounts and submit 12-digit bank UTRs for instant 1-tap chef confirmation. The platform sustains operations through a fair SaaS Pass providing 50 free orders/month and a flat ₹5.00/order maintenance fee thereafter via a prepaid platform credit wallet.
-
----
-
-### Design Philosophy
-The visual interface follows a **Warm Culinary & Coffee-App Inspired Aesthetic**:
-1. **Earthy Gourmet Color Palette**:
-   - **Dark Forest Green** (`#1B4332` / `#2D6A4F`): Signals culinary freshness, active selection, vegetarian purity, and checkout confirmation.
-   - **Warm Terracotta** (`#E05A2B`): Primary appetite stimulant, batch urgency, and action accents.
-   - **Honey Saffron** (`#F6BD60`): Star ratings, scheduled pre-order indicators, and warm highlights.
-   - **Dark Obsidian** (`#0F0F1A` / `#181829`): Deep, battery-efficient dark-mode surfaces with glassmorphism overlays.
-2. **Typography**: Engineered around **Poppins** and **Plus Jakarta Sans** for modern, consumer-grade legibility.
-3. **Pill-Shaped Category Filters**: Instant sliding filter pills (`🟢 Pure Veg`, `🔴 Non-Veg`, `🥪 Snacks`, `🍰 Desserts`, `☕ Beverages`).
-4. **Mobile PWA First**: Fixed responsive bottom navigation (`Home`, `Cravings`, `Orders`, `Cart`, `Profile`) for seamless mobile dining workflows.
-
----
-
-## Table of Contents
-1. [System Specifications](#system-specifications)
-2. [Architectural Overview & Mermaid Pipelines](#architectural-overview--mermaid-pipelines)
-3. [Project Folder Blueprint](#project-folder-blueprint)
-4. [Installation & Quick Start](#installation--quick-start)
-5. [Design System & Visual Tokens](#design-system--visual-tokens)
-6. [Core Features Walkthrough](#core-features-walkthrough)
-7. [Cybersecurity & Data Protection Matrix](#cybersecurity--data-protection-matrix)
-8. [Testing & Quality Assurance Matrix](#testing--quality-assurance-matrix)
-9. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
-10. [Licensing & Contribution Details](#licensing--contribution-details)
+#### 7. Direct P2PM UPI & Zero-Commission SaaS Pass Model
+- **Challenge**: 2-3% payment gateway MDR fees drain resident chef margins on low-ticket home-cooked portions.
+- **Solution**: Engineered a peer-to-peer merchant Direct UPI architecture. Residents scan dynamic chef UPI QR codes with pre-filled amounts and submit 12-digit bank UTRs for instant 1-tap chef confirmation. The platform sustains operations through a SaaS Pass providing 50 free orders/month and a flat ₹5.00/order maintenance fee thereafter via a prepaid platform credit wallet.
 
 ---
 
@@ -104,21 +94,14 @@ The visual interface follows a **Warm Culinary & Coffee-App Inspired Aesthetic**
 ### Technical Component Table
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Backend Framework** | FastAPI (Python) | 3.12 / 0.110+ | High-throughput asynchronous REST API & WebSocket server |
+| **Backend Framework** | FastAPI (Python) | 3.12 / 0.110+ | Asynchronous REST API, WebSockets, background tasks |
 | **Database & ORM** | PostgreSQL + SQLAlchemy | 14+ / 2.0+ | Relational persistence, JSON item structures, migrations |
-| **Schema Migrations** | Alembic | 1.13+ | Automated revision history & declarative database migrations |
+| **Schema Migrations** | Alembic | 1.13+ | Automated revision history & declarative migrations |
 | **Cache & OTP Store** | Redis | 7.0+ | TTL-managed OTP secrets and rate-limiting counters |
-| **Real-Time Push** | WebSockets | Native Starlette | Sub-millisecond kitchen order status & door dispatch alerts |
+| **Real-Time Push** | WebSockets | Native Starlette | Real-time kitchen order status & door dispatch alerts |
 | **Frontend Framework** | React + PWA | 18.2+ | Progressive Web App with offline caching & mobile responsiveness |
 | **Component UI** | Material UI (MUI v5) | 5.15+ | Glassmorphic theme system, custom cards, accessible dialogs |
-| **Typography** | Poppins & Plus Jakarta | Google Fonts | Premium consumer typography and visual hierarchy |
 | **Containerization** | Docker & Compose | 24+ | Multi-container isolation with unprivileged non-root runtime |
-
-### Performance & Scalability Targets
-- **API Response Latency**: $< 45\text{ ms}$ (p95 on core endpoints).
-- **WebSocket Broadcast Latency**: $< 12\text{ ms}$ to connected clients.
-- **Frontend Lighthouse Score**: $\ge 95$ across Performance, Accessibility, and Best Practices.
-- **Payload Footprint**: Zero third-party tracker scripts; clean single-bundle deployment.
 
 ---
 
@@ -144,31 +127,17 @@ flowchart TD
 ### 2. Order Lifecycle State Machine
 ```mermaid
 stateDiagram-v2
-    [*] --> Placed: Buyer places order (Stock Decremented)
+    [*] --> Placed: Resident places order (Stock Decremented)
     Placed --> Accepted: Chef confirms batch preparation
-    Placed --> Cancelled: Cancelled by Buyer (Pending only)
+    Placed --> Cancelled: Cancelled by Resident (Pending only)
     Accepted --> Cooking: Chef actively preparing dish
     Cooking --> Ready: Meal cooked & packaged
     Ready --> Dispatched: Out for Door Delivery (In-building)
     Dispatched --> Delivered: Handed over at Resident Flat
-    Ready --> PickedUp: Buyer collects at Chef Kitchen
+    Ready --> PickedUp: Resident collects at Chef Kitchen
     Delivered --> [*]: Ledger balanced & rating enabled
     PickedUp --> [*]: Ledger balanced & rating enabled
     Cancelled --> [*]: Stock automatically restored
-```
-
-### 3. Cravings-to-Chef Matching Engine
-```mermaid
-flowchart LR
-    Craving["Resident Craving"] --> DietCheck{"Dietary Guard"}
-    DietCheck -->|"Non-Veg on Pure-Veg Kitchen"| Incompatible["🚫 Incompatible (0% Score)"]
-    DietCheck -->|"Compatible"| MatchEngine["Weighted Scoring Engine"]
-    MatchEngine --> Cat["Category Fit (30%)"]
-    MatchEngine --> Token["Dish Similarity (45%)"]
-    MatchEngine --> Chef["Kitchen Activity (15%)"]
-    MatchEngine --> Upvote["Resident Backing (10%)"]
-    Cat & Token & Chef & Upvote --> Score["Score: 0 - 100%"]
-    Score --> Badges["🎯 Chef Demand Radar Badges"]
 ```
 
 ---
@@ -180,203 +149,138 @@ food-platform-docs/
 ├── backend/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── dependencies.py      # Auth, DB, and RBAC injection
+│   │   │   ├── dependencies.py          # Auth, DB, and RBAC injection
 │   │   │   └── v1/
-│   │   │       ├── auth.py          # Cryptographic OTP & JWT routes
-│   │   │       ├── menus.py         # Daily dishes, inventory, image uploads
-│   │   │       ├── orders.py        # Order placement, BOLA guards, tracking
-│   │   │       ├── sellers.py       # Kitchen profiles, payout details
-│   │   │       └── suggestions.py   # Community cravings & matching API
+│   │   │       ├── admin.py             # Society Admin & telemetry endpoints
+│   │   │       ├── auth.py              # Cryptographic OTP & role-safe auth
+│   │   │       ├── menus.py             # Dishes, inventory, portions, images
+│   │   │       ├── orders.py            # Order placement, BOLA guards, tracking
+│   │   │       ├── payments.py          # SaaS pass, maintenance ledger, UPI
+│   │   │       ├── sellers.py           # Kitchen profiles, showcase photos
+│   │   │       └── suggestions.py       # Community cravings & matching API
 │   │   ├── core/
-│   │   │   ├── config.py            # Pydantic environment configurations
-│   │   │   └── security.py          # Secrets-based OTP, bcrypt, JWT tokens
+│   │   │   ├── config.py                # Pydantic environment configurations
+│   │   │   └── security.py              # Secrets-based OTP, bcrypt, JWT tokens
 │   │   ├── db/
-│   │   │   ├── database.py          # SQLAlchemy engine & session factory
-│   │   │   └── models/              # User, Order, Menu, Ledger models
-│   │   ├── schemas/                 # Pydantic validation contracts
-│   │   └── services/
-│   │       ├── matching_service.py  # Cravings-to-chef compatibility algorithm
-│   │       ├── order_service.py     # State machine & stock decrementing
-│   │       └── websocket_manager.py # Real-time dispatch engine
-│   ├── Dockerfile                   # Non-root hardened container specification
-│   ├── entrypoint.sh                # DB wait, Alembic migrations, server startup
-│   └── tests/                       # 36 Pytest automated tests (100% pass)
+│   │   │   ├── database.py              # SQLAlchemy engine & session factory
+│   │   │   └── models/                  # User, Order, Menu, Ledger models
+│   │   ├── schemas/                     # Pydantic validation contracts
+│   │   └── services/                    # Order, matching, and WebSocket services
+│   ├── Dockerfile                       # Non-root hardened container specification
+│   ├── entrypoint.sh                    # DB wait, Alembic migrations, startup
+│   └── tests/                           # 44 Pytest automated tests (100% pass)
 │
 ├── frontend/
-│   ├── public/
-│   │   └── index.html               # Poppins font CDN & PWA meta tags
+│   ├── public/                          # Fonts, manifest, and icons
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── CartDrawer.jsx       # Multi-chef sliding basket & checkout
-│   │   │   ├── DishImageModal.jsx   # Lightbox modal with attributes & favorites
-│   │   │   └── Footer.jsx           # Clean application footer
+│   │   ├── components/                  # CartDrawer, Lightbox, Navigation
 │   │   ├── pages/
-│   │   │   ├── BuyerDashboard.jsx   # Time-of-day greeting, search, pill filters
-│   │   │   ├── Menu.jsx             # Kitchen catalog, portion stock, quick-add
-│   │   │   ├── Orders.jsx           # Live visual order tracking timeline
-│   │   │   ├── Profile.jsx          # Flat address & persona preferences
-│   │   │   ├── SellerDashboard.jsx  # Kitchen Hub, live portion steppers
-│   │   │   └── SuggestionsBoard.jsx # Chef Demand Radar & Dual Acceptance modal
-│   │   ├── services/api.js          # Axios client with session hygiene
-│   │   ├── App.jsx                  # Poppins theme, navigation, mobile bottom bar
-│   │   └── __tests__/               # 22 Jest automated tests (100% pass)
+│   │   │   ├── admin/                   # Admin Layout & 4 Modular Subpages
+│   │   │   │   ├── AdminLayout.jsx      # Header shell, supervisor tabs
+│   │   │   │   ├── AdminOverview.jsx    # GMV analytics & platform KPIs
+│   │   │   │   ├── AdminApprovals.jsx   # Chef applicant review queue
+│   │   │   │   ├── AdminResidents.jsx   # Resident & unit account directory
+│   │   │   │   └── AdminRefunds.jsx     # Dispute resolution & refund ledger
+│   │   │   ├── partner/                 # Partner Layout & 5 Modular Subpages
+│   │   │   │   ├── PartnerLayout.jsx    # Persistent shell, order badge, SaaS meter
+│   │   │   │   ├── PartnerOverview.jsx  # Kitchen health, batch prep sheet
+│   │   │   │   ├── PartnerOrders.jsx    # Live fulfillment order pipeline
+│   │   │   │   ├── PartnerMenu.jsx      # Portions, availability, clone dish
+│   │   │   │   ├── PartnerGallery.jsx   # Storefront branding & curated presets
+│   │   │   │   └── PartnerFinances.jsx  # SaaS pass meter, Direct UPI, fee ledger
+│   │   │   ├── BuyerDashboard.jsx       # Resident home marketplace
+│   │   │   ├── Menu.jsx                 # Kitchen catalog & portion steppers
+│   │   │   ├── Orders.jsx               # Visual order tracking timeline
+│   │   │   ├── Profile.jsx              # Profile & Account Services Action Menu
+│   │   │   └── SuggestionsBoard.jsx     # Community Cravings Radar
+│   │   ├── services/api.js              # Axios client with session hygiene
+│   │   ├── App.jsx                      # Universal login, smart routing, theme
+│   │   └── __tests__/                   # 40 Jest tests across 14 suites (100% pass)
+│   ├── nginx.conf                       # Reverse proxy & SPA routing fallback
+│   └── Dockerfile                       # Multi-stage React + Nginx build
 │
-├── docker-compose.yml               # Multi-container local production stack
-└── README.md                        # Complete project manual (this file)
+├── docker-compose.yml                   # Local development stack (hot reload)
+├── docker-compose.staging.yml           # Staging environment stack
+├── docker-compose.prod.yml              # Production hardened stack
+└── README.md                            # Complete platform manual (this file)
 ```
 
 ---
 
-## Installation & Quick Start
+## Docker Setup & Deployment Guide
 
-### Option A: Docker Compose (Recommended)
+The platform provides dedicated Docker Compose configurations for every deployment tier:
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/food-platform-docs.git
-   cd food-platform-docs
-   ```
-
-2. **Configure environment variables**:
-   ```bash
-   cp backend/.env.example backend/.env
-   ```
-
-3. **Start the complete platform stack**:
-   ```bash
-   docker-compose up -d --build
-   ```
-   - **Frontend UI**: `http://localhost:3000`
-   - **Backend API Docs**: `http://localhost:8000/docs`
-   - **PostgreSQL Database**: `localhost:5432`
-
----
-
-### Option B: Bare-Metal Local Development
-
-#### 1. Backend Setup (FastAPI)
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
-pip install -r requirements.txt
-
-# Run migrations
-alembic upgrade head
-
-# Start development server
-uvicorn app.main:app --reload --port 8000
-```
-
-#### 2. Frontend Setup (React PWA)
-```bash
-cd frontend
-npm install
-npm start
-```
-
----
-
-## Design System & Visual Tokens
-
-The platform features an adaptive culinary aesthetic crafted for food discovery:
-
-| Token Name | Hex Code | Visual Application |
+| Compose File | Target Environment | Purpose & Characteristics |
 | :--- | :--- | :--- |
-| **Forest Emerald** | `#1B4332` | Primary brand accent, active category pills, rating badges |
-| **Deep Forest Mint** | `#2D6A4F` | Mobile bottom navigation active icons, success states |
-| **Warm Terracotta** | `#E05A2B` | Action CTA buttons, batch urgency highlights, cravings flame |
-| **Honey Saffron** | `#F6BD60` | Pre-order schedules, star ratings, flat identity badges |
-| **Dark Obsidian** | `#0F0F1A` | Background surface for high-contrast dark mode |
-| **Elevated Card** | `#181829` | Frosted glassmorphism panels with 16px rounded borders |
+| `docker-compose.yml` | **Development** | Source bind-mounts for instant hot-reload, dev database, Redis cache. |
+| `docker-compose.staging.yml`| **Staging** | Production-like multi-container stack with Nginx proxy and migration checks. |
+| `docker-compose.prod.yml` | **Production** | Optimized multi-worker backend (`WORKERS=4`), healthcheck dependencies, restart policies. |
 
----
+### 1. Development Mode (Hot-Reload)
 
-## Core Features Walkthrough
+```bash
+# Start dev stack
+docker compose -f docker-compose.yml up -d --build
 
-### 🛒 For Apartment Residents (Buyers)
-- **Time-of-Day Personalized Greeting**: Dynamic welcome (*"Good morning, Rohan! 👋"*) with resident flat identification (*"📍 Flat #304"*).
-- **Pill-Shaped Category Filter Bar**: Filter dishes instantly with single-tap pills (`🟢 Veg`, `🔴 Non-Veg`, `🥪 Snacks`, `🍰 Desserts`, `☕ Beverages`).
-- **Interactive Dish Lightbox Modal**: High-resolution top-down imagery, dietary attribute chips, favorite heart toggle, and sticky bottom *"Add to Basket"* CTA.
-- **Multi-Chef Slide-Out Cart**: Add items from different neighbor chefs into a unified slide-out drawer with individual delivery slot configurations.
-- **Live Visual Order Timeline**: Track progress through step indicators (`Order Placed` $\rightarrow$ `Chef Cooking` $\rightarrow$ `Out for Delivery` $\rightarrow$ `Delivered`).
-- **Community Cravings Board**: Post missing regional cravings and upvote requests to signal culinary demand to home chefs.
+# View container logs
+docker compose -f docker-compose.yml logs -f backend
+```
 
-### 🍳 For Resident Home Chefs (Sellers)
-- **Kitchen Command Center**: Manage active kitchen status (`Open` / `Closed`), double-entry ledger earnings, and bank/UPI payout details.
-- **Interactive Dish Editor & 1-Click Duplicate**: Edit published dishes anytime with live form pre-population; clone successful batches into new drafts (`Dish Name (Copy)`) with one click.
-- **Spice Level & Low Stock Badges**: Tag dishes (`🌶️ Mild`, `🌶️🌶️ Medium`, `🌶️🌶️🌶️ Hot`) and trigger automated `⚠️ Only X left` badges when 1 to 3 portions remain.
-- **Local Photo Browsing & Previews**: Browse and upload appetizing kitchen photos directly from device storage (up to 5MB) with instant previews.
-- **Dynamic Portion Steppers**: Increment and decrement available servings in real time; automatically switches to *"Sold Out"* at zero.
-- **Direct UPI & SaaS Pass Management**: Enjoy zero payment gateway MDR fees via Direct UPI; track 50 monthly free orders and recharge platform credits via QR.
-- **Chef Demand Radar on Cravings**: View matched community requests scored by the culinary algorithm ($0-100\%$) with category and keyword breakdowns.
-- **Dual Acceptance Modes**: Accept cravings by launching a new scheduled pre-order batch or linking an existing published dish with one click.
-- **Strict Self-Order & Concurrency Safeguards**: Platform guards prevent accidental self-orders and reject stale cart checkouts if prices change mid-browse.
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8000`
+- **Swagger Docs**: `http://localhost:8000/docs`
 
----
+### 2. Staging Deployment
 
-## Cybersecurity & Data Protection Matrix
+```bash
+# Start staging stack
+docker compose -f docker-compose.staging.yml up -d --build
 
-Following our Senior Cybersecurity threat modeling audit, the platform implements enterprise-grade safeguards:
+# Verify container health
+docker compose -f docker-compose.staging.yml ps
+```
 
-| Security Vector | Implementation Detail | Status |
-| :--- | :--- | :--- |
-| **Cryptographic OTP Generation** | Utilizes Python `secrets.SystemRandom().choices` to eliminate PRNG predictability. | ✅ Hardened |
-| **OTP Expiry & Destruction** | Strict 5-minute validity window with atomic destruction upon verification. | ✅ Hardened |
-| **Brute-Force Rate Limiting** | Strict limit of max 3 OTP requests per phone/email per 15 minutes. | ✅ Active |
-| **BOLA / IDOR Authorization** | Object-level checks ensure users can only view or cancel their own orders. | ✅ Verified |
-| **Self-Dealing Prevention** | Orders where `buyer_id == seller_id` are rejected with HTTP 400. | ✅ Enforced |
-| **Cart Concurrency Guard** | Checks client price against live DB price; rejects checkout on price modification. | ✅ Enforced |
-| **Container Sandboxing** | `backend/Dockerfile` runs under dedicated unprivileged `appuser` (UID 1001). | ✅ Hardened |
-| **SQL Injection Prevention** | 100% of queries parameterized via SQLAlchemy ORM; zero string concatenation. | ✅ Compliant |
+### 3. Production Deployment
+
+```bash
+# Configure production secrets in .env
+# Start production stack
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
 ---
 
 ## Testing & Quality Assurance Matrix
 
-The platform is backed by comprehensive automated test suites covering authentication, order workflows, portion decrements, BOLA guards, cart concurrency, and UI interactions.
-
-### Backend Pytest Suite: **41/41 Passed (100%)**
+### Backend Pytest Suite: **44/44 Passed (100%)**
 ```bash
 cd backend
-.\.venv\Scripts\python -m pytest
+.\.venv\Scripts\python -m pytest tests/ -v
 ```
-- `tests/test_auth.py`: Password registration, JWT refresh, role claims.
-- `tests/test_otp_auth.py`: Cryptographic OTP dispatch, 5-minute expiry, rate-limiting (`429`), single-use consumption.
-- `tests/test_orders.py`: Order placement, portion decrements, auto-disable at 0 stock, self-order block, BOLA cross-flat access rejection, in-flight cart price concurrency guard, and spice level CRUD.
-- `tests/test_direct_upi_and_saas_pass.py`: Direct UPI payment flow, UTR submission, chef balance calculation, and platform maintenance fee ledger.
-- `tests/test_matching.py`: Pure-veg dietary incompatibility ($0\%$), category match scoring, and existing menu linking.
-- `tests/test_delivery.py`, `test_payments.py`, `test_preorders.py`, `test_punctuality.py`: 100% passing.
+All 44 automated backend tests validate auth demotion protection, OTP rate-limiting, portion decrements, BOLA checks, direct UPI calculations, cravings matching, and delivery routing.
 
-### Frontend Jest Suite: **27/27 Passed Across 11 Suites (100%)**
+### Frontend Jest Suite: **40/40 Passed Across 14 Suites (100%)**
 ```bash
 cd frontend
 npm test -- --watchAll=false
 ```
-- `seller-menu-edit.test.jsx`: Dish edit dialog pre-population, 1-click duplicate cloning, spice chips, low stock badges, and photo uploads.
-- `direct-upi-and-saas-pass.test.jsx`: Direct UPI modal, dynamic QR generation, UTR verification, and SaaS Pass quota display.
-- `role-navigation-and-self-order.test.jsx`: Persona role navigation, User Chip popover, and self-order prevention.
-- `cravings-matching-and-seller-view.test.jsx`: Chef Demand Radar, Dual Acceptance modal, and enriched buyer view.
-- `menu-search-and-lightbox.test.jsx`: Search, category pills, and DishImageModal lightbox.
-- `cart-checkout-journey.test.jsx`: Multi-chef cart grouping and checkout flow.
-- `role-switching.test.jsx`: Smooth persona transitions between Buyer and Chef.
+All 14 suites validate subpage mounting (`partner-subpages.test.jsx`, `admin-subpages.test.jsx`), profile action menu, SaaS pass meters, dish editing, drawer checkout, and persona navigation.
 
 ---
 
 ## Frequently Asked Questions (FAQ)
 
-**Q: Can a chef also order food as a resident buyer?**  
-A: Yes! Residents can switch between Buyer and Chef personas via the Navbar switcher. However, a chef cannot place orders from their own kitchen to preserve financial ledger accuracy.
+**Q: Can a resident apply to become a Home Chef?**  
+A: Yes! Residents simply open the **Account Services & Action Menu** on their Profile page and tap *"Apply as Home Chef"*. Once approved by the Society Admin, their Kitchen Hub activates immediately.
 
-**Q: What happens when all portions of a dish are ordered?**  
-A: The inventory system decrements portions atomically. When quantity reaches 0, the dish immediately reflects as *"Sold Out"* on all resident menus, preventing overselling.
+**Q: How does the Direct UPI model work without payment gateway charges?**  
+A: Residents scan the chef's personalized UPI QR at checkout and submit their bank UTR. Funds settle directly into the chef's bank account with 0% platform commission. The platform maintains services via a prepaid SaaS pass (50 free orders included).
 
-**Q: How are community cravings matched to home chefs?**  
-A: The matching engine evaluates culinary keywords, dish categories, chef activity, and dietary compatibility. Pure-vegetarian kitchens are strictly shielded from non-vegetarian cravings ($0\%$ match score).
+**Q: Can an Administrator account be downgraded on login?**  
+A: No. The backend authentication layer strictly protects `admin` and `super_admin` accounts from accidental demotion regardless of client inputs.
 
 ---
 
-## Licensing & Contribution Details
+## Licensing
 This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
-
-Developed with ❤️ for residential food lovers and home chefs. Happy dining!

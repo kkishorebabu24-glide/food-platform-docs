@@ -8,11 +8,12 @@ Entry points:
 """
 
 import logging
+import os
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -72,12 +73,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(api_router)
 
 # ── Static Files (menu images) ────────────────────────────────────────────────
-import os
-
 os.makedirs("uploads/menus", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ── WebSocket — Real-time Order Status ────────────────────────────────────────
+
 
 @app.websocket("/ws/orders/{order_id}")
 async def websocket_order_status(websocket: WebSocket, order_id: int):
@@ -108,9 +108,6 @@ async def websocket_order_status(websocket: WebSocket, order_id: int):
 
 # ── Core Endpoints ────────────────────────────────────────────────────────────
 
-@app.get("/")
-def root():
-    return RedirectResponse(url="/api/v1/docs")
 
 @app.get("/", tags=["health"])
 async def root():
@@ -131,6 +128,7 @@ async def health():
 
 
 # ── Global Exception Handler ─────────────────────────────────────────────────
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

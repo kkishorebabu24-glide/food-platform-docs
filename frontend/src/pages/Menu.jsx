@@ -30,7 +30,6 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
 
 const SLOT_SHORT_LABELS = {
   lunch_today: '☀️ Lunch Today',
@@ -62,7 +61,6 @@ export default function MenuPage({ onAddToCart }) {
   const [activeTab, setActiveTab] = useState(0); // 0: Available Today, 1: Pre-Order Specials
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [modalItem, setModalItem] = useState(null);
   const [modalIndex, setModalIndex] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -86,9 +84,9 @@ export default function MenuPage({ onAddToCart }) {
   })();
 
   const isSelfKitchen = Boolean(
-    savedUser && (savedUser.id === Number(resolvedSellerId) || (seller && savedUser.id === seller.id))
+    savedUser &&
+    (savedUser.id === Number(resolvedSellerId) || (seller && savedUser.id === seller.id))
   );
-
 
   useEffect(() => {
     if (!resolvedSellerId) {
@@ -156,6 +154,7 @@ export default function MenuPage({ onAddToCart }) {
     if (urlSearch && !searchQuery) {
       setSearchQuery(urlSearch);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkedDishId, urlSearch, items]);
 
   return (
@@ -181,7 +180,9 @@ export default function MenuPage({ onAddToCart }) {
         <Box
           sx={{
             bgcolor: '#191928',
-            backgroundImage: seller.banner_url ? `linear-gradient(rgba(25, 25, 40, 0.82), rgba(25, 25, 40, 0.95)), url(${seller.banner_url})` : 'none',
+            backgroundImage: seller.banner_url
+              ? `linear-gradient(rgba(25, 25, 40, 0.82), rgba(25, 25, 40, 0.95)), url(${seller.banner_url})`
+              : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             p: { xs: 2.5, md: 3.5 },
@@ -194,7 +195,6 @@ export default function MenuPage({ onAddToCart }) {
             gap: 2.5,
           }}
         >
-
           <Avatar
             src={seller.photo_url || undefined}
             sx={{
@@ -264,7 +264,11 @@ export default function MenuPage({ onAddToCart }) {
                 ),
                 endAdornment: searchQuery ? (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchQuery('')} sx={{ color: '#aaa' }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchQuery('')}
+                      sx={{ color: '#aaa' }}
+                    >
                       <ClearIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
@@ -285,7 +289,12 @@ export default function MenuPage({ onAddToCart }) {
 
           {/* Category Pills */}
           <Grid item xs={12} md={6}>
-            <Box display="flex" gap={1} flexWrap="wrap" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+            <Box
+              display="flex"
+              gap={1}
+              flexWrap="wrap"
+              justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+            >
               {CATEGORIES.map((cat) => (
                 <Chip
                   key={cat.id}
@@ -326,7 +335,11 @@ export default function MenuPage({ onAddToCart }) {
         </Tabs>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -339,8 +352,8 @@ export default function MenuPage({ onAddToCart }) {
             {searchQuery || selectedCategory !== 'all'
               ? `No dishes found matching your search filter.`
               : activeTab === 0
-              ? 'No instant meals ready right now.'
-              : 'No scheduled pre-order specials for this chef.'}
+                ? 'No instant meals ready right now.'
+                : 'No scheduled pre-order specials for this chef.'}
           </Typography>
           <Typography variant="body2" mt={0.5}>
             {searchQuery || selectedCategory !== 'all' ? (
@@ -365,7 +378,11 @@ export default function MenuPage({ onAddToCart }) {
         <Grid container spacing={3}>
           {displayedItems.map((item) => {
             const imageUrl = getDishImageUrl(item);
-            const isVeg = item.category === 'veg' || (!item.category?.includes('non') && !item.name?.toLowerCase().includes('chicken') && !item.name?.toLowerCase().includes('mutton'));
+            const isVeg =
+              item.category === 'veg' ||
+              (!item.category?.includes('non') &&
+                !item.name?.toLowerCase().includes('chicken') &&
+                !item.name?.toLowerCase().includes('mutton'));
 
             return (
               <Grid item xs={12} sm={6} md={4} key={item.id}>
@@ -400,11 +417,9 @@ export default function MenuPage({ onAddToCart }) {
                         opacity: 1,
                       },
                     }}
-                    onClick={() => setModalItem(item)}
                     onClick={() => handleOpenModal(item)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && setModalItem(item)}
                     onKeyDown={(e) => e.key === 'Enter' && handleOpenModal(item)}
                     aria-label={`View photo and details of ${item.name}`}
                   >
@@ -426,7 +441,8 @@ export default function MenuPage({ onAddToCart }) {
                       sx={{
                         position: 'absolute',
                         inset: 0,
-                        background: 'linear-gradient(to top, rgba(25, 25, 40, 0.9) 0%, transparent 60%)',
+                        background:
+                          'linear-gradient(to top, rgba(25, 25, 40, 0.9) 0%, transparent 60%)',
                       }}
                     />
 
@@ -477,9 +493,17 @@ export default function MenuPage({ onAddToCart }) {
                       {item.is_preorder_only && (
                         <Chip
                           size="small"
-                          icon={<AccessTimeIcon sx={{ fontSize: '13px !important', color: '#fff !important' }} />}
+                          icon={
+                            <AccessTimeIcon
+                              sx={{ fontSize: '13px !important', color: '#fff !important' }}
+                            />
+                          }
                           label="Pre-Order"
-                          sx={{ bgcolor: 'rgba(246, 189, 96, 0.9)', color: '#191928', fontWeight: 'bold' }}
+                          sx={{
+                            bgcolor: 'rgba(246, 189, 96, 0.9)',
+                            color: '#191928',
+                            fontWeight: 'bold',
+                          }}
                         />
                       )}
                     </Box>
@@ -487,7 +511,12 @@ export default function MenuPage({ onAddToCart }) {
 
                   <CardContent sx={{ flexGrow: 1, pt: 2 }}>
                     {/* Title & Price */}
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={1}
+                    >
                       <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
                         {item.name}
                       </Typography>
@@ -496,7 +525,12 @@ export default function MenuPage({ onAddToCart }) {
                       </Typography>
                     </Box>
 
-                    <Typography variant="body2" color="text.secondary" mb={2} sx={{ minHeight: 40 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      mb={2}
+                      sx={{ minHeight: 40 }}
+                    >
                       {item.description || 'Prepared fresh in a residential home kitchen.'}
                     </Typography>
 
@@ -504,7 +538,13 @@ export default function MenuPage({ onAddToCart }) {
                     {item.is_preorder_only && (
                       <Box bgcolor="#1F1F35" p={1.5} borderRadius={2} mb={1}>
                         {item.preorder_cutoff_time && (
-                          <Typography variant="caption" display="block" color="#F6BD60" fontWeight="bold" mb={0.5}>
+                          <Typography
+                            variant="caption"
+                            display="block"
+                            color="#F6BD60"
+                            fontWeight="bold"
+                            mb={0.5}
+                          >
                             ⏰ Booking closes at: {item.preorder_cutoff_time}
                           </Typography>
                         )}
@@ -515,7 +555,11 @@ export default function MenuPage({ onAddToCart }) {
                                 key={s}
                                 size="small"
                                 label={SLOT_SHORT_LABELS[s] || s}
-                                sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#ccc', fontSize: 11 }}
+                                sx={{
+                                  bgcolor: 'rgba(255,255,255,0.08)',
+                                  color: '#ccc',
+                                  fontSize: 11,
+                                }}
                               />
                             ))}
                           </Box>
@@ -525,11 +569,12 @@ export default function MenuPage({ onAddToCart }) {
                   </CardContent>
 
                   {/* Actions Bar */}
-                  <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between', alignItems: 'center' }}>
+                  <CardActions
+                    sx={{ p: 2, pt: 0, justifyContent: 'space-between', alignItems: 'center' }}
+                  >
                     <Button
                       size="small"
                       variant="text"
-                      onClick={() => setModalItem(item)}
                       onClick={() => handleOpenModal(item)}
                       sx={{ color: '#2EC4B6', fontWeight: 'bold', textTransform: 'none' }}
                     >
@@ -580,12 +625,8 @@ export default function MenuPage({ onAddToCart }) {
         </Grid>
       )}
 
-      {/* Modern Dish Image Popup Lightbox Modal */}
       {/* Modern Dish Image Popup Lightbox Modal with Sliding Carousel */}
       <DishImageModal
-        open={Boolean(modalItem)}
-        onClose={() => setModalItem(null)}
-        item={modalItem}
         open={isModalOpen && modalIndex !== null && displayedItems.length > 0}
         onClose={() => {
           setIsModalOpen(false);
@@ -606,7 +647,6 @@ export default function MenuPage({ onAddToCart }) {
     </Container>
   );
 }
-
 
 MenuPage.propTypes = {
   onAddToCart: PropTypes.func,

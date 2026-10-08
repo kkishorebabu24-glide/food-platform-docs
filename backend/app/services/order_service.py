@@ -1,5 +1,6 @@
 """Order service — order placement, status management, and history."""
 
+import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.db.models import Menu, Order, PartnerProfile
 from app.db.models.enums import OrderStatus, UserRole
 from app.schemas.order import OrderCreateRequest
+
+logger = logging.getLogger(__name__)
 
 VALID_TRANSITIONS = {
     OrderStatus.placed: {OrderStatus.accepted, OrderStatus.cancelled},
@@ -49,7 +52,7 @@ def create_order(db: Session, resident_id: int, request: OrderCreateRequest) -> 
         .filter(
             Menu.id.in_(menu_ids),
             Menu.partner_id == request.partner_id,
-            Menu.is_available == True,
+            Menu.is_available.is_(True),
         )
         .all()
     )
@@ -85,16 +88,19 @@ def create_order(db: Session, resident_id: int, request: OrderCreateRequest) -> 
                 )
 
         total_price += req_item.quantity * float(menu.price)
-        items_data.append({
-            "menu_id": req_item.menu_id,
-            "name": menu.name,
-            "quantity": req_item.quantity,
-            "price": float(menu.price),
-        })
+        items_data.append(
+            {
+                "menu_id": req_item.menu_id,
+                "name": menu.name,
+                "quantity": req_item.quantity,
+                "price": float(menu.price),
+            }
+        )
 
     target_date = None
     if request.target_delivery_date:
         from datetime import date as dt_date
+
         if isinstance(request.target_delivery_date, str):
             try:
                 target_date = dt_date.fromisoformat(request.target_delivery_date)
@@ -117,7 +123,6 @@ def create_order(db: Session, resident_id: int, request: OrderCreateRequest) -> 
     )
     db.add(order)
 
-
     # ── Decrement stock for finite-quantity items ──────────────────────────
     for req_item in request.items:
         menu = menu_map[req_item.menu_id]
@@ -135,9 +140,7 @@ def get_order_by_id(db: Session, order_id: int) -> Order:
     """Return an Order by id, or raise 404."""
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
     return order
 
 
@@ -204,13 +207,9 @@ def update_order_status(
 
     # Role-based access check
     if actor_role == UserRole.partner.value and order.partner_id != actor_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your order.")
     if actor_role == UserRole.resident.value and order.resident_id != actor_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your order.")
 
     # Lifecycle validation (admins bypass)
     try:
@@ -221,7 +220,7 @@ def update_order_status(
             detail=f"Invalid status value: '{new_status}'.",
         )
 
-    if actor_role != UserRole.admin.value:
+    if actor_role not in (UserRole.admin.value, UserRole.super_admin.value):
         allowed = VALID_TRANSITIONS.get(order.status, set())
         if new_status_enum not in allowed:
             raise HTTPException(
@@ -233,16 +232,18 @@ def update_order_status(
     if new_status_enum == OrderStatus.delivered:
         order.completed_at = datetime.now(UTC)
         try:
-            from app.services.punctuality_service import update_partner_punctuality_on_order_completed
+            from app.services.punctuality_service import (
+                update_partner_punctuality_on_order_completed,
+            )
+
             update_partner_punctuality_on_order_completed(db, order.partner_id, order)
-        except Exception as e:
+        except Exception:
             # Punctuality calculation should not block order status update
-            pass
+            logger.warning("Punctuality update failed for order %s", order.id, exc_info=True)
 
     db.commit()
     db.refresh(order)
     return order
-
 
 
 def cancel_order(db: Session, order_id: int, resident_id: int) -> Order:
@@ -276,4 +277,3 @@ def _serialize_orders(orders: list[Order]) -> list[dict]:
 # Backward compatibility aliases
 get_buyer_orders = get_resident_orders
 get_seller_orders = get_partner_orders
-

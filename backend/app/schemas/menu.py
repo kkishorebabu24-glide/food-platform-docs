@@ -35,9 +35,7 @@ class MenuCreateRequest(BaseModel):
     @classmethod
     def validate_category(cls, v: str) -> str:
         if v not in VALID_CATEGORIES:
-            raise ValueError(
-                f"category must be one of: {', '.join(sorted(VALID_CATEGORIES))}"
-            )
+            raise ValueError(f"category must be one of: {', '.join(sorted(VALID_CATEGORIES))}")
         return v
 
     @field_validator("price")
@@ -76,9 +74,7 @@ class MenuUpdateRequest(BaseModel):
     @classmethod
     def validate_category(cls, v: str | None) -> str | None:
         if v is not None and v not in VALID_CATEGORIES:
-            raise ValueError(
-                f"category must be one of: {', '.join(sorted(VALID_CATEGORIES))}"
-            )
+            raise ValueError(f"category must be one of: {', '.join(sorted(VALID_CATEGORIES))}")
         return v
 
 
@@ -109,5 +105,3 @@ class MenuItemResponse(BaseModel):
     spice_level: str | None = "medium"
 
     model_config = {"from_attributes": True}
-
-

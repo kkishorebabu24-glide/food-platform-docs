@@ -15,13 +15,12 @@ import re
 import urllib.parse
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.models import LedgerEntry, Order, Payment, PartnerProfile, User
+from app.db.models import LedgerEntry, Order, PartnerProfile, Payment, User
 from app.db.models.enums import LedgerEntryType, OrderStatus, PaymentStatus
 
 logger = logging.getLogger(__name__)
@@ -32,9 +31,7 @@ def _get_razorpay_client():
     try:
         import razorpay  # type: ignore[import]
 
-        return razorpay.Client(
-            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-        )
+        return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     except ImportError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -51,9 +48,7 @@ def create_payment_order(db: Session, order_id: int, resident_id: int) -> dict:
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.resident_id != resident_id:
         raise HTTPException(
@@ -283,7 +278,6 @@ def _handle_payment_failed_webhook(db: Session, event: dict) -> None:
 
 def _handle_refund_webhook(db: Session, event: dict) -> None:
     """Handle refund.created webhook. (TODO: implement full refund processing)"""
-    pass
 
 
 def _verify_razorpay_signature(
@@ -332,7 +326,7 @@ def refund_payment(db: Session, order_id: int, admin_id: int) -> Payment:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot refund a payment in '{payment.status}' status. "
-                   "Only 'captured' payments can be refunded.",
+            "Only 'captured' payments can be refunded.",
         )
 
     # Call Razorpay refund API
@@ -342,7 +336,8 @@ def refund_payment(db: Session, order_id: int, admin_id: int) -> Payment:
         rz_client.payment.refund(payment.provider_payment_id, {"amount": amount_paise})
         logger.info(
             "Razorpay refund initiated: payment_id=%s amount_paise=%d",
-            payment.provider_payment_id, amount_paise
+            payment.provider_payment_id,
+            amount_paise,
         )
     except Exception as exc:
         logger.error("Razorpay refund failed: %s", exc)
@@ -377,9 +372,7 @@ def generate_direct_upi_payload(db: Session, order_id: int, resident_id: int) ->
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.resident_id != resident_id:
         raise HTTPException(
@@ -394,9 +387,7 @@ def generate_direct_upi_payload(db: Session, order_id: int, resident_id: int) ->
         )
 
     partner_user = db.query(User).filter(User.id == order.partner_id).first()
-    partner_profile = (
-        db.query(PartnerProfile).filter(PartnerProfile.id == order.partner_id).first()
-    )
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == order.partner_id).first()
 
     if not partner_profile or not partner_profile.upi_id:
         raise HTTPException(
@@ -405,7 +396,9 @@ def generate_direct_upi_payload(db: Session, order_id: int, resident_id: int) ->
         )
 
     partner_vpa = partner_profile.upi_id.strip()
-    partner_name = (partner_profile.upi_account_name or (partner_user.name if partner_user else "Home Chef")).strip()
+    partner_name = (
+        partner_profile.upi_account_name or (partner_user.name if partner_user else "Home Chef")
+    ).strip()
     amount_str = f"{Decimal(str(order.total_price)):.2f}"
 
     # Standard NPCI UPI URI Specification
@@ -460,9 +453,7 @@ def submit_resident_payment(
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.resident_id != resident_id:
         raise HTTPException(
@@ -500,18 +491,14 @@ def submit_resident_payment(
     return payment
 
 
-def confirm_partner_payment(
-    db: Session, order_id: int, partner_id: int
-) -> Payment:
+def confirm_partner_payment(db: Session, order_id: int, partner_id: int) -> Payment:
     """
     Home chef confirms receipt of direct UPI credit in their bank account.
     Marks payment captured, moves order to 'accepted', and updates SaaS pass quota/ledger.
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.partner_id != partner_id:
         raise HTTPException(
@@ -537,13 +524,9 @@ def confirm_partner_payment(
     order.updated_at = now
 
     # SaaS Pass & Maintenance Quota Logic
-    partner_profile = (
-        db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
-    )
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
     if partner_profile:
-        partner_profile.lifetime_orders_count = (
-            partner_profile.lifetime_orders_count or 0
-        ) + 1
+        partner_profile.lifetime_orders_count = (partner_profile.lifetime_orders_count or 0) + 1
 
         free_remaining = (
             partner_profile.free_orders_remaining
@@ -593,9 +576,7 @@ def confirm_partner_payment(
 
 def get_partner_maintenance_status(db: Session, partner_id: int) -> dict:
     """Return SaaS Pass free quota, credit balance, and availability guard status."""
-    partner_profile = (
-        db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
-    )
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
     if not partner_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Partner profile not found."
@@ -631,9 +612,7 @@ def topup_partner_maintenance(
     db: Session, partner_id: int, amount: Decimal, utr_number: str
 ) -> dict:
     """Top up partner platform maintenance balance with submitted recharge UTR."""
-    partner_profile = (
-        db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
-    )
+    partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == partner_id).first()
     if not partner_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Partner profile not found."
@@ -673,4 +652,3 @@ def topup_partner_maintenance(
     db.refresh(partner_profile)
 
     return get_partner_maintenance_status(db, partner_id)
-

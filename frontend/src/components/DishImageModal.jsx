@@ -13,8 +13,6 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import DeliveryDiningIcon from '@mui/icons-material/DeliveryDining';
-import StorefrontIcon from '@mui/icons-material/Storefront';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import StarIcon from '@mui/icons-material/Star';
@@ -57,16 +55,39 @@ export function getDishImageUrl(item) {
   if (name.includes('dosa') || name.includes('idli') || name.includes('sambar')) {
     return 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80';
   }
-  if (name.includes('cake') || name.includes('jamun') || category === 'desserts' || name.includes('halwa') || name.includes('sweet')) {
+  if (
+    name.includes('cake') ||
+    name.includes('jamun') ||
+    category === 'desserts' ||
+    name.includes('halwa') ||
+    name.includes('sweet')
+  ) {
     return 'https://images.unsplash.com/photo-1589119908995-c6837fa14848?w=800&auto=format&fit=crop&q=80';
   }
-  if (name.includes('tea') || name.includes('coffee') || category === 'beverages' || name.includes('chai') || name.includes('lassi')) {
+  if (
+    name.includes('tea') ||
+    name.includes('coffee') ||
+    category === 'beverages' ||
+    name.includes('chai') ||
+    name.includes('lassi')
+  ) {
     return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80';
   }
-  if (category === 'snacks' || name.includes('samosa') || name.includes('pakora') || name.includes('chaat')) {
+  if (
+    category === 'snacks' ||
+    name.includes('samosa') ||
+    name.includes('pakora') ||
+    name.includes('chaat')
+  ) {
     return 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80';
   }
-  if (category === 'non_veg' || category === 'non-veg' || name.includes('chicken') || name.includes('mutton') || name.includes('fish')) {
+  if (
+    category === 'non_veg' ||
+    category === 'non-veg' ||
+    name.includes('chicken') ||
+    name.includes('mutton') ||
+    name.includes('fish')
+  ) {
     return 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&auto=format&fit=crop&q=80';
   }
   // Default fresh home-cooked meal
@@ -85,7 +106,7 @@ export default function DishImageModal({
   onAddToCart,
   isSelfKitchen = false,
 }) {
-  const activeList = items && items.length > 0 ? items : (item ? [item] : []);
+  const activeList = items && items.length > 0 ? items : item ? [item] : [];
   const [internalIndex, setInternalIndex] = useState(currentIndex || 0);
   const [isFavorite, setIsFavorite] = useState(false);
   const touchStartX = useRef(null);
@@ -130,6 +151,7 @@ export default function DishImageModal({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeIndex, activeList.length]);
 
   const handleTouchStart = (e) => {
@@ -151,15 +173,20 @@ export default function DishImageModal({
   if (!currentDish) return null;
 
   const imageUrl = getDishImageUrl(currentDish);
-  const isVeg = currentDish.category === 'veg' || (!currentDish.category?.includes('non') && !currentDish.name?.toLowerCase().includes('chicken') && !currentDish.name?.toLowerCase().includes('mutton'));
+  const isVeg =
+    currentDish.category === 'veg' ||
+    (!currentDish.category?.includes('non') &&
+      !currentDish.name?.toLowerCase().includes('chicken') &&
+      !currentDish.name?.toLowerCase().includes('mutton'));
   const currentSellerName = currentDish.seller_name || sellerName;
   const currentSellerFlat = currentDish.seller_flat || sellerFlat;
 
-  const spiceBadge = currentDish.spice_level === 'hot'
-    ? '🌶️🌶️🌶️ Hot'
-    : currentDish.spice_level === 'mild'
-    ? '🌶️ Mild'
-    : '🌶️🌶️ Medium';
+  const spiceBadge =
+    currentDish.spice_level === 'hot'
+      ? '🌶️🌶️🌶️ Hot'
+      : currentDish.spice_level === 'mild'
+        ? '🌶️ Mild'
+        : '🌶️🌶️ Medium';
 
   return (
     <Dialog
@@ -261,7 +288,17 @@ export default function DishImageModal({
         )}
 
         {/* Top-Left Badges: Counter, Category & Rating */}
-        <Box sx={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 1, flexWrap: 'wrap', zIndex: 3 }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 14,
+            left: 14,
+            display: 'flex',
+            gap: 1,
+            flexWrap: 'wrap',
+            zIndex: 3,
+          }}
+        >
           {activeList.length > 1 && (
             <Chip
               label={`Dish ${activeIndex + 1} of ${activeList.length}`}
@@ -338,7 +375,8 @@ export default function DishImageModal({
             </Typography>
             {(currentSellerName || currentSellerFlat) && (
               <Typography variant="body2" color="text.secondary" mt={0.5}>
-                by <strong>{currentSellerName || 'Home Chef'}</strong> {currentSellerFlat ? `(Flat #${currentSellerFlat})` : ''}
+                by <strong>{currentSellerName || 'Home Chef'}</strong>{' '}
+                {currentSellerFlat ? `(Flat #${currentSellerFlat})` : ''}
               </Typography>
             )}
           </Box>
@@ -352,34 +390,66 @@ export default function DishImageModal({
           <Chip
             size="small"
             label={isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
-            sx={{ bgcolor: 'rgba(46, 196, 182, 0.15)', color: '#2EC4B6', fontWeight: 600, fontSize: 12 }}
+            sx={{
+              bgcolor: 'rgba(46, 196, 182, 0.15)',
+              color: '#2EC4B6',
+              fontWeight: 600,
+              fontSize: 12,
+            }}
           />
           <Chip
             size="small"
             label="🌾 Fresh Kitchen Made"
-            sx={{ bgcolor: 'rgba(246, 189, 96, 0.15)', color: '#F6BD60', fontWeight: 600, fontSize: 12 }}
+            sx={{
+              bgcolor: 'rgba(246, 189, 96, 0.15)',
+              color: '#F6BD60',
+              fontWeight: 600,
+              fontSize: 12,
+            }}
           />
           <Chip
             size="small"
             label={spiceBadge}
-            sx={{ bgcolor: 'rgba(224, 90, 43, 0.15)', color: '#E05A2B', fontWeight: 600, fontSize: 12 }}
+            sx={{
+              bgcolor: 'rgba(224, 90, 43, 0.15)',
+              color: '#E05A2B',
+              fontWeight: 600,
+              fontSize: 12,
+            }}
           />
           <Chip
             size="small"
             label="⏱️ Ready in ~25m"
-            sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#ccc', fontWeight: 600, fontSize: 12 }}
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.08)',
+              color: '#ccc',
+              fontWeight: 600,
+              fontSize: 12,
+            }}
           />
         </Box>
 
         {currentDish.description && (
-          <Typography variant="body2" color="rgba(255,255,255,0.8)" sx={{ mb: 2.5, lineHeight: 1.6 }}>
+          <Typography
+            variant="body2"
+            color="rgba(255,255,255,0.8)"
+            sx={{ mb: 2.5, lineHeight: 1.6 }}
+          >
             {currentDish.description}
           </Typography>
         )}
 
         {/* Pre-Order Specifics */}
         {currentDish.is_preorder_only && (
-          <Box sx={{ bgcolor: 'rgba(246, 189, 96, 0.1)', border: '1px solid rgba(246, 189, 96, 0.25)', p: 2, borderRadius: 2, mb: 2.5 }}>
+          <Box
+            sx={{
+              bgcolor: 'rgba(246, 189, 96, 0.1)',
+              border: '1px solid rgba(246, 189, 96, 0.25)',
+              p: 2,
+              borderRadius: 2,
+              mb: 2.5,
+            }}
+          >
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <AccessTimeIcon sx={{ color: '#F6BD60', fontSize: 20 }} />
               <Typography variant="subtitle2" fontWeight="bold" color="#F6BD60">
@@ -449,14 +519,21 @@ export default function DishImageModal({
               '&:hover': { bgcolor: '#c9481c' },
             }}
           >
-            {currentDish.is_preorder_only ? `Pre-Order for ₹${currentDish.price}` : `Add to Basket • ₹${currentDish.price}`}
+            {currentDish.is_preorder_only
+              ? `Pre-Order for ₹${currentDish.price}`
+              : `Add to Basket • ₹${currentDish.price}`}
           </Button>
         )}
 
         {/* Quick Thumbnail Strip Carousel for Multiple Dishes */}
         {activeList.length > 1 && (
           <Box sx={{ mt: 2.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              fontWeight="bold"
+              sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}
+            >
               Slide to Browse Other Dishes ({activeList.length})
             </Typography>
             <Box

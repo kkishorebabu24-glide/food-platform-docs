@@ -1,7 +1,6 @@
 """Menu service — CRUD for a partner's menu items."""
 
 import logging
-import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -46,7 +45,7 @@ def get_partner_menus(
     query = db.query(Menu).filter(Menu.partner_id == partner_id)
 
     if available_only:
-        query = query.filter(Menu.is_available == True)
+        query = query.filter(Menu.is_available.is_(True))
 
     if category:
         query = query.filter(Menu.category == category)
@@ -98,12 +97,12 @@ def search_public_dishes(
         .join(User, PartnerProfile.id == User.id)
         .filter(
             PartnerProfile.application_status == PartnerApplicationStatus.approved,
-            User.is_active == True,
+            User.is_active.is_(True),
         )
     )
 
     if available_only:
-        q = q.filter(Menu.is_available == True, PartnerProfile.is_open == True)
+        q = q.filter(Menu.is_available.is_(True), PartnerProfile.is_open.is_(True))
 
     if veg_only:
         q = q.filter(Menu.category == "veg")
@@ -177,12 +176,14 @@ def search_public_dishes(
             }
         matched_partners_map[partner.id]["matching_dishes_count"] += 1
         if len(matched_partners_map[partner.id]["sample_dishes"]) < 4:
-            matched_partners_map[partner.id]["sample_dishes"].append({
-                "id": menu_item.id,
-                "name": menu_item.name,
-                "price": float(menu_item.price),
-                "image_url": menu_item.image_url,
-            })
+            matched_partners_map[partner.id]["sample_dishes"].append(
+                {
+                    "id": menu_item.id,
+                    "name": menu_item.name,
+                    "price": float(menu_item.price),
+                    "image_url": menu_item.image_url,
+                }
+            )
 
     matched_partners_list = list(matched_partners_map.values())
     return {
@@ -241,14 +242,10 @@ def update_menu_item(
     """
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found.")
 
     if owner_id and item.partner_id != owner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item.")
 
     if request.name is not None:
         item.name = request.name
@@ -287,19 +284,14 @@ def update_menu_item(
     return item
 
 
-
 def delete_menu_item(db: Session, menu_id: int, owner_id: int | None = None) -> None:
     """Delete a menu item. Optionally validates ownership."""
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found.")
 
     if owner_id and item.partner_id != owner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item.")
 
     db.delete(item)
     db.commit()
@@ -315,14 +307,10 @@ def toggle_availability(
     """Toggle the is_available flag and portions on a menu item."""
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found.")
 
     if owner_id and item.partner_id != owner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item.")
 
     if quantity is not None:
         item.quantity = max(0, quantity)
@@ -336,7 +324,6 @@ def toggle_availability(
     db.commit()
     db.refresh(item)
     return item
-
 
 
 async def upload_menu_image(
@@ -353,21 +340,17 @@ async def upload_menu_image(
     """
     item = db.query(Menu).filter(Menu.id == menu_id).first()
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found.")
 
     if owner_id and item.partner_id != owner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your menu item.")
 
     # Validate file type
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported image type: {file.content_type}. "
-                   f"Allowed: {', '.join(ALLOWED_IMAGE_TYPES)}",
+            f"Allowed: {', '.join(ALLOWED_IMAGE_TYPES)}",
         )
 
     # Read and validate file size
@@ -408,6 +391,10 @@ async def upload_menu_image(
     db.commit()
     db.refresh(item)
 
-    logger.info("Menu image uploaded: menu_id=%s path=%s size=%.1fKB",
-                menu_id, file_path, len(content) / 1024)
+    logger.info(
+        "Menu image uploaded: menu_id=%s path=%s size=%.1fKB",
+        menu_id,
+        file_path,
+        len(content) / 1024,
+    )
     return item

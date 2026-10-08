@@ -46,15 +46,17 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 4. You're logged in!
 
 **Note:** If you don't receive OTP:
+
 - Check spam folder
 - Wait a few minutes and try again
-- Contact support@societyfood.com
+- Contact <support@societyfood.com>
 
 ## For Buyers
 
 ### 1. Browsing Available Sellers
 
 **On Home Page:**
+
 1. You'll see cards of all active sellers
 2. Each card shows:
    - Seller name
@@ -63,6 +65,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
    - "View Menu" button
 
 **Filtering & Searching:**
+
 - **By Rating**: Show 4.5+ stars only
 - **By Category**: Veg, Non-Veg, Snacks, Desserts
 - **Search**: Search seller name
@@ -70,6 +73,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 ### 2. Viewing Menus
 
 **Click "View Menu"**
+
 1. See all items seller is offering today
 2. Each item shows:
    - Name
@@ -80,6 +84,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
    - "Add to Cart" button
 
 **Item Categories:**
+
 - 🥬 **Veg**: Vegetarian items
 - 🍗 **Non-Veg**: Meat/chicken items
 - 🍪 **Snacks**: Chips, samosas, etc.
@@ -88,31 +93,37 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 ### 3. Placing an Order
 
 **1. Add Items to Cart**
+
 - Select quantity (1+)
 - Click "Add to Cart"
 - Can add from multiple sellers (each gets separate order)
 
 **2. View Cart**
+
 - Click cart icon (top right)
 - Review items and quantities
 - See total price
 
 **3. Add Special Requests**
+
 - Add notes like "Less spicy" or "No onions"
 - Optional field
 
 **4. Place Order**
+
 - Click "Confirm Order"
 - Order sent to seller
 - You'll get order confirmation
 
 **Price:**
+
 - Total = Item price × quantity
 - Cash on pickup (no delivery charges)
 
 ### 4. Tracking Your Order
 
 **Check Status:**
+
 1. Go to "My Orders"
 2. Select the order
 3. See current status:
@@ -122,12 +133,14 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
    - ✅ **Completed** - Picked up
 
 **Real-time Updates:**
+
 - Status updates appear immediately
 - Get notification when order is ready
 
 ### 5. Rating Sellers
 
 **After Receiving Order:**
+
 1. Go to "My Orders"
 2. Select completed order
 3. Click "Rate Seller"
@@ -136,6 +149,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 6. Submit
 
 **What Your Rating Means:**
+
 - ⭐ 1 - Poor quality
 - ⭐⭐ 2 - Below average
 - ⭐⭐⭐ 3 - Average
@@ -145,6 +159,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 ### 6. Your Profile
 
 **Edit Profile:**
+
 1. Click "Profile" (top right)
 2. Update:
    - Name
@@ -153,6 +168,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
    - Flat number
 
 **View History:**
+
 - See all past orders
 - Check total spent
 - View order dates
@@ -162,6 +178,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 ### 1. Getting Started
 
 **Registration:**
+
 1. Sign up as "Seller"
 2. Enter your details:
    - Name
@@ -173,6 +190,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 5. Admin will verify within 24 hours
 
 **After Approval:**
+
 - You can start creating menus
 - Can accept orders
 - Earnings tracked daily
@@ -180,6 +198,7 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
 ### 2. Creating Your Menu
 
 **Add New Menu Item:**
+
 1. Go to "My Menu"
 2. Click "Add Item"
 3. Fill in:
@@ -190,11 +209,13 @@ Welcome to Society Food Platform! This guide explains how to use the app as a bu
    - **Photo** (optional)
 
 **Available Today:**
+
 - Toggle "Available" to show/hide the item
 - Buyers only see available items
 
 **Example Menu:**
-```
+
+```text
 Vegetarian:
 - Masala Dosa ₹60
 - Idli (3) ₹40
@@ -211,17 +232,20 @@ Desserts:
 ### 3. Managing Your Menu
 
 **Update Item:**
+
 1. Go to "My Menu"
 2. Click item to edit
 3. Change price, description, or availability
 4. Save changes
 
 **Remove Item:**
+
 1. Click item
 2. Click "Delete"
 3. Confirm deletion
 
 **Daily Updates:**
+
 - Update menu every morning
 - Toggle availability based on stock
 - Buyers can only see available items
@@ -229,6 +253,7 @@ Desserts:
 ### 4. Accepting Orders
 
 **See Incoming Orders:**
+
 1. Go to "Orders" dashboard
 2. See list of pending orders
 3. Each order shows:
@@ -239,11 +264,13 @@ Desserts:
    - Order time
 
 **Accept/Reject Order:**
+
 1. Review order details
 2. Click "Accept" or "Reject"
 3. If reject, include reason
 
 **Why Reject?**
+
 - Ran out of stock
 - Can't prepare in time
 - Special ingredient unavailable
@@ -251,17 +278,20 @@ Desserts:
 ### 5. Managing Orders
 
 **Prepare Order:**
+
 1. After accepting, note preparation time
 2. Prepare food with care
 3. Pack safely
 
 **Mark as Ready:**
+
 1. Click "Mark Ready"
 2. Order shows as "Ready for Pickup"
 3. Buyer gets notification
 4. Buyer has 2 hours to pickup
 
 **Order Status:**
+
 - 🔵 **Pending** - Awaiting your response
 - 🟢 **Accepted** - You accepted, now preparing
 - 🟡 **Ready** - Ready for buyer pickup
@@ -271,6 +301,7 @@ Desserts:
 ### 6. Tracking Earnings
 
 **View Earnings:**
+
 1. Go to "Earnings"
 2. See:
    - Daily earnings
@@ -279,6 +310,7 @@ Desserts:
    - Average rating
 
 **Payment:**
+
 - Buyers pay in cash on pickup
 - No online payment needed
 - Weekly summary of earnings
@@ -286,6 +318,7 @@ Desserts:
 ### 7. Managing Your Profile
 
 **Seller Profile:**
+
 1. Go to "Profile"
 2. Update:
    - Bio (what you cook)
@@ -294,11 +327,13 @@ Desserts:
    - Bank details (for future payments)
 
 **View Ratings:**
+
 - See average rating
 - Read buyer reviews
 - Count of ratings received
 
 **Tips to Get Good Ratings:**
+
 - ✅ Prepare fresh, quality food
 - ✅ Pack hygienically
 - ✅ Accept orders you can fulfill
@@ -310,6 +345,7 @@ Desserts:
 ### Admin Dashboard
 
 **Overview:**
+
 - Total active sellers
 - Total buyers
 - Daily orders
@@ -318,6 +354,7 @@ Desserts:
 ### Seller Approval
 
 **Pending Sellers:**
+
 1. Go to "Pending Approvals"
 2. Review seller:
    - Name and flat number
@@ -326,6 +363,7 @@ Desserts:
 3. Click "Approve" or "Reject"
 
 **Verification Checklist:**
+
 - ✅ Valid resident (flat exists)
 - ✅ Phone number verified
 - ✅ No previous violations
@@ -333,6 +371,7 @@ Desserts:
 ### Resident Management
 
 **Manage Residents:**
+
 1. Go to "Residents"
 2. See list of all residents
 3. Can add or remove residents
@@ -341,6 +380,7 @@ Desserts:
 ### Activity Monitoring
 
 **View:**
+
 - Order count and trends
 - Seller performance
 - Buyer satisfaction
@@ -352,13 +392,15 @@ Desserts:
 
 **Problem:** OTP not received
 **Solution:**
+
 1. Check email spam folder
 2. Wait 2-3 minutes
 3. Try requesting OTP again
-4. Contact support@societyfood.com
+4. Contact <support@societyfood.com>
 
 **Problem:** Account not approved
 **Solution:**
+
 - Admin approves within 24 hours
 - Check email for approval notification
 - If delayed, contact support
@@ -367,12 +409,14 @@ Desserts:
 
 **Problem:** Can't place order
 **Solution:**
+
 - Ensure seller has items available
 - Check total price is acceptable
 - Try clearing cache and refreshing
 
 **Problem:** Order was rejected
 **Solution:**
+
 - Seller may have run out of stock
 - Try ordering from different seller
 - Message seller for alternative items
@@ -381,12 +425,14 @@ Desserts:
 
 **Problem:** Can't accept orders
 **Solution:**
+
 - Ensure your menu is active
 - Check if items are marked available
 - Refresh the page
 
 **Problem:** Earnings not showing
 **Solution:**
+
 - Only completed orders count
 - Cash must be collected
 - Check if order was completed
@@ -433,7 +479,7 @@ A: Buyers rate after receiving order (1-5 stars).
 A: No online payments in Phase 1. All cash.
 
 **Q: How do I report a problem?**
-A: Email support@societyfood.com with details.
+A: Email <support@societyfood.com> with details.
 
 **Q: Can I change my role (buyer to seller)?**
 A: Contact support. Admin can help you switch.
@@ -442,7 +488,7 @@ A: Contact support. Admin can help you switch.
 
 ## Contact & Support
 
-- 📧 **Email**: support@societyfood.com
+- 📧 **Email**: <support@societyfood.com>
 - 📞 **Phone**: Available soon
 - 💬 **In-App Chat**: Coming in Phase 2
 

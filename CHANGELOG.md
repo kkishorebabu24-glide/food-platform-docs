@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2026-09-23
 
 ### Added
+
 - **Chef Menu Management & Power Tools**:
   - Interactive **Edit Dish** dialog with pre-populated form state supporting name, category, pricing, portions, spice level, description, and photo updates via `PUT /api/v1/menus/{menu_id}`.
   - 1-Click **"Duplicate / Clone Dish"** button cloning active menu items into new drafts titled `Dish Name (Copy)`.
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Backend test coverage reached **41/41 passing tests (100%)**; Frontend test coverage reached **27/27 passing tests across 11 test suites (100%)**.
 
 ### Fixed
+
 - Resolved symptom where menu items were not rendering after creation due to `{ items: [...], total: N }` payload response parsing in `SellerDashboard.jsx`.
 
 ---
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-09-15
 
 ### Added
+
 - **Direct P2PM UPI & Zero-MDR Payment Flow**:
   - Direct buyer-to-seller UPI QR code generation with pre-populated chef VPA and order amount.
   - 12-digit bank UTR reference input and chef 1-tap confirmation workflow.
@@ -46,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0-beta.1] - 2026-08-30
 
 ### Added
+
 - **Automated Punctuality & Speed Reliability Engine**:
   - Decoupled subjective customer star ratings from objective, automated punctuality scores (`on_time_delivery_rate`, `punctuality_rating`, `avg_delivery_minutes`, `total_orders_completed`).
   - Automated `punctuality_service.py` calculation engine for both instant orders (estimated prep time + 10m grace period) and pre-order batches (scheduled slot deadline + 10m grace period).
@@ -67,8 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0-alpha.1] - 2026-08-30
 
-
 ### Added
+
 - **Pre-Order Engine**:
   - Slot-based scheduled ordering supporting `lunch_today`, `dinner_today`, `lunch_tomorrow`, `dinner_tomorrow`, and `weekend_special`.
   - Configurable daily cutoff times (`preorder_cutoff_time`) and max portion batch sizes (`max_batch_quantity`) per menu item.
@@ -89,8 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0-alpha.1] - 2026-08-30
 
-
 ### Added
+
 - **Authentication & Authorization**:
   - JWT authentication with Bcrypt password hashing, access tokens, and refresh tokens (`/api/v1/auth/register`, `/login`, `/refresh`, `/me`, `/me/password`).
   - Role-Based Access Control (RBAC) supporting `buyer`, `seller`, and `admin`.
@@ -139,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0-alpha.1] - Phase 1 Planning
 
 ### Added
+
 - Repository initialized
 - README with complete documentation
 - Architecture documentation
@@ -176,11 +181,13 @@ For future releases:
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org/):
+
 - MAJOR: Breaking changes
 - MINOR: New features (backward compatible)
 - PATCH: Bug fixes (backward compatible)
 
 Example: `1.2.3`
+
 - 1 = MAJOR (breaking changes)
 - 2 = MINOR (new features)
 - 3 = PATCH (bug fixes)
@@ -194,4 +201,3 @@ Example: `1.2.3`
 - **v1.1.0-beta.1**: Cart checkout polish, E2E integration test suite, and staging deployment
 - **v1.1.0**: Public society release
 - **v2.0.0**: Multimodal AI search, meal subscriptions, and multi-node Redis pub/sub scaling
-

@@ -5,10 +5,11 @@ No third-party courier. Simple lifecycle: pending → dispatched → delivered |
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -43,12 +44,8 @@ class Delivery(TimestampMixin, Base):
     )
 
     # Parties involved
-    partner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
-    resident_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    resident_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # Delivery lifecycle status
     status: Mapped[DeliveryStatus] = mapped_column(
@@ -71,13 +68,9 @@ class Delivery(TimestampMixin, Base):
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     # When the partner actually left to deliver
-    dispatched_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # When the food was handed to the resident
-    delivered_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     order: Mapped["Order"] = relationship("Order")

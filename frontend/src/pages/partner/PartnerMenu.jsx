@@ -165,7 +165,9 @@ export default function PartnerMenu() {
                 bgcolor: categoryFilter === cat ? '#E05A2B' : 'rgba(255,255,255,0.06)',
                 color: categoryFilter === cat ? '#fff' : 'text.secondary',
                 fontWeight: categoryFilter === cat ? 'bold' : 'normal',
-                '&:hover': { bgcolor: categoryFilter === cat ? '#c9481c' : 'rgba(255,255,255,0.12)' },
+                '&:hover': {
+                  bgcolor: categoryFilter === cat ? '#c9481c' : 'rgba(255,255,255,0.12)',
+                },
               }}
             />
           ))}
@@ -209,7 +211,8 @@ export default function PartnerMenu() {
       ) : (
         <Grid container spacing={2.5}>
           {filteredItems.map((dish) => {
-            const isSoldOut = !dish.is_available || (dish.quantity !== undefined && dish.quantity <= 0);
+            const isSoldOut =
+              !dish.is_available || (dish.quantity !== undefined && dish.quantity <= 0);
             const catColor = CATEGORY_COLORS[dish.category] || '#E05A2B';
 
             return (
@@ -228,7 +231,13 @@ export default function PartnerMenu() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5} gap={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={1.5}
+                      gap={1}
+                    >
                       <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap">
                         <Chip
                           label={dish.category?.toUpperCase() || 'DISH'}
@@ -250,8 +259,8 @@ export default function PartnerMenu() {
                               dish.spice_level === 'hot'
                                 ? 'Hot'
                                 : dish.spice_level === 'mild'
-                                ? 'Mild'
-                                : 'Medium'
+                                  ? 'Mild'
+                                  : 'Medium'
                             }
                             size="small"
                             sx={{
@@ -265,20 +274,23 @@ export default function PartnerMenu() {
                         )}
 
                         {/* Low Stock Warning Badge */}
-                        {dish.is_available && dish.quantity !== undefined && dish.quantity >= 1 && dish.quantity <= 3 && (
-                          <Chip
-                            label={`⚠️ Only ${dish.quantity} left`}
-                            size="small"
-                            sx={{
-                              bgcolor: 'rgba(255, 152, 0, 0.15)',
-                              color: '#ff9800',
-                              fontWeight: 'bold',
-                              fontSize: '0.7rem',
-                              height: 22,
-                              border: '1px solid rgba(255, 152, 0, 0.3)',
-                            }}
-                          />
-                        )}
+                        {dish.is_available &&
+                          dish.quantity !== undefined &&
+                          dish.quantity >= 1 &&
+                          dish.quantity <= 3 && (
+                            <Chip
+                              label={`⚠️ Only ${dish.quantity} left`}
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(255, 152, 0, 0.15)',
+                                color: '#ff9800',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                height: 22,
+                                border: '1px solid rgba(255, 152, 0, 0.3)',
+                              }}
+                            />
+                          )}
                       </Box>
 
                       {/* Action Icon Buttons */}
@@ -375,7 +387,13 @@ export default function PartnerMenu() {
                     <Divider sx={{ borderColor: 'rgba(255,255,255,0.06)', my: 1.5 }} />
 
                     {/* Portions Available & Stepper Controls */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      flexWrap="wrap"
+                      gap={1}
+                    >
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block">
                           Portions Available:
@@ -427,8 +445,13 @@ export default function PartnerMenu() {
                           control={
                             <Switch
                               size="small"
-                              checked={Boolean(dish.is_available && (dish.quantity === undefined || dish.quantity > 0))}
-                              onChange={() => handleToggleAvailability(dish.id, dish.is_available, dish.quantity)}
+                              checked={Boolean(
+                                dish.is_available &&
+                                (dish.quantity === undefined || dish.quantity > 0)
+                              )}
+                              onChange={() =>
+                                handleToggleAvailability(dish.id, dish.is_available, dish.quantity)
+                              }
                               color="success"
                             />
                           }
@@ -436,9 +459,17 @@ export default function PartnerMenu() {
                             <Typography
                               variant="caption"
                               fontWeight="bold"
-                              color={dish.is_available && (dish.quantity === undefined || dish.quantity > 0) ? '#2EC4B6' : '#aaa'}
+                              color={
+                                dish.is_available &&
+                                (dish.quantity === undefined || dish.quantity > 0)
+                                  ? '#2EC4B6'
+                                  : '#aaa'
+                              }
                             >
-                              {dish.is_available && (dish.quantity === undefined || dish.quantity > 0) ? 'IN STOCK' : 'SOLD OUT'}
+                              {dish.is_available &&
+                              (dish.quantity === undefined || dish.quantity > 0)
+                                ? 'IN STOCK'
+                                : 'SOLD OUT'}
                             </Typography>
                           }
                           sx={{ m: 0 }}

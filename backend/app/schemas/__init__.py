@@ -13,25 +13,25 @@ from app.schemas.auth import (
     TokenResponse,
     UserInfo,
 )
-from app.schemas.resident import ResidentProfileResponse, ResidentProfileUpdate
 from app.schemas.menu import (
     AvailabilityRequest,
     MenuCreateRequest,
     MenuItemResponse,
     MenuUpdateRequest,
 )
-from app.schemas.order import (
-    OrderCreateRequest,
-    OrderItem,
-    OrderResponse,
-    OrderStatusUpdate,
+from app.schemas.order import OrderCreateRequest, OrderItem, OrderResponse, OrderStatusUpdate
+from app.schemas.partner import (
+    PartnerDetailResponse,
+    PartnerRegisterRequest,
+    PartnerResponse,
+    PartnerUpdateRequest,
 )
 from app.schemas.payment import (
     LedgerEntryResponse,
+    PartnerBalanceResponse,
     PaymentCaptureRequest,
     PaymentInitiateResponse,
     PaymentResponse,
-    PartnerBalanceResponse,
 )
 from app.schemas.payout import (
     PayoutConfirmRequest,
@@ -40,12 +40,7 @@ from app.schemas.payout import (
     PayoutResponse,
 )
 from app.schemas.rating import RatingCreateRequest, RatingResponse
-from app.schemas.partner import (
-    PartnerDetailResponse,
-    PartnerRegisterRequest,
-    PartnerResponse,
-    PartnerUpdateRequest,
-)
+from app.schemas.resident import ResidentProfileResponse, ResidentProfileUpdate
 from app.schemas.suggestion import (
     SuggestionClaimRequest,
     SuggestionCreateRequest,
@@ -99,4 +94,3 @@ __all__ = [
     "UpvoteResponse",
     "UserInfo",
 ]
-

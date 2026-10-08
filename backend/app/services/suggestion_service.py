@@ -1,8 +1,6 @@
 """Suggestion service — Community dish requests, upvoting, and chef pre-order claim flow."""
 
 import logging
-from datetime import UTC, datetime
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -20,9 +18,7 @@ def create_suggestion(
     """Create a new community dish request from a resident."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
     suggestion = DishSuggestion(
         user_id=user_id,
@@ -42,8 +38,12 @@ def create_suggestion(
 
     db.commit()
     db.refresh(suggestion)
-    logger.info("New dish suggestion created: id=%s title='%s' by user_id=%s",
-                suggestion.id, suggestion.title, user_id)
+    logger.info(
+        "New dish suggestion created: id=%s title='%s' by user_id=%s",
+        suggestion.id,
+        suggestion.title,
+        user_id,
+    )
     return suggestion
 
 
@@ -94,7 +94,9 @@ def list_suggestions(
         user_upvoted_ids = {u[0] for u in upvotes}
 
         # Check if current user is a partner to calculate real-time match scores
-        partner_profile = db.query(PartnerProfile).filter(PartnerProfile.id == current_user_id).first()
+        partner_profile = (
+            db.query(PartnerProfile).filter(PartnerProfile.id == current_user_id).first()
+        )
         if partner_profile:
             partner_menus = db.query(Menu).filter(Menu.partner_id == current_user_id).all()
 
@@ -123,29 +125,31 @@ def list_suggestions(
             match_reasons = match_data["match_reasons"]
             matching_menu_items = match_data["matching_menu_items"]
 
-        results.append({
-            "id": s.id,
-            "user_id": s.user_id,
-            "user_name": user.name if user else "Resident",
-            "user_flat": user.flat_number if user else None,
-            "title": s.title,
-            "description": s.description,
-            "category": s.category.value if hasattr(s.category, "value") else str(s.category),
-            "target_date": s.target_date.isoformat() if s.target_date else None,
-            "upvotes_count": s.upvotes_count,
-            "status": s.status.value if hasattr(s.status, "value") else str(s.status),
-            "accepted_by_partner_id": s.accepted_by_partner_id,
-            "partner_name": partner.name if partner else None,
-            "partner_flat": partner.flat_number if partner else None,
-            "created_menu_id": s.created_menu_id,
-            "menu_name": menu.name if menu else None,
-            "menu_price": float(menu.price) if menu else None,
-            "has_upvoted": s.id in user_upvoted_ids,
-            "match_score": match_score,
-            "match_reasons": match_reasons,
-            "matching_menu_items": matching_menu_items,
-            "created_at": s.created_at.isoformat(),
-        })
+        results.append(
+            {
+                "id": s.id,
+                "user_id": s.user_id,
+                "user_name": user.name if user else "Resident",
+                "user_flat": user.flat_number if user else None,
+                "title": s.title,
+                "description": s.description,
+                "category": s.category.value if hasattr(s.category, "value") else str(s.category),
+                "target_date": s.target_date.isoformat() if s.target_date else None,
+                "upvotes_count": s.upvotes_count,
+                "status": s.status.value if hasattr(s.status, "value") else str(s.status),
+                "accepted_by_partner_id": s.accepted_by_partner_id,
+                "partner_name": partner.name if partner else None,
+                "partner_flat": partner.flat_number if partner else None,
+                "created_menu_id": s.created_menu_id,
+                "menu_name": menu.name if menu else None,
+                "menu_price": float(menu.price) if menu else None,
+                "has_upvoted": s.id in user_upvoted_ids,
+                "match_score": match_score,
+                "match_reasons": match_reasons,
+                "matching_menu_items": matching_menu_items,
+                "created_at": s.created_at.isoformat(),
+            }
+        )
 
     return {"suggestions": results, "total": total}
 
@@ -218,17 +222,25 @@ def claim_suggestion(
 
     if request.existing_menu_id:
         # Link existing menu item from partner
-        menu_item = db.query(Menu).filter(
-            Menu.id == request.existing_menu_id,
-            Menu.partner_id == partner_id,
-        ).first()
+        menu_item = (
+            db.query(Menu)
+            .filter(
+                Menu.id == request.existing_menu_id,
+                Menu.partner_id == partner_id,
+            )
+            .first()
+        )
         if not menu_item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Selected menu item not found in your kitchen.",
             )
-        logger.info("Chef partner_id=%s linked existing menu_id=%s for suggestion id=%s",
-                    partner_id, menu_item.id, suggestion_id)
+        logger.info(
+            "Chef partner_id=%s linked existing menu_id=%s for suggestion id=%s",
+            partner_id,
+            menu_item.id,
+            suggestion_id,
+        )
     else:
         if request.price is None:
             raise HTTPException(
@@ -240,7 +252,8 @@ def claim_suggestion(
         menu_item = Menu(
             partner_id=partner_id,
             name=f"Special: {suggestion.title}",
-            description=suggestion.description or f"Community requested dish by Flat {suggestion.user_id}",
+            description=suggestion.description
+            or f"Community requested dish by Flat {suggestion.user_id}",
             category=suggestion.category,
             price=request.price,
             is_available=True,
@@ -252,8 +265,12 @@ def claim_suggestion(
         )
         db.add(menu_item)
         db.flush()
-        logger.info("Chef partner_id=%s created new menu_id=%s for suggestion id=%s",
-                    partner_id, menu_item.id, suggestion_id)
+        logger.info(
+            "Chef partner_id=%s created new menu_id=%s for suggestion id=%s",
+            partner_id,
+            menu_item.id,
+            suggestion_id,
+        )
 
     # Update suggestion record
     suggestion.status = SuggestionStatus.claimed_by_chef
@@ -270,6 +287,7 @@ def claim_suggestion(
         "menu_id": menu_item.id,
         "menu_name": menu_item.name,
         "price": float(menu_item.price),
-        "status": suggestion.status.value if hasattr(suggestion.status, "value") else str(suggestion.status),
+        "status": suggestion.status.value
+        if hasattr(suggestion.status, "value")
+        else str(suggestion.status),
     }
-

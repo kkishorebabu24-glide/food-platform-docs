@@ -1,8 +1,9 @@
 """Rating model -- resident reviews for completed orders."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Text, Enum as SAEnum
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -20,7 +21,7 @@ class Rating(TimestampMixin, Base):
     __tablename__ = "ratings"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    
+
     # One rating per order -- enforced by unique constraint
     order_id: Mapped[int] = mapped_column(
         ForeignKey("orders.id"), nullable=False, index=True, unique=True
@@ -28,9 +29,7 @@ class Rating(TimestampMixin, Base):
     partner_id: Mapped[int] = mapped_column(
         ForeignKey("partner_profiles.id"), index=True, nullable=False
     )
-    rater_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, nullable=False
-    )
+    rater_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 
     # Score 1-5 (validated)
     score: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -46,9 +45,7 @@ class Rating(TimestampMixin, Base):
     )
 
     # -- Relationships ---------------------------------------------------------
-    partner: Mapped["PartnerProfile"] = relationship(
-        "PartnerProfile", back_populates="ratings"
-    )
+    partner: Mapped["PartnerProfile"] = relationship("PartnerProfile", back_populates="ratings")
     rater: Mapped["User"] = relationship("User", foreign_keys=[rater_id])
     order: Mapped["Order"] = relationship("Order")
 

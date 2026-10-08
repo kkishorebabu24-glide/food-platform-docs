@@ -37,9 +37,9 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarsIcon from '@mui/icons-material/Stars';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
-import StorefrontIcon from '@mui/icons-material/Storefront';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { suggestionsAPI, menusAPI, getErrorMessage } from '../services/api';
+import { isAdminRole, isPartnerRole } from '../utils/roles';
 
 const CATEGORIES = ['all', 'veg', 'non-veg', 'snacks', 'desserts'];
 
@@ -58,7 +58,7 @@ export default function SuggestionsBoard({ currentUser }) {
   const [error, setError] = useState(null);
 
   // Seller specific tab: 'matched' | 'high_demand' | 'all' | 'my_accepted'
-  const isSeller = currentUser?.role === 'seller' || currentUser?.role === 'admin';
+  const isSeller = isPartnerRole(currentUser?.role) || isAdminRole(currentUser?.role);
   const [sellerTab, setSellerTab] = useState(isSeller ? 'matched' : 'all');
 
   // Propose Dish Modal
@@ -210,7 +210,9 @@ export default function SuggestionsBoard({ currentUser }) {
       }
 
       const res = await suggestionsAPI.claim(selectedSuggestion.id, payload);
-      setClaimSuccessMsg(res.data.message || `Pre-order batch launched for "${selectedSuggestion.title}"!`);
+      setClaimSuccessMsg(
+        res.data.message || `Pre-order batch launched for "${selectedSuggestion.title}"!`
+      );
       setSelectedSuggestion(null);
       fetchSuggestions();
     } catch (err) {
@@ -223,7 +225,9 @@ export default function SuggestionsBoard({ currentUser }) {
   // Compute Chef Stats for Demand Radar
   const matchedCount = suggestions.filter((s) => (s.match_score || 0) >= 40).length;
   const highDemandCount = suggestions.filter((s) => s.upvotes_count >= 2).length;
-  const myAcceptedCount = suggestions.filter((s) => s.accepted_by_seller_id === currentUser?.id).length;
+  const myAcceptedCount = suggestions.filter(
+    (s) => s.accepted_by_seller_id === currentUser?.id
+  ).length;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4, color: '#fff' }}>
@@ -239,7 +243,14 @@ export default function SuggestionsBoard({ currentUser }) {
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}
         >
-          <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} gap={2} mb={3}>
+          <Box
+            display="flex"
+            flexDirection={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            gap={2}
+            mb={3}
+          >
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                 <StarsIcon sx={{ color: '#F6BD60', fontSize: 32 }} />
@@ -248,7 +259,8 @@ export default function SuggestionsBoard({ currentUser }) {
                 </Typography>
               </Box>
               <Typography variant="body1" color="text.secondary">
-                Match community cravings with your kitchen! Launch pre-order batches or fulfill requests with dishes already on your menu.
+                Match community cravings with your kitchen! Launch pre-order batches or fulfill
+                requests with dishes already on your menu.
               </Typography>
             </Box>
 
@@ -273,8 +285,20 @@ export default function SuggestionsBoard({ currentUser }) {
           {/* Quick Metrics Bar */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 2, border: '1px solid rgba(46, 196, 182, 0.2)' }}>
-                <Typography variant="caption" color="#2EC4B6" fontWeight="bold" textTransform="uppercase">
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(46, 196, 182, 0.2)',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="#2EC4B6"
+                  fontWeight="bold"
+                  textTransform="uppercase"
+                >
                   🎯 Matched for Your Kitchen
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" mt={0.5}>
@@ -283,8 +307,20 @@ export default function SuggestionsBoard({ currentUser }) {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 2, border: '1px solid rgba(246, 189, 96, 0.2)' }}>
-                <Typography variant="caption" color="#F6BD60" fontWeight="bold" textTransform="uppercase">
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(246, 189, 96, 0.2)',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="#F6BD60"
+                  fontWeight="bold"
+                  textTransform="uppercase"
+                >
                   🔥 High Demand in Society
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" mt={0.5}>
@@ -293,8 +329,20 @@ export default function SuggestionsBoard({ currentUser }) {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.04)', borderRadius: 2, border: '1px solid rgba(224, 90, 43, 0.2)' }}>
-                <Typography variant="caption" color="#E05A2B" fontWeight="bold" textTransform="uppercase">
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(224, 90, 43, 0.2)',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="#E05A2B"
+                  fontWeight="bold"
+                  textTransform="uppercase"
+                >
                   🍳 Batches You're Cooking
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" mt={0.5}>
@@ -327,7 +375,8 @@ export default function SuggestionsBoard({ currentUser }) {
               </Typography>
             </Box>
             <Typography variant="body1" color="text.secondary">
-              Request homemade dishes you crave! Upvote neighbor favorites or discover when chefs accept requests.
+              Request homemade dishes you crave! Upvote neighbor favorites or discover when chefs
+              accept requests.
             </Typography>
           </Box>
 
@@ -433,8 +482,8 @@ export default function SuggestionsBoard({ currentUser }) {
             {sellerTab === 'matched'
               ? 'No matching cravings found for your kitchen right now.'
               : sellerTab === 'my_accepted'
-              ? 'You have not accepted any community cravings yet.'
-              : 'No dish cravings yet in this category.'}
+                ? 'You have not accepted any community cravings yet.'
+                : 'No dish cravings yet in this category.'}
           </Typography>
           <Typography variant="body2" mt={0.5}>
             {sellerTab === 'matched'
@@ -456,10 +505,9 @@ export default function SuggestionsBoard({ currentUser }) {
                     bgcolor: '#191928',
                     borderRadius: 3,
                     border: '1px solid',
-                    borderColor:
-                      isClaimedByMe
-                        ? '#2EC4B6'
-                        : hasMatch && item.match_score >= 70
+                    borderColor: isClaimedByMe
+                      ? '#2EC4B6'
+                      : hasMatch && item.match_score >= 70
                         ? 'rgba(246, 189, 96, 0.6)'
                         : 'rgba(255,255,255,0.08)',
                     display: 'flex',
@@ -474,7 +522,14 @@ export default function SuggestionsBoard({ currentUser }) {
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
                     {/* Category & Status & Match Badges */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5} flexWrap="wrap" gap={0.5}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1.5}
+                      flexWrap="wrap"
+                      gap={0.5}
+                    >
                       <Box display="flex" alignItems="center" gap={1}>
                         <Chip
                           size="small"
@@ -540,7 +595,12 @@ export default function SuggestionsBoard({ currentUser }) {
                       {item.title}
                     </Typography>
 
-                    <Typography variant="body2" color="text.secondary" mb={2} sx={{ minHeight: 40 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      mb={2}
+                      sx={{ minHeight: 40 }}
+                    >
                       {item.description || 'Requested by a neighbor in the society.'}
                     </Typography>
 
@@ -555,7 +615,12 @@ export default function SuggestionsBoard({ currentUser }) {
                           border: '1px solid rgba(46, 196, 182, 0.2)',
                         }}
                       >
-                        <Typography variant="caption" display="block" color="#2EC4B6" fontWeight="bold">
+                        <Typography
+                          variant="caption"
+                          display="block"
+                          color="#2EC4B6"
+                          fontWeight="bold"
+                        >
                           {`🍳 Accepted by ${item.seller_name ? (item.seller_name.toLowerCase().startsWith('chef') ? item.seller_name : `Chef ${item.seller_name}`) : 'Home Cook'}${item.seller_flat ? ` (Flat #${item.seller_flat})` : ''}`}
                         </Typography>
 
@@ -568,13 +633,23 @@ export default function SuggestionsBoard({ currentUser }) {
                     )}
 
                     {/* Match Reasons Highlight (for sellers on open items) */}
-                    {hasMatch && !isClaimed && item.match_reasons && item.match_reasons.length > 0 && (
-                      <Box sx={{ bgcolor: 'rgba(246, 189, 96, 0.08)', p: 1, borderRadius: 1.5, mb: 1.5 }}>
-                        <Typography variant="caption" color="#F6BD60" display="block">
-                          💡 {item.match_reasons[0]}
-                        </Typography>
-                      </Box>
-                    )}
+                    {hasMatch &&
+                      !isClaimed &&
+                      item.match_reasons &&
+                      item.match_reasons.length > 0 && (
+                        <Box
+                          sx={{
+                            bgcolor: 'rgba(246, 189, 96, 0.08)',
+                            p: 1,
+                            borderRadius: 1.5,
+                            mb: 1.5,
+                          }}
+                        >
+                          <Typography variant="caption" color="#F6BD60" display="block">
+                            💡 {item.match_reasons[0]}
+                          </Typography>
+                        </Box>
+                      )}
 
                     {/* Resident Info & Preferred Date */}
                     <Box display="flex" alignItems="center" gap={1} color="text.secondary">
@@ -642,7 +717,7 @@ export default function SuggestionsBoard({ currentUser }) {
                           size="small"
                           variant="outlined"
                           component={Link}
-                          to="/seller/dashboard"
+                          to="/partner"
                           sx={{
                             color: '#2EC4B6',
                             borderColor: '#2EC4B6',
@@ -663,29 +738,27 @@ export default function SuggestionsBoard({ currentUser }) {
                           Chef's Menu
                         </Button>
                       )
+                    ) : /* Buyer Actions */
+                    isClaimed && item.accepted_by_seller_id ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        component={Link}
+                        to={`/menu/${item.accepted_by_seller_id}`}
+                        startIcon={<ShoppingBagOutlinedIcon />}
+                        sx={{
+                          bgcolor: '#E05A2B',
+                          fontWeight: 'bold',
+                          textTransform: 'none',
+                          '&:hover': { bgcolor: '#c9481c' },
+                        }}
+                      >
+                        Pre-Order Now 🛒
+                      </Button>
                     ) : (
-                      /* Buyer Actions */
-                      isClaimed && item.accepted_by_seller_id ? (
-                        <Button
-                          size="small"
-                          variant="contained"
-                          component={Link}
-                          to={`/menu/${item.accepted_by_seller_id}`}
-                          startIcon={<ShoppingBagOutlinedIcon />}
-                          sx={{
-                            bgcolor: '#E05A2B',
-                            fontWeight: 'bold',
-                            textTransform: 'none',
-                            '&:hover': { bgcolor: '#c9481c' },
-                          }}
-                        >
-                          Pre-Order Now 🛒
-                        </Button>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Awaiting Chef
-                        </Typography>
-                      )
+                      <Typography variant="caption" color="text.secondary">
+                        Awaiting Chef
+                      </Typography>
                     )}
                   </CardActions>
                 </Card>
@@ -773,9 +846,7 @@ export default function SuggestionsBoard({ currentUser }) {
         onClose={() => setSelectedSuggestion(null)}
         PaperProps={{ sx: { bgcolor: '#161622', color: '#fff', width: 520, borderRadius: 3 } }}
       >
-        <DialogTitle fontWeight="bold">
-          Accept Craving: "{selectedSuggestion?.title}"
-        </DialogTitle>
+        <DialogTitle fontWeight="bold">Accept Craving: "{selectedSuggestion?.title}"</DialogTitle>
         <DialogContent>
           {/* Dual Mode Switcher Tabs */}
           <Tabs
@@ -794,7 +865,8 @@ export default function SuggestionsBoard({ currentUser }) {
             /* Mode A: Launch New Pre-Order Batch */
             <Box>
               <Typography variant="body2" color="text.secondary" mb={2}>
-                Set your batch price, cutoff schedule, and available slots. A new pre-order dish will be published to your kitchen menu.
+                Set your batch price, cutoff schedule, and available slots. A new pre-order dish
+                will be published to your kitchen menu.
               </Typography>
 
               <TextField
@@ -853,7 +925,8 @@ export default function SuggestionsBoard({ currentUser }) {
             /* Mode B: Link Existing Menu Dish */
             <Box>
               <Typography variant="body2" color="text.secondary" mb={2}>
-                Already prepare this dish? Select it from your kitchen to instantly fulfill this craving with zero duplicate setup!
+                Already prepare this dish? Select it from your kitchen to instantly fulfill this
+                craving with zero duplicate setup!
               </Typography>
 
               <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
@@ -862,7 +935,10 @@ export default function SuggestionsBoard({ currentUser }) {
                   value={selectedExistingMenuId}
                   onChange={(e) => setSelectedExistingMenuId(e.target.value)}
                   label="Select Dish from Your Menu"
-                  sx={{ color: '#fff', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' } }}
+                  sx={{
+                    color: '#fff',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
+                  }}
                 >
                   {chefMenuItems.length === 0 ? (
                     <MenuItem disabled value="">
@@ -879,8 +955,12 @@ export default function SuggestionsBoard({ currentUser }) {
               </FormControl>
 
               {selectedExistingMenuId && (
-                <Alert severity="info" sx={{ bgcolor: 'rgba(46, 196, 182, 0.1)', color: '#2EC4B6' }}>
-                  This craving will immediately show your existing dish and route interested residents to your kitchen menu.
+                <Alert
+                  severity="info"
+                  sx={{ bgcolor: 'rgba(46, 196, 182, 0.1)', color: '#2EC4B6' }}
+                >
+                  This craving will immediately show your existing dish and route interested
+                  residents to your kitchen menu.
                 </Alert>
               )}
             </Box>
@@ -896,7 +976,13 @@ export default function SuggestionsBoard({ currentUser }) {
             onClick={handleClaimSubmit}
             sx={{ bgcolor: '#2EC4B6', color: '#000', fontWeight: 'bold' }}
           >
-            {submittingClaim ? <CircularProgress size={20} /> : claimTab === 1 ? 'Link & Fulfill 🔗' : 'Launch Batch 🚀'}
+            {submittingClaim ? (
+              <CircularProgress size={20} />
+            ) : claimTab === 1 ? (
+              'Link & Fulfill 🔗'
+            ) : (
+              'Launch Batch 🚀'
+            )}
           </Button>
         </DialogActions>
       </Dialog>

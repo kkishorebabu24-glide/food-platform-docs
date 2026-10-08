@@ -9,21 +9,48 @@ Matches resident residents' cravings with home chefs based on:
 5. Demand urgency (community upvote momentum)
 """
 
-import re
 import logging
-from typing import Any, Optional
+import re
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.db.models import DishSuggestion, Menu, PartnerProfile, User
-from app.db.models.enums import MenuCategory, SuggestionStatus
+from app.db.models.enums import SuggestionStatus
 from app.services.ai_service import CULINARY_KNOWLEDGE_BASE
 
 logger = logging.getLogger(__name__)
 
 STOP_WORDS = {
-    "a", "an", "the", "and", "or", "for", "with", "in", "on", "of", "to", "at",
-    "by", "from", "is", "it", "my", "our", "this", "that", "want", "craving",
-    "please", "make", "need", "like", "home", "style", "homemade"
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "for",
+    "with",
+    "in",
+    "on",
+    "of",
+    "to",
+    "at",
+    "by",
+    "from",
+    "is",
+    "it",
+    "my",
+    "our",
+    "this",
+    "that",
+    "want",
+    "craving",
+    "please",
+    "make",
+    "need",
+    "like",
+    "home",
+    "style",
+    "homemade",
 }
 
 
@@ -47,24 +74,44 @@ def calculate_craving_partner_match(
     matching_menu_items: list[dict[str, Any]] = []
 
     craving_tokens = _tokenize(f"{craving.title} {craving.description or ''}")
-    craving_cat = craving.category.value if hasattr(craving.category, "value") else str(craving.category)
+    craving_cat = (
+        craving.category.value if hasattr(craving.category, "value") else str(craving.category)
+    )
 
     # Collect chef's culinary profile tokens and category footprint
     chef_bio = partner_profile.bio or ""
     bio_tokens = _tokenize(chef_bio)
 
     chef_categories = {
-        m.category.value if hasattr(m.category, "value") else str(m.category)
-        for m in partner_menus
+        m.category.value if hasattr(m.category, "value") else str(m.category) for m in partner_menus
     }
 
     # 1. Pure-Veg vs Non-Veg Strict Compatibility Guard
     is_non_veg_craving = craving_cat in ["non-veg", "non_veg"] or any(
-        w in craving_tokens for w in ["chicken", "mutton", "egg", "fish", "prawn", "meat", "nonveg", "non-veg"]
+        w in craving_tokens
+        for w in [
+            "chicken",
+            "mutton",
+            "egg",
+            "fish",
+            "prawn",
+            "meat",
+            "nonveg",
+            "non-veg",
+        ]
     )
-    chef_has_non_veg = (
-        any(cat in ["non-veg", "non_veg"] for cat in chef_categories)
-        or any(w in bio_tokens for w in ["chicken", "mutton", "egg", "fish", "prawn", "meat", "nonveg", "non-veg"])
+    chef_has_non_veg = any(cat in ["non-veg", "non_veg"] for cat in chef_categories) or any(
+        w in bio_tokens
+        for w in [
+            "chicken",
+            "mutton",
+            "egg",
+            "fish",
+            "prawn",
+            "meat",
+            "nonveg",
+            "non-veg",
+        ]
     )
 
     if is_non_veg_craving and not chef_has_non_veg:
@@ -98,17 +145,20 @@ def calculate_craving_partner_match(
         overlap = craving_tokens.intersection(menu_tokens)
 
         # Check for direct title similarity
-        title_lower = craving.title.lower()
         menu_name_lower = menu.name.lower()
         if any(token in menu_name_lower for token in craving_tokens):
             direct_dish_match_found = True
-            matching_menu_items.append({
-                "id": menu.id,
-                "name": menu.name,
-                "price": float(menu.price),
-                "category": menu.category.value if hasattr(menu.category, "value") else str(menu.category),
-                "is_available": menu.is_available,
-            })
+            matching_menu_items.append(
+                {
+                    "id": menu.id,
+                    "name": menu.name,
+                    "price": float(menu.price),
+                    "category": menu.category.value
+                    if hasattr(menu.category, "value")
+                    else str(menu.category),
+                    "is_available": menu.is_available,
+                }
+            )
 
         if overlap:
             keyword_points = max(keyword_points, min(35.0, len(overlap) * 15.0))
@@ -130,7 +180,9 @@ def calculate_craving_partner_match(
         if key in craving.title.lower() or key in (craving.description or "").lower():
             for tag in data.get("tags", []):
                 tag_tokens = _tokenize(tag)
-                if tag_tokens.intersection(bio_tokens) or any(tag_tokens.intersection(_tokenize(m.name)) for m in partner_menus):
+                if tag_tokens.intersection(bio_tokens) or any(
+                    tag_tokens.intersection(_tokenize(m.name)) for m in partner_menus
+                ):
                     keyword_points = min(45.0, keyword_points + 10.0)
                     reasons.append(f"Cuisine Tag: {tag}")
                     break
@@ -184,7 +236,6 @@ def get_matched_cravings_for_partner(
     if not partner_profile:
         return []
 
-    partner_user = db.query(User).filter(User.id == partner_id).first()
     partner_menus = db.query(Menu).filter(Menu.partner_id == partner_id).all()
 
     open_cravings = (
@@ -204,25 +255,30 @@ def get_matched_cravings_for_partner(
         match_data = calculate_craving_partner_match(craving, partner_profile, partner_menus)
         if match_data["match_score"] >= min_score:
             craving_user = db.query(User).filter(User.id == craving.user_id).first()
-            matched_results.append({
-                "id": craving.id,
-                "user_id": craving.user_id,
-                "user_name": craving_user.name if craving_user else "Resident",
-                "user_flat": craving_user.flat_number if craving_user else None,
-                "title": craving.title,
-                "description": craving.description,
-                "category": craving.category.value if hasattr(craving.category, "value") else str(craving.category),
-                "target_date": craving.target_date.isoformat() if craving.target_date else None,
-                "upvotes_count": craving.upvotes_count,
-                "status": craving.status.value if hasattr(craving.status, "value") else str(craving.status),
-                "match_score": match_data["match_score"],
-                "match_level": match_data["match_level"],
-                "match_reasons": match_data["match_reasons"],
-                "matching_menu_items": match_data["matching_menu_items"],
-                "created_at": craving.created_at.isoformat(),
-            })
+            matched_results.append(
+                {
+                    "id": craving.id,
+                    "user_id": craving.user_id,
+                    "user_name": craving_user.name if craving_user else "Resident",
+                    "user_flat": craving_user.flat_number if craving_user else None,
+                    "title": craving.title,
+                    "description": craving.description,
+                    "category": craving.category.value
+                    if hasattr(craving.category, "value")
+                    else str(craving.category),
+                    "target_date": craving.target_date.isoformat() if craving.target_date else None,
+                    "upvotes_count": craving.upvotes_count,
+                    "status": craving.status.value
+                    if hasattr(craving.status, "value")
+                    else str(craving.status),
+                    "match_score": match_data["match_score"],
+                    "match_level": match_data["match_level"],
+                    "match_reasons": match_data["match_reasons"],
+                    "matching_menu_items": match_data["matching_menu_items"],
+                    "created_at": craving.created_at.isoformat(),
+                }
+            )
 
     # Sort primarily by match score desc, secondarily by upvotes desc
     matched_results.sort(key=lambda x: (x["match_score"], x["upvotes_count"]), reverse=True)
     return matched_results[:limit]
-

@@ -46,11 +46,11 @@ export default function AdminApprovals() {
 
       const pendingList = Array.isArray(pendingRes?.data)
         ? pendingRes.data
-        : (pendingRes?.data?.partners || pendingRes?.data?.pending_partners || []);
+        : pendingRes?.data?.partners || pendingRes?.data?.pending_partners || [];
       setPendingPartners(pendingList);
       const approvedList = Array.isArray(approvedRes?.data)
         ? approvedRes.data
-        : (approvedRes?.data?.partners || approvedRes?.data?.sellers || []);
+        : approvedRes?.data?.partners || approvedRes?.data?.sellers || [];
       setApprovedPartners(approvedList);
     } catch (err) {
       setError?.(getErrorMessage(err, 'Failed to fetch partner applicants.'));
@@ -61,6 +61,7 @@ export default function AdminApprovals() {
 
   useEffect(() => {
     fetchPartners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleApprove = async (partnerId, partnerName) => {
@@ -82,7 +83,9 @@ export default function AdminApprovals() {
     try {
       setProcessingId(rejectPartnerData.id);
       await adminAPI.rejectPartner(rejectPartnerData.id);
-      setActionSuccess?.(`Partner application for '${rejectPartnerData.name || rejectPartnerData.id}' was rejected.`);
+      setActionSuccess?.(
+        `Partner application for '${rejectPartnerData.name || rejectPartnerData.id}' was rejected.`
+      );
       setRejectPartnerData(null);
       fetchPartners();
       refreshAdminData?.();
@@ -95,13 +98,21 @@ export default function AdminApprovals() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1.5}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+        flexWrap="wrap"
+        gap={1.5}
+      >
         <Box>
           <Typography variant="h5" fontWeight="bold">
             Home Chef Onboarding & Approvals
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Review kitchen applicants, ensure flat residency and hygiene standards, and grant selling privileges.
+            Review kitchen applicants, ensure flat residency and hygiene standards, and grant
+            selling privileges.
           </Typography>
         </Box>
       </Box>
@@ -136,7 +147,13 @@ export default function AdminApprovals() {
       ) : activeTab === 0 ? (
         /* Pending Applications */
         pendingPartners.length === 0 ? (
-          <Box textAlign="center" py={8} bgcolor="#191928" borderRadius={3} border="1px dashed rgba(255,255,255,0.1)">
+          <Box
+            textAlign="center"
+            py={8}
+            bgcolor="#191928"
+            borderRadius={3}
+            border="1px dashed rgba(255,255,255,0.1)"
+          >
             <HowToRegIcon sx={{ fontSize: 48, color: '#2EC4B6', mb: 1 }} />
             <Typography variant="h6" color="#2EC4B6" fontWeight="bold">
               Review Queue is Clear! ✨
@@ -149,9 +166,21 @@ export default function AdminApprovals() {
           <Grid container spacing={3}>
             {pendingPartners.map((partner) => (
               <Grid item xs={12} md={6} key={partner.id}>
-                <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+                <Card
+                  sx={{
+                    bgcolor: '#191928',
+                    borderRadius: 3,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    height: '100%',
+                  }}
+                >
                   <CardContent sx={{ p: 3 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={2}
+                    >
                       <Box display="flex" alignItems="center" gap={1.5}>
                         <Avatar
                           src={partner.photo_url || undefined}
@@ -164,14 +193,19 @@ export default function AdminApprovals() {
                             {partner.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Applicant ID #{partner.id} • Flat #{partner.flat_number || 'Unspecified'}
+                            Applicant ID #{partner.id} • Flat #
+                            {partner.flat_number || 'Unspecified'}
                           </Typography>
                         </Box>
                       </Box>
                       <Chip
                         size="small"
                         label="PENDING"
-                        sx={{ bgcolor: 'rgba(246,189,96,0.15)', color: '#F6BD60', fontWeight: 'bold' }}
+                        sx={{
+                          bgcolor: 'rgba(246,189,96,0.15)',
+                          color: '#F6BD60',
+                          fontWeight: 'bold',
+                        }}
                       />
                     </Box>
 
@@ -204,7 +238,13 @@ export default function AdminApprovals() {
                         startIcon={<CheckCircleOutlineIcon />}
                         disabled={processingId === partner.id}
                         onClick={() => handleApprove(partner.id, partner.name)}
-                        sx={{ bgcolor: '#2EC4B6', color: '#000', fontWeight: 'bold', textTransform: 'none', '&:hover': { bgcolor: '#25a094' } }}
+                        sx={{
+                          bgcolor: '#2EC4B6',
+                          color: '#000',
+                          fontWeight: 'bold',
+                          textTransform: 'none',
+                          '&:hover': { bgcolor: '#25a094' },
+                        }}
                       >
                         {processingId === partner.id ? 'Approving...' : 'Approve & Activate'}
                       </Button>
@@ -215,48 +255,60 @@ export default function AdminApprovals() {
             ))}
           </Grid>
         )
+      ) : /* Approved Kitchens */
+      approvedPartners.length === 0 ? (
+        <Box textAlign="center" py={8} bgcolor="#191928" borderRadius={3}>
+          <Typography variant="body1" color="text.secondary">
+            No approved kitchens found.
+          </Typography>
+        </Box>
       ) : (
-        /* Approved Kitchens */
-        approvedPartners.length === 0 ? (
-          <Box textAlign="center" py={8} bgcolor="#191928" borderRadius={3}>
-            <Typography variant="body1" color="text.secondary">No approved kitchens found.</Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {approvedPartners.map((partner) => (
-              <Grid item xs={12} sm={6} md={4} key={partner.id}>
-                <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <CardContent sx={{ p: 2.5 }}>
-                    <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
-                      <Avatar
-                        src={partner.photo_url || undefined}
-                        sx={{ width: 44, height: 44, bgcolor: '#E05A2B', fontWeight: 'bold' }}
-                      >
-                        {partner.name?.[0]?.toUpperCase() || 'C'}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {partner.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Flat #{partner.flat_number || 'N/A'} • {partner.is_open ? '🟢 Open' : '🔒 Closed'}
-                        </Typography>
-                      </Box>
+        <Grid container spacing={3}>
+          {approvedPartners.map((partner) => (
+            <Grid item xs={12} sm={6} md={4} key={partner.id}>
+              <Card
+                sx={{
+                  bgcolor: '#191928',
+                  borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <CardContent sx={{ p: 2.5 }}>
+                  <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+                    <Avatar
+                      src={partner.photo_url || undefined}
+                      sx={{ width: 44, height: 44, bgcolor: '#E05A2B', fontWeight: 'bold' }}
+                    >
+                      {partner.name?.[0]?.toUpperCase() || 'C'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {partner.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Flat #{partner.flat_number || 'N/A'} •{' '}
+                        {partner.is_open ? '🟢 Open' : '🔒 Closed'}
+                      </Typography>
                     </Box>
-                    <Typography variant="body2" color="text.secondary" noWrap mb={1.5}>
-                      {partner.bio || 'Home Kitchen'}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      label="✅ APPROVED CHEF"
-                      sx={{ bgcolor: 'rgba(46,196,182,0.15)', color: '#2EC4B6', fontSize: '0.7rem', height: 20 }}
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" noWrap mb={1.5}>
+                    {partner.bio || 'Home Kitchen'}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label="✅ APPROVED CHEF"
+                    sx={{
+                      bgcolor: 'rgba(46,196,182,0.15)',
+                      color: '#2EC4B6',
+                      fontSize: '0.7rem',
+                      height: 20,
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
       {/* Reject Confirmation Dialog */}
@@ -268,12 +320,16 @@ export default function AdminApprovals() {
         <DialogTitle fontWeight="bold">Confirm Application Rejection</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            Are you sure you want to reject the chef application from <strong>{rejectPartnerData?.name}</strong> (Flat #{rejectPartnerData?.flat_number})?
+            Are you sure you want to reject the chef application from{' '}
+            <strong>{rejectPartnerData?.name}</strong> (Flat #{rejectPartnerData?.flat_number})?
             This will deactivate their partner profile.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setRejectPartnerData(null)} sx={{ color: '#aaa', textTransform: 'none' }}>
+          <Button
+            onClick={() => setRejectPartnerData(null)}
+            sx={{ color: '#aaa', textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button

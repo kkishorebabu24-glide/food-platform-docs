@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Order, Rating, PartnerProfile
+from app.db.models import Order, PartnerProfile, Rating
 from app.db.models.enums import OrderStatus
 from app.schemas.rating import RatingCreateRequest
 
@@ -26,14 +26,10 @@ def create_rating(
     """
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.resident_id != rater_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your order.")
 
     if order.status != OrderStatus.delivered:
         raise HTTPException(
@@ -65,9 +61,7 @@ def create_rating(
     return rating
 
 
-def get_partner_ratings(
-    db: Session, partner_id: int, skip: int = 0, limit: int = 20
-) -> dict:
+def get_partner_ratings(db: Session, partner_id: int, skip: int = 0, limit: int = 20) -> dict:
     """Return paginated ratings for a partner with distribution summary."""
     ratings = (
         db.query(Rating)
@@ -79,9 +73,7 @@ def get_partner_ratings(
     )
     total = db.query(Rating).filter(Rating.partner_id == partner_id).count()
 
-    avg_result = (
-        db.query(func.avg(Rating.score)).filter(Rating.partner_id == partner_id).scalar()
-    )
+    avg_result = db.query(func.avg(Rating.score)).filter(Rating.partner_id == partner_id).scalar()
     average = round(float(avg_result), 2) if avg_result else 0.0
 
     distribution = {str(i): 0 for i in range(1, 6)}

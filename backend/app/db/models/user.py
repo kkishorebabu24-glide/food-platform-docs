@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -34,17 +35,13 @@ class User(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Primary login identifier — must be unique
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
 
     # 10-digit Indian mobile — optional, validated
     phone: Mapped[str | None] = mapped_column(String(15), nullable=True)
 
     # Society flat number e.g. "A-101", "TowerA-101" -- optional
-    flat_number: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, index=True
-    )
+    flat_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
 
     # -- Role & Status ---------------------------------------------------------
     # Roles: resident | partner | admin | super_admin
@@ -70,9 +67,7 @@ class User(TimestampMixin, Base):
 
     # -- OTP Fields (nullable -- reserved for future email / phone OTP flow) ---
     otp_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    otp_expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    otp_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     otp_attempts: Mapped[int] = mapped_column(default=0, nullable=False)
 
     # -- Relationships ---------------------------------------------------------
@@ -130,9 +125,7 @@ class User(TimestampMixin, Base):
     def validate_flat_number(self, key: str, value: str | None) -> str | None:
         """Accept alphanumeric flat numbers with optional hyphens (e.g. A-101)."""
         if value is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\-]*", value):
-            raise ValueError(
-                "Flat number must be alphanumeric with optional hyphens (e.g. A-101)"
-            )
+            raise ValueError("Flat number must be alphanumeric with optional hyphens (e.g. A-101)")
         return value
 
     @validates("name")

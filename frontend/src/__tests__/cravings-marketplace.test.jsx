@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SuggestionsBoard from '../pages/SuggestionsBoard';
-
+import * as apiModule from '../services/api';
 
 // Mock API
 const mockSuggestions = [
@@ -29,8 +29,6 @@ const mockSuggestions = [
     created_at: '2026-08-30T11:00:00Z',
   },
 ];
-
-import * as apiModule from '../services/api';
 
 describe('Community Cravings Marketplace', () => {
   beforeEach(() => {
@@ -59,7 +57,6 @@ describe('Community Cravings Marketplace', () => {
   });
 
   test('renders community cravings board and triggers upvote', async () => {
-
     render(
       <MemoryRouter>
         <SuggestionsBoard currentUser={{ id: 1, name: 'Alice', role: 'buyer' }} />
@@ -95,7 +92,4 @@ describe('Community Cravings Marketplace', () => {
     const claimButtons = screen.getAllByRole('button', { name: /Accept & Cook|I'll Cook This!/i });
     expect(claimButtons.length).toBeGreaterThanOrEqual(1);
   });
-
 });
-
-

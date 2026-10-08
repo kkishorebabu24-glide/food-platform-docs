@@ -24,6 +24,7 @@
 ## 2. API Endpoints Reference
 
 ### 🔐 Authentication & Session
+
 - `POST /api/v1/auth/login` — Password authentication; respects DB role and protects admins from demotion.
 - `POST /api/v1/auth/register` — Account registration with role selection (`resident` or `partner`).
 - `POST /api/v1/auth/refresh` — Exchange refresh token for fresh access token.
@@ -33,6 +34,7 @@
 - `POST /api/v1/auth/switch-role` — Session-based workspace persona switching.
 
 ### 🍳 Partner & Home Chef APIs
+
 - `GET  /api/v1/sellers/me` — Fetch current chef kitchen profile, bio, photos, and UPI details.
 - `PUT  /api/v1/sellers/me` — Update chef bio, specialties, and Direct UPI settlement settings.
 - `PATCH /api/v1/sellers/me/open` — Toggle kitchen open/closed operational status.
@@ -41,6 +43,7 @@
 - `POST /api/v1/sellers/banner` — Update kitchen storefront cover banner.
 
 ### 🍽️ Menu & Batch Inventory
+
 - `GET  /api/v1/menus/sellers/{id}` — Fetch published menu for a specific home chef.
 - `POST /api/v1/menus/` — Create new dish or scheduled pre-order batch.
 - `PUT  /api/v1/menus/{id}` — Update dish details, price, spice level, or description.
@@ -50,12 +53,14 @@
 - `POST /api/v1/menus/{id}/image` — Upload dish presentation photograph.
 
 ### 📦 Orders & Fulfillment
+
 - `POST /api/v1/orders/` — Place order; enforces portion decrement, self-order block, and in-flight price checks.
 - `GET  /api/v1/orders/` — List orders for active resident or partner with pagination.
 - `GET  /api/v1/orders/{id}` — Order details protected by BOLA/IDOR authorization guards.
 - `PUT  /api/v1/orders/{id}/status` — Advance order state (`accepted`, `cooking`, `ready`, `dispatched`, `delivered`).
 
 ### 💳 Direct UPI & SaaS Pass Ledger
+
 - `GET  /api/v1/payments/balance` — Partner total earned and available wallet balance.
 - `GET  /api/v1/payments/maintenance-status` — SaaS pass quota (remaining free orders out of 50).
 - `GET  /api/v1/payments/ledger` — Transaction history and ₹5/order maintenance deduction ledger.
@@ -63,6 +68,7 @@
 - `POST /api/v1/payments/orders/{id}/confirm` — Chef confirms receipt of resident UPI transfer.
 
 ### 🛡️ Society Admin Console
+
 - `GET  /api/v1/admin/analytics` — Platform GMV, total volume, active kitchens, and pending approvals.
 - `GET  /api/v1/admin/sellers/pending` — Queue of chef partner applicants awaiting verification.
 - `POST /api/v1/admin/sellers/{id}/approve` — Approve chef application and grant partner permissions.
@@ -76,6 +82,7 @@
 ## 3. Local Development
 
 ### Prerequisites
+
 - Python `3.12+`
 - PostgreSQL `14+`
 - Redis `7+`
@@ -146,6 +153,7 @@ pytest tests/test_auth.py tests/test_otp_auth.py -v
 ## 5. Docker Container Hardening
 
 The backend `Dockerfile` enforces security best practices:
+
 - **Unprivileged Runtime**: Runs under dedicated non-root `appuser` (UID 1001).
 - **Multi-Phase Entrypoint (`entrypoint.sh`)**: Automatically verifies PostgreSQL connectivity with `pg_isready`, runs Alembic database migrations (`alembic upgrade head`), and starts Uvicorn.
 - **Docker Healthcheck**: Configured to poll `/health` every 30s.

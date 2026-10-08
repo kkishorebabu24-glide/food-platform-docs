@@ -61,4 +61,3 @@ async def get_my_orders(
     return order_service.get_resident_orders(
         db, resident_id=current_user.id, skip=skip, limit=limit
     )
-

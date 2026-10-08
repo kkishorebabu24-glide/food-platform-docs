@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/v1/residents", tags=["residents"])
 DB_DEPENDENCY = Depends(get_db)
 GET_USER_DEPENDENCY = Depends(get_current_user)
 
+
 @router.get("/me", response_model=ResidentProfileResponse)
 async def get_my_profile(
     current_user: User = GET_USER_DEPENDENCY,

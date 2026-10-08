@@ -15,11 +15,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_db, require_role
-from app.db.models import Order, PartnerProfile, User
+from app.db.models import User
+from app.db.models.enums import UserRole
 from app.schemas.order import OrderCreateRequest, OrderResponse, OrderStatusUpdate
 from app.services import notification_service, order_service
 from app.services.websocket_manager import get_manager
-from app.db.models.enums import OrderStatus, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,11 @@ async def get_order(
 ):
     """Get details of a specific order (BOLA protected)."""
     order = order_service.get_order_by_id(db, order_id)
-    if current_user.role != "admin" and order.resident_id != current_user.id and order.partner_id != current_user.id:
+    if (
+        not current_user.is_admin
+        and order.resident_id != current_user.id
+        and order.partner_id != current_user.id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this order.",
@@ -110,7 +114,6 @@ async def cancel_order(
     """Cancel a pending order (resident only)."""
     order = order_service.cancel_order(db, order_id=order_id, resident_id=current_user.id)
     return OrderResponse.model_validate(order)
-
 
 
 @router.put("/{order_id}/status", response_model=OrderResponse)
@@ -154,9 +157,6 @@ async def update_status(
     resident_user = db.query(User).filter(User.id == order.resident_id).first()
     partner_user = db.query(User).filter(User.id == order.partner_id).first()
     if resident_user and partner_user:
-        partner_profile = db.query(PartnerProfile).filter(
-            PartnerProfile.id == order.partner_id
-        ).first()
         background_tasks.add_task(
             notification_service.send_order_status_email,
             resident_email=resident_user.email,

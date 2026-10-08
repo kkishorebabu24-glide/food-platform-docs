@@ -1,7 +1,5 @@
 """Multimodal AI Service for culinary intelligence, dish analysis, and meal advice."""
 
-import os
-import json
 import logging
 from typing import Any
 
@@ -52,21 +50,24 @@ CULINARY_KNOWLEDGE_BASE = {
 }
 
 
-def analyze_dish_multimodal(title: str, description: str = "", image_url: str | None = None) -> dict[str, Any]:
+def analyze_dish_multimodal(
+    title: str, description: str = "", image_url: str | None = None
+) -> dict[str, Any]:
     """
     Analyzes dish parameters and visual cues to extract structured dietary, allergen, and price estimates.
     """
     combined_text = f"{title.lower()} {description.lower()}"
-    
+
     # Check knowledge base matches
     matched_tags = ["Freshly Prepared", "Home Cooked"]
-    allergens = []
+    allergens: list[str] = []
     calories = 300
     spice_level = "Medium"
     price_min = 120
     price_max = 180
 
-    for key, data in CULINARY_KNOWLEDGE_BASE.items():
+    kb: dict[str, dict[str, Any]] = CULINARY_KNOWLEDGE_BASE  # type: ignore[assignment]
+    for key, data in kb.items():
         if key in combined_text:
             matched_tags.extend(data["tags"])
             allergens.extend(data["allergens"])
@@ -77,7 +78,9 @@ def analyze_dish_multimodal(title: str, description: str = "", image_url: str | 
             break
 
     # Determine Veg vs Non-Veg
-    is_non_veg = any(w in combined_text for w in ["chicken", "mutton", "egg", "fish", "prawn", "meat", "non-veg"])
+    is_non_veg = any(
+        w in combined_text for w in ["chicken", "mutton", "egg", "fish", "prawn", "meat", "non-veg"]
+    )
     if is_non_veg:
         if "100% Pure Veg" in matched_tags:
             matched_tags.remove("100% Pure Veg")
@@ -106,7 +109,9 @@ def analyze_dish_multimodal(title: str, description: str = "", image_url: str | 
     }
 
 
-def generate_meal_advice(prompt: str, active_menu_items: list[dict] | None = None) -> dict[str, Any]:
+def generate_meal_advice(
+    prompt: str, active_menu_items: list[dict] | None = None
+) -> dict[str, Any]:
     """
     Generates conversational recommendations matching resident queries against available society kitchen dishes.
     """
@@ -116,7 +121,11 @@ def generate_meal_advice(prompt: str, active_menu_items: list[dict] | None = Non
     recommended_items = []
     for item in items:
         item_name = item.get("name", "").lower()
-        if any(token in prompt_lower for token in item_name.split()) or "healthy" in prompt_lower or "recommend" in prompt_lower:
+        if (
+            any(token in prompt_lower for token in item_name.split())
+            or "healthy" in prompt_lower
+            or "recommend" in prompt_lower
+        ):
             recommended_items.append(item)
 
     if not recommended_items and items:
@@ -124,8 +133,7 @@ def generate_meal_advice(prompt: str, active_menu_items: list[dict] | None = Non
 
     return {
         "query": prompt,
-        "advice_message": f"Based on today's society kitchen specials, here are the top home-cooked dishes tailored for your request!",
+        "advice_message": "Based on today's society kitchen specials, here are the top home-cooked dishes tailored for your request!",
         "recommendations": recommended_items,
         "suggested_actions": ["Book for Lunch Slot", "Upvote on Cravings Board"],
     }
-

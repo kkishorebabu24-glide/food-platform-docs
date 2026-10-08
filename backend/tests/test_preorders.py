@@ -5,10 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
 from app.db.models import PartnerProfile, User
-from app.db.models.enums import PartnerApplicationStatus, UserRole
+from app.db.models.enums import PartnerApplicationStatus, PartnerStatus, UserRole
 
 
-def test_create_preorder_menu_and_place_preorder(client: TestClient, db: Session, test_resident: User, resident_headers: dict):
+def test_create_preorder_menu_and_place_preorder(
+    client: TestClient, db: Session, test_resident: User, resident_headers: dict
+):
     # 1. Setup partner
     partner_user = User(
         name="Chef Sharma",
@@ -23,6 +25,7 @@ def test_create_preorder_menu_and_place_preorder(client: TestClient, db: Session
         bio="North Indian Specials",
         upi_id="chefsharma@okaxis",
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
     )
     db.add(partner_prof)
     db.commit()
@@ -65,7 +68,14 @@ def test_create_preorder_menu_and_place_preorder(client: TestClient, db: Session
         headers=resident_headers,
         json={
             "partner_id": partner_user.id,
-            "items": [{"menu_id": menu_id, "name": combo_item["name"], "quantity": 2, "price": 180.0}],
+            "items": [
+                {
+                    "menu_id": menu_id,
+                    "name": combo_item["name"],
+                    "quantity": 2,
+                    "price": 180.0,
+                }
+            ],
             "notes": "Please deliver hot at 8 PM",
             "is_preorder": True,
             "delivery_slot": "dinner_today",

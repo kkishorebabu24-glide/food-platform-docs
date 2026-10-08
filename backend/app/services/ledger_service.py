@@ -33,16 +33,12 @@ def _get_platform_fee_rate() -> Decimal:
 def get_partner_balance(db: Session, partner_id: int) -> Decimal:
     """Return the current outstanding balance for a partner."""
     result = (
-        db.query(func.sum(LedgerEntry.amount))
-        .filter(LedgerEntry.user_id == partner_id)
-        .scalar()
+        db.query(func.sum(LedgerEntry.amount)).filter(LedgerEntry.user_id == partner_id).scalar()
     )
     return Decimal(str(result or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def get_partner_ledger(
-    db: Session, partner_id: int, skip: int = 0, limit: int = 20
-) -> dict:
+def get_partner_ledger(db: Session, partner_id: int, skip: int = 0, limit: int = 20) -> dict:
     """Return paginated ledger entries for a partner."""
     entries = (
         db.query(LedgerEntry)
@@ -81,9 +77,7 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
       2. platform_fee:  negative amount recording the commission    (negative)
     """
     if payment.status != PaymentStatus.captured:
-        logger.warning(
-            "record_payment_credit called for non-captured payment %s", payment.id
-        )
+        logger.warning("record_payment_credit called for non-captured payment %s", payment.id)
         return
 
     fee_rate = _get_platform_fee_rate()
@@ -122,8 +116,7 @@ def record_payment_credit(db: Session, payment: Payment) -> None:
         amount=-platform_fee,
         balance_after=balance_after_credit,  # net balance unchanged by this entry
         description=(
-            f"Platform fee ({settings.PLATFORM_FEE_PERCENT}%) "
-            f"for order #{payment.order_id}"
+            f"Platform fee ({settings.PLATFORM_FEE_PERCENT}%) " f"for order #{payment.order_id}"
         ),
     )
     db.add(fee_entry)

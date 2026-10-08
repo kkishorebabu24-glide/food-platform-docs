@@ -90,7 +90,9 @@ describe('Seller Menu Management: Edit, Duplicate, Spice Level & Low Stock', () 
       },
     });
     menusAPI.create.mockResolvedValue({ data: { id: 103, name: 'Hyderabadi Dum Biryani (Copy)' } });
-    menusAPI.update.mockResolvedValue({ data: { id: 101, name: 'Hyderabadi Dum Biryani (Spicy Special)' } });
+    menusAPI.update.mockResolvedValue({
+      data: { id: 101, name: 'Hyderabadi Dum Biryani (Spicy Special)' },
+    });
     menusAPI.uploadImage.mockResolvedValue({ data: { image_url: '/uploads/menus/101.jpg' } });
   });
 
@@ -178,4 +180,3 @@ describe('Seller Menu Management: Edit, Duplicate, Spice Level & Low Stock', () 
     });
   });
 });
-

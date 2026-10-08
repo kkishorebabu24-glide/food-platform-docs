@@ -237,7 +237,9 @@ describe('Multi-Photo Chef Cards, Sliding Dish Modal Carousel, and Filter Enhanc
     fireEvent.click(sortRating);
 
     // Type in search box to trigger dish search and live autocomplete
-    const searchInput = screen.getByPlaceholderText(/Search chef name, flat number, or special dishes/i);
+    const searchInput = screen.getByPlaceholderText(
+      /Search chef name, flat number, or special dishes/i
+    );
     fireEvent.change(searchInput, { target: { value: 'Biryani' } });
 
     await waitFor(() => {

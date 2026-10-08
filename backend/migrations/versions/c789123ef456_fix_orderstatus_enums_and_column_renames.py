@@ -5,16 +5,16 @@ Revises: a547385bacf7
 Create Date: 2026-10-08 23:45:00.000000
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'c789123ef456'
-down_revision: Union[str, Sequence[str], None] = 'a547385bacf7'
+revision: str = "c789123ef456"
+down_revision: Union[str, Sequence[str], None] = "a547385bacf7"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -36,7 +36,9 @@ def upgrade() -> None:
         cols = [c["name"] for c in inspector.get_columns("dish_suggestions")]
         if "accepted_by_seller_id" in cols and "accepted_by_partner_id" not in cols:
             with op.batch_alter_table("dish_suggestions") as batch_op:
-                batch_op.alter_column("accepted_by_seller_id", new_column_name="accepted_by_partner_id")
+                batch_op.alter_column(
+                    "accepted_by_seller_id", new_column_name="accepted_by_partner_id"
+                )
 
 
 def downgrade() -> None:
@@ -48,4 +50,6 @@ def downgrade() -> None:
         cols = [c["name"] for c in inspector.get_columns("dish_suggestions")]
         if "accepted_by_partner_id" in cols and "accepted_by_seller_id" not in cols:
             with op.batch_alter_table("dish_suggestions") as batch_op:
-                batch_op.alter_column("accepted_by_partner_id", new_column_name="accepted_by_seller_id")
+                batch_op.alter_column(
+                    "accepted_by_partner_id", new_column_name="accepted_by_seller_id"
+                )

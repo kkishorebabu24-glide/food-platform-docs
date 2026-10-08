@@ -1,7 +1,7 @@
 """Order request/response schemas."""
 
-from datetime import date, datetime
-from typing import Any, Optional
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -56,7 +56,9 @@ class OrderCreateRequest(BaseModel):
     @classmethod
     def validate_delivery_type(cls, v: str) -> str:
         if v not in VALID_DELIVERY_TYPES:
-            raise ValueError(f"delivery_type must be one of: {', '.join(sorted(VALID_DELIVERY_TYPES))}")
+            raise ValueError(
+                f"delivery_type must be one of: {', '.join(sorted(VALID_DELIVERY_TYPES))}"
+            )
         return v
 
 
@@ -69,9 +71,7 @@ class OrderStatusUpdate(BaseModel):
     @classmethod
     def validate_status(cls, v: str) -> str:
         if v not in VALID_STATUSES:
-            raise ValueError(
-                f"status must be one of: {', '.join(sorted(VALID_STATUSES))}"
-            )
+            raise ValueError(f"status must be one of: {', '.join(sorted(VALID_STATUSES))}")
         return v
 
 
@@ -103,4 +103,3 @@ class OrderResponse(BaseModel):
         if self.buyer_id is None:
             self.buyer_id = self.resident_id
         return self
-

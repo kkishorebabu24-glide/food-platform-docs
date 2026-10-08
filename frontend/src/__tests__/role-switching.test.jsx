@@ -55,13 +55,9 @@ describe('Role Selection & Switching Flow', () => {
     fireEvent.click(signInBtn);
 
     await waitFor(() => {
-      expect(loginSpy).toHaveBeenCalledWith(
-        'chef.meera@society.local',
-        'secret123',
-        'seller'
-      );
+      expect(loginSpy).toHaveBeenCalledWith('chef.meera@society.local', 'secret123', 'partner');
       // Verify user is now authenticated as seller and sees Kitchen Hub in Navbar
-      expect(screen.getByText(/Chef Meera \(seller\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Chef Meera \(partner\)/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Kitchen Hub/i })).toBeInTheDocument();
     });
   });
@@ -82,13 +78,13 @@ describe('Role Selection & Switching Flow', () => {
     render(<App />);
 
     // Verify initial resident navbar
-    expect(screen.getByText(/Anil Kumar \(buyer\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Anil Kumar \(resident\)/i)).toBeInTheDocument();
 
     // Verify that the obsolete mode switch button is completely removed from navbar
     expect(screen.queryByRole('button', { name: /Switch to Chef Mode/i })).not.toBeInTheDocument();
 
     // Click User Chip to open User Popover
-    const userChip = screen.getByText(/Anil Kumar \(buyer\)/i);
+    const userChip = screen.getByText(/Anil Kumar \(resident\)/i);
     fireEvent.click(userChip);
 
     // Verify Workspace Switcher shortcuts in Popover
@@ -98,4 +94,3 @@ describe('Role Selection & Switching Flow', () => {
     });
   });
 });
-

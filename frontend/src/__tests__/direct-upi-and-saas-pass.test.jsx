@@ -92,7 +92,9 @@ describe('Direct P2PM UPI and SaaS Pass Frontend Flows', () => {
           upi_id: 'ananya.new@okaxis',
         })
       );
-      expect(screen.getByText(/Kitchen payment details updated successfully!/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Kitchen payment details updated successfully!/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -131,4 +133,3 @@ describe('Direct P2PM UPI and SaaS Pass Frontend Flows', () => {
     });
   });
 });
-

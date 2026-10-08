@@ -4,7 +4,14 @@ import { Box, Chip } from '@mui/material';
 
 // Simple ingredient names for demo
 const INGREDIENTS = [
-  'Arborio', 'Porcini', 'Mascarpone', 'Parsley', 'White Wine', 'Butter', 'Shallot', 'Garlic'
+  'Arborio',
+  'Porcini',
+  'Mascarpone',
+  'Parsley',
+  'White Wine',
+  'Butter',
+  'Shallot',
+  'Garlic',
 ];
 
 export default function StreamingIngredients({ active = true }) {

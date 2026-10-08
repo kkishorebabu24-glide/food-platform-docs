@@ -32,12 +32,12 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
     expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
     // Mode switch button is removed in favor of unified navigation
     expect(screen.queryByRole('button', { name: /Switch to Chef Mode/i })).not.toBeInTheDocument();
-    
+
     // Kitchen Hub must NOT be in the navbar for a resident
     expect(screen.queryByRole('link', { name: /^Kitchen Hub$/i })).not.toBeInTheDocument();
 
     // Click the User Chip to open the User Info Popover
-    const userChip = screen.getByText(/Rohan Sharma \(buyer\)/i);
+    const userChip = screen.getByText(/Rohan Sharma \(resident\)/i);
     fireEvent.click(userChip);
 
     // Verify Popover content
@@ -69,7 +69,12 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
   });
 
   test('Kitchen Hub lists seller dishes with dynamic portion controls and availability toggle', async () => {
-    const mockSeller = { id: 202, email: 'chefmeera@society.com', name: 'Chef Meera', role: 'seller' };
+    const mockSeller = {
+      id: 202,
+      email: 'chefmeera@society.com',
+      name: 'Chef Meera',
+      role: 'seller',
+    };
     const mockDishes = [
       {
         id: 501,
@@ -84,14 +89,20 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
       },
     ];
 
-    jest.spyOn(apiModule.sellersAPI, 'getMe').mockResolvedValue({ data: { id: 202, is_open: true } });
+    jest
+      .spyOn(apiModule.sellersAPI, 'getMe')
+      .mockResolvedValue({ data: { id: 202, is_open: true } });
     jest.spyOn(apiModule.ordersAPI, 'list').mockResolvedValue({ data: { orders: [] } });
-    jest.spyOn(apiModule.paymentsAPI, 'getBalance').mockResolvedValue({ data: { current_balance: 1500, total_earned: 4500 } });
+    jest
+      .spyOn(apiModule.paymentsAPI, 'getBalance')
+      .mockResolvedValue({ data: { current_balance: 1500, total_earned: 4500 } });
     if (apiModule.paymentsAPI.getMaintenanceStatus) {
       jest.spyOn(apiModule.paymentsAPI, 'getMaintenanceStatus').mockResolvedValue({ data: null });
     }
     jest.spyOn(apiModule.menusAPI, 'bySeller').mockResolvedValue({ data: mockDishes });
-    const updatePortionsSpy = jest.spyOn(apiModule.menusAPI, 'updatePortions').mockResolvedValue({ data: { id: 501, is_available: true, quantity: 13 } });
+    const updatePortionsSpy = jest
+      .spyOn(apiModule.menusAPI, 'updatePortions')
+      .mockResolvedValue({ data: { id: 501, is_available: true, quantity: 13 } });
 
     render(
       <MemoryRouter>
@@ -115,12 +126,25 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
   });
 
   test('Menu Page disables Add to Basket and displays notice when chef views own kitchen in buyer mode', async () => {
-    const mockChefUser = { id: 303, name: 'Chef Suresh', email: 'suresh@society.com', role: 'buyer' };
+    const mockChefUser = {
+      id: 303,
+      name: 'Chef Suresh',
+      email: 'suresh@society.com',
+      role: 'buyer',
+    };
     localStorage.setItem('user', JSON.stringify(mockChefUser));
 
     const mockChefProfile = { id: 303, name: 'Chef Suresh', flat_number: '401' };
     const mockItems = [
-      { id: 601, seller_id: 303, name: 'Special Masala Dosa', price: 90, category: 'veg', is_available: true, quantity: 10 },
+      {
+        id: 601,
+        seller_id: 303,
+        name: 'Special Masala Dosa',
+        price: 90,
+        category: 'veg',
+        is_available: true,
+        quantity: 10,
+      },
     ];
 
     jest.spyOn(apiModule.menusAPI, 'bySeller').mockResolvedValue({ data: { items: mockItems } });
@@ -136,7 +160,11 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
 
     await waitFor(() => {
       // Self-order alert notice
-      expect(screen.getByText(/You are viewing your own kitchen menu. Self-ordering is disabled in buyer mode/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /You are viewing your own kitchen menu. Self-ordering is disabled in buyer mode/i
+        )
+      ).toBeInTheDocument();
       // Add to Basket button replaced with disabled "Your Kitchen"
       const yourKitchenBtn = screen.getByRole('button', { name: /^Your Kitchen$/i });
       expect(yourKitchenBtn).toBeDisabled();
@@ -144,11 +172,23 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
   });
 
   test('Cart Drawer highlights self-kitchen items and blocks checkout', () => {
-    const mockChefUser = { id: 404, name: 'Chef Ananya', email: 'ananya@society.com', role: 'buyer' };
+    const mockChefUser = {
+      id: 404,
+      name: 'Chef Ananya',
+      email: 'ananya@society.com',
+      role: 'buyer',
+    };
     localStorage.setItem('user', JSON.stringify(mockChefUser));
 
     const cartItems = [
-      { id: 701, name: 'Paneer Butter Masala', price: 180, quantity: 2, sellerId: 404, sellerName: 'Chef Ananya' },
+      {
+        id: 701,
+        name: 'Paneer Butter Masala',
+        price: 180,
+        quantity: 2,
+        sellerId: 404,
+        sellerName: 'Chef Ananya',
+      },
     ];
 
     render(
@@ -167,8 +207,9 @@ describe('Role Navigation, User Info Popover, Dynamic Portions & Self-Ordering P
     expect(screen.getByText(/You cannot order dishes from your own kitchen/i)).toBeInTheDocument();
 
     // Checkout button disabled
-    const checkoutBtn = screen.getByRole('button', { name: /Remove Own Kitchen Dishes to Checkout/i });
+    const checkoutBtn = screen.getByRole('button', {
+      name: /Remove Own Kitchen Dishes to Checkout/i,
+    });
     expect(checkoutBtn).toBeDisabled();
   });
 });
-

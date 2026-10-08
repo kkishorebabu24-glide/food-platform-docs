@@ -26,7 +26,11 @@ export default function RatingForm({ orderId, onSubmitted }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+    >
       {error && (
         <Alert severity="error" onClose={() => setError(null)}>
           {error}
@@ -40,16 +44,19 @@ export default function RatingForm({ orderId, onSubmitted }) {
         multiline
         rows={3}
       />
-      <Button type="submit" variant="contained" disabled={loading} sx={{ bgcolor: '#E05A2B', '&:hover': { bgcolor: '#c9481c' } }}>
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={loading}
+        sx={{ bgcolor: '#E05A2B', '&:hover': { bgcolor: '#c9481c' } }}
+      >
         {loading ? 'Submitting...' : 'Submit Rating'}
       </Button>
     </Box>
   );
 }
 
-
 RatingForm.propTypes = {
   orderId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSubmitted: PropTypes.func,
 };
-

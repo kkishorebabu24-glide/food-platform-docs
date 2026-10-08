@@ -47,15 +47,15 @@ const mockSeller = {
 
 describe('Menu Search, Category Filtering, and Modern Image Lightbox', () => {
   beforeEach(() => {
-    jest.spyOn(apiModule.menusAPI, 'bySeller').mockImplementation(() =>
-      Promise.resolve({ data: { items: mockMenuItems } })
-    );
-    jest.spyOn(apiModule.sellersAPI, 'get').mockImplementation(() =>
-      Promise.resolve({ data: mockSeller })
-    );
-    jest.spyOn(apiModule.ordersAPI, 'create').mockImplementation(() =>
-      Promise.resolve({ data: { id: 501, status: 'pending' } })
-    );
+    jest
+      .spyOn(apiModule.menusAPI, 'bySeller')
+      .mockImplementation(() => Promise.resolve({ data: { items: mockMenuItems } }));
+    jest
+      .spyOn(apiModule.sellersAPI, 'get')
+      .mockImplementation(() => Promise.resolve({ data: mockSeller }));
+    jest
+      .spyOn(apiModule.ordersAPI, 'create')
+      .mockImplementation(() => Promise.resolve({ data: { id: 501, status: 'pending' } }));
   });
 
   afterEach(() => {
@@ -182,7 +182,9 @@ describe('Menu Search, Category Filtering, and Modern Image Lightbox', () => {
     expect(screen.getByText('₹600.00')).toBeInTheDocument();
 
     // Checkout button reflects 2 kitchens
-    const checkoutBtn = screen.getByRole('button', { name: /Place All Orders \(2 Kitchens\) • ₹600/i });
+    const checkoutBtn = screen.getByRole('button', {
+      name: /Place All Orders \(2 Kitchens\) • ₹600/i,
+    });
     expect(checkoutBtn).toBeInTheDocument();
 
     fireEvent.click(checkoutBtn);

@@ -18,17 +18,17 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.models import Delivery, Order, PartnerProfile, User
+from app.db.models import Delivery, Order, User
 from app.db.models.enums import DeliveryStatus, OrderStatus
 
 logger = logging.getLogger(__name__)
 
 # Valid delivery status transitions (partner-controlled)
 _VALID_TRANSITIONS: dict[DeliveryStatus, set[DeliveryStatus]] = {
-    DeliveryStatus.pending:    {DeliveryStatus.dispatched, DeliveryStatus.failed},
+    DeliveryStatus.pending: {DeliveryStatus.dispatched, DeliveryStatus.failed},
     DeliveryStatus.dispatched: {DeliveryStatus.delivered, DeliveryStatus.failed},
-    DeliveryStatus.delivered:  set(),   # terminal state
-    DeliveryStatus.failed:     set(),   # terminal state
+    DeliveryStatus.delivered: set(),  # terminal state
+    DeliveryStatus.failed: set(),  # terminal state
 }
 
 
@@ -51,15 +51,13 @@ def create_delivery(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
 
     if order.partner_id != partner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your order."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your order.")
 
     if order.status not in (OrderStatus.ready, OrderStatus.delivered):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot create delivery for order in '{order.status}' status. "
-                   "Order must be 'ready' or 'completed'.",
+            "Order must be 'ready' or 'completed'.",
         )
 
     # Prevent duplicate delivery records
@@ -90,7 +88,9 @@ def create_delivery(
 
     logger.info(
         "Delivery created: order_id=%s partner=%s resident=%s",
-        order_id, partner_id, order.resident_id
+        order_id,
+        partner_id,
+        order.resident_id,
     )
     return delivery
 
@@ -110,14 +110,10 @@ def update_delivery_status(
     """
     delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
     if not delivery:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found.")
 
     if delivery.partner_id != partner_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not your delivery."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your delivery.")
 
     try:
         new_status_enum = DeliveryStatus(new_status)
@@ -150,7 +146,9 @@ def update_delivery_status(
 
     logger.info(
         "Delivery %s status → %s (order_id=%s)",
-        delivery_id, new_status, delivery.order_id
+        delivery_id,
+        new_status,
+        delivery.order_id,
     )
     return delivery
 
@@ -166,9 +164,7 @@ def get_delivery_by_order(db: Session, order_id: int) -> Delivery:
     return delivery
 
 
-def get_partner_deliveries(
-    db: Session, partner_id: int, skip: int = 0, limit: int = 20
-) -> dict:
+def get_partner_deliveries(db: Session, partner_id: int, skip: int = 0, limit: int = 20) -> dict:
     """Return paginated deliveries for a partner."""
     deliveries = (
         db.query(Delivery)

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
 from app.db.models import PartnerProfile, User
-from app.db.models.enums import PartnerApplicationStatus, UserRole
+from app.db.models.enums import PartnerApplicationStatus, PartnerStatus, UserRole
 
 
 def test_create_and_list_suggestions(client: TestClient, resident_headers: dict):
@@ -32,7 +32,9 @@ def test_create_and_list_suggestions(client: TestClient, resident_headers: dict)
     assert any(s["id"] == suggestion_id for s in suggestions)
 
 
-def test_toggle_upvote(client: TestClient, db: Session, test_resident: User, resident_headers: dict):
+def test_toggle_upvote(
+    client: TestClient, db: Session, test_resident: User, resident_headers: dict
+):
     # Create suggestion
     res = client.post(
         "/api/v1/suggestions/",
@@ -66,7 +68,9 @@ def test_toggle_upvote(client: TestClient, db: Session, test_resident: User, res
     assert downvote_res.json()["has_upvoted"] is False
 
 
-def test_chef_claim_suggestion(client: TestClient, db: Session, test_resident: User, resident_headers: dict):
+def test_chef_claim_suggestion(
+    client: TestClient, db: Session, test_resident: User, resident_headers: dict
+):
     # 1. Resident creates suggestion
     res = client.post(
         "/api/v1/suggestions/",
@@ -88,6 +92,7 @@ def test_chef_claim_suggestion(client: TestClient, db: Session, test_resident: U
         id=chef_user.id,
         bio="Authentic Gujarati snacks",
         application_status=PartnerApplicationStatus.approved,
+        partner_status=PartnerStatus.active,
     )
     db.add(chef_profile)
     db.commit()

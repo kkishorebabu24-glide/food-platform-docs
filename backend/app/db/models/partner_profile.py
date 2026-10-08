@@ -4,9 +4,9 @@ import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum as SAEnum
+from sqlalchemy import JSON, Boolean
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy import Float, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy import Float, ForeignKey, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base, TimestampMixin
@@ -71,7 +71,6 @@ class PartnerProfile(TimestampMixin, Base):
     avg_delivery_minutes: Mapped[int] = mapped_column(Integer, default=25, nullable=False)
     total_orders_completed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-
     # ── Availability ──────────────────────────────────────────────────────────
     # Partners can toggle themselves open/closed without affecting menus or approval.
     # Residents only see open partners; closed partners cannot receive new orders.
@@ -120,12 +119,8 @@ class PartnerProfile(TimestampMixin, Base):
     @validates("upi_id")
     def validate_upi_id(self, key: str, value: str | None) -> str | None:
         """Basic UPI ID format validation: localpart@bankhandle."""
-        if value is not None and not re.fullmatch(
-            r"[a-zA-Z0-9.\-_]+@[a-zA-Z]{3,}", value
-        ):
-            raise ValueError(
-                "UPI ID format invalid (expected: handle@bank, e.g. john@paytm)"
-            )
+        if value is not None and not re.fullmatch(r"[a-zA-Z0-9.\-_]+@[a-zA-Z]{3,}", value):
+            raise ValueError("UPI ID format invalid (expected: handle@bank, e.g. john@paytm)")
         return value
 
     @validates("rating")

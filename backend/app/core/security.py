@@ -8,15 +8,16 @@ Responsibilities:
   - FastAPI HTTP Bearer scheme
 """
 
+import json
+import logging
 import secrets
 import string
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from fastapi.security import HTTPBearer
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -52,8 +53,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Redis value:       JSON { "otp": "123456", "attempts": 0 }
 # Redis TTL:         OTP_EXPIRY_MINUTES (set via EXPIRE command)
 
-import json
-
 _otp_fallback: dict = {}  # Used only when Redis is unreachable
 _otp_request_rate_limit: dict = {}  # In-memory rate limiting fallback
 
@@ -62,6 +61,7 @@ def _get_redis():
     """Return a Redis client, or None if Redis is unavailable."""
     try:
         import redis as redis_lib
+
         r = redis_lib.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=1)
         r.ping()
         return r
@@ -178,14 +178,12 @@ def verify_otp(email: str, otp: str) -> bool:
         return True
 
 
-
 # ── JWT Helpers ───────────────────────────────────────────────────────────────
+
 
 def create_access_token(user_id: int, role: str) -> str:
     """Sign and return a short-lived JWT access token."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "role": role,
@@ -198,9 +196,7 @@ def create_access_token(user_id: int, role: str) -> str:
 
 def create_refresh_token(user_id: int, role: str) -> str:
     """Sign and return a long-lived JWT refresh token."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": str(user_id),
         "role": role,

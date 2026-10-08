@@ -40,8 +40,11 @@ class ConnectionManager:
         if order_id not in self._connections:
             self._connections[order_id] = []
         self._connections[order_id].append(websocket)
-        logger.info("WS connect: order_id=%s total_listeners=%d",
-                    order_id, len(self._connections[order_id]))
+        logger.info(
+            "WS connect: order_id=%s total_listeners=%d",
+            order_id,
+            len(self._connections[order_id]),
+        )
 
     def disconnect(self, order_id: int, websocket: WebSocket) -> None:
         """Remove a WebSocket connection from the pool."""

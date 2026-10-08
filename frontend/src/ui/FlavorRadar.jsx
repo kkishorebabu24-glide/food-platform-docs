@@ -1,7 +1,15 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { Radar } from 'react-chartjs-2';
-import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -38,7 +46,9 @@ export default function FlavorRadar() {
 
   return (
     <Box sx={{ height: '100%', color: '#fff' }}>
-      <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>AI Flavor Profile</Typography>
+      <Typography variant="h6" sx={{ mb: 1, fontWeight: 700 }}>
+        AI Flavor Profile
+      </Typography>
       <Box sx={{ height: 180 }}>
         <Radar data={data} options={options} />
       </Box>

@@ -16,22 +16,17 @@ from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_db, require_role
-from app.db.models import Order, Payment, PartnerProfile, User
-from app.db.models.enums import (
-    OrderStatus,
-    PartnerApplicationStatus,
-    PaymentStatus,
-    UserRole,
-)
-from app.services import payment_service, partner_service
+from app.api.dependencies import get_db, require_admin
+from app.db.models import Order, PartnerProfile, Payment, User
+from app.db.models.enums import OrderStatus, PartnerApplicationStatus, PaymentStatus, UserRole
+from app.services import partner_service, payment_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 DB_DEPENDENCY = Depends(get_db)
-ADMIN_DEPENDENCY = Depends(require_role("admin"))
+ADMIN_DEPENDENCY = Depends(require_admin)
 
 
 @router.get("/partners/pending")
@@ -62,7 +57,7 @@ async def reject_partner(
     _: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
-    """Reject a pending partner (deactivates their account)."""
+    """Reject a partner application (the user keeps resident access)."""
     partner_service.reject_partner(db, partner_id)
     return {"message": f"Partner {partner_id} rejected.", "partner_id": partner_id}
 
@@ -75,10 +70,8 @@ async def get_residents(
     db: Session = DB_DEPENDENCY,
 ):
     """List all registered residents (residents and partners)."""
-    users = (
-        db.query(User).filter(User.is_active == True).offset(skip).limit(limit).all()
-    )
-    total = db.query(User).filter(User.is_active == True).count()
+    users = db.query(User).filter(User.is_active.is_(True)).offset(skip).limit(limit).all()
+    total = db.query(User).filter(User.is_active.is_(True)).count()
     return {
         "residents": [
             {
@@ -100,9 +93,7 @@ async def get_residents(
 @router.patch("/users/{user_id}/status")
 async def set_user_status(
     user_id: int,
-    is_active: bool = Body(
-        ..., embed=True, description="true to activate, false to deactivate"
-    ),
+    is_active: bool = Body(..., embed=True, description="true to activate, false to deactivate"),
     admin_user: User = ADMIN_DEPENDENCY,
     db: Session = DB_DEPENDENCY,
 ):
@@ -124,8 +115,17 @@ async def set_user_status(
     if not user:
         from fastapi import HTTPException, status
 
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    if (
+        user.role in (UserRole.admin, UserRole.super_admin)
+        and admin_user.role != UserRole.super_admin
+    ):
+        from fastapi import HTTPException, status
+
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a super admin can change the status of admin accounts.",
         )
 
     user.is_active = is_active
@@ -152,14 +152,10 @@ async def get_analytics(
         .count()
     )
     total_residents = (
-        db.query(User)
-        .filter(User.role == UserRole.resident, User.is_active == True)
-        .count()
+        db.query(User).filter(User.role == UserRole.resident, User.is_active.is_(True)).count()
     )
     total_orders = db.query(Order).count()
-    completed_orders = (
-        db.query(Order).filter(Order.status == OrderStatus.delivered).count()
-    )
+    completed_orders = db.query(Order).filter(Order.status == OrderStatus.delivered).count()
     pending_approvals = (
         db.query(PartnerProfile)
         .filter(PartnerProfile.application_status == PartnerApplicationStatus.pending)
@@ -168,15 +164,11 @@ async def get_analytics(
 
     # Revenue = sum of all captured payments (gross, before fees)
     total_revenue = (
-        db.query(func.sum(Payment.amount))
-        .filter(Payment.status == PaymentStatus.captured)
-        .scalar()
+        db.query(func.sum(Payment.amount)).filter(Payment.status == PaymentStatus.captured).scalar()
         or 0
     )
     refunded_amount = (
-        db.query(func.sum(Payment.amount))
-        .filter(Payment.status == PaymentStatus.refunded)
-        .scalar()
+        db.query(func.sum(Payment.amount)).filter(Payment.status == PaymentStatus.refunded).scalar()
         or 0
     )
 
@@ -206,9 +198,7 @@ async def refund_order_payment(
     Marks the payment as refunded, calls Razorpay refund API,
     and records a debit ledger entry for the partner.
     """
-    payment = payment_service.refund_payment(
-        db, order_id=order_id, admin_id=admin_user.id
-    )
+    payment = payment_service.refund_payment(db, order_id=order_id, admin_id=admin_user.id)
     return {
         "message": f"Refund initiated for order #{order_id}.",
         "order_id": order_id,

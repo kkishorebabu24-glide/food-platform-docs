@@ -7,9 +7,11 @@ assignees: ''
 ---
 
 ## Description
+
 A clear and concise description of what the bug is.
 
 ## Affected Component
+
 - [ ] Backend (FastAPI)
 - [ ] Frontend (React)
 - [ ] Database
@@ -19,31 +21,38 @@ A clear and concise description of what the bug is.
 - [ ] Other (specify)
 
 ## Steps to Reproduce
+
 1. Go to '...'
 2. Click on '...'
 3. See error
 
 ## Expected Behavior
+
 What should happen.
 
 ## Actual Behavior
+
 What actually happened.
 
 ## Environment
+
 - **Device**: [e.g., iPhone 12, Desktop Windows 11]
 - **Browser**: [e.g., Chrome, Safari]
 - **OS**: [e.g., iOS, Windows]
 - **Role**: [e.g., Seller, Buyer, Admin]
 
 ## Screenshots
+
 If applicable, add screenshots.
 
 ## Error Message
-```
+
+```text
 Paste error message or logs here
 ```
 
 ## Checklist
+
 - [ ] I have searched for similar issues
 - [ ] I have provided clear reproduction steps
 - [ ] I have included relevant screenshots

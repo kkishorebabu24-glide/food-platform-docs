@@ -12,14 +12,12 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Chip,
   IconButton,
   Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { paymentsAPI, getErrorMessage } from '../services/api';
 
@@ -126,7 +124,9 @@ export default function DirectUPIPaymentModal({
         },
       }}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+      <DialogTitle
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}
+      >
         <Box>
           <Typography variant="h6" fontWeight="bold">
             Direct UPI Payment
@@ -142,7 +142,9 @@ export default function DirectUPIPaymentModal({
 
       <DialogContent dividers sx={{ borderColor: '#232336', pt: 2 }}>
         {loading && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 2 }}>
+          <Box
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 2 }}
+          >
             <CircularProgress sx={{ color: '#E05A2B' }} />
             <Typography variant="body2" sx={{ color: '#aaa' }}>
               Connecting with Chef's UPI rails...
@@ -174,7 +176,10 @@ export default function DirectUPIPaymentModal({
                 textAlign: 'center',
               }}
             >
-              <Typography variant="caption" sx={{ color: '#aaa', textTransform: 'uppercase', letterSpacing: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{ color: '#aaa', textTransform: 'uppercase', letterSpacing: 1 }}
+              >
                 Pay Exactly
               </Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: '#E05A2B', my: 0.5 }}>
@@ -196,7 +201,10 @@ export default function DirectUPIPaymentModal({
                   borderRadius: 1.5,
                 }}
               >
-                <Typography variant="caption" sx={{ color: '#4caf50', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: '#4caf50', fontFamily: 'monospace', fontWeight: 'bold' }}
+                >
                   {paymentData.seller_vpa}
                 </Typography>
                 <Tooltip title={copied ? 'Copied!' : 'Copy UPI ID'}>
@@ -259,7 +267,8 @@ export default function DirectUPIPaymentModal({
                 Step 2: Confirm Payment UTR
               </Typography>
               <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mb: 1.5 }}>
-                After completing the payment in your UPI app, paste the 12-digit UTR / Reference number from your receipt:
+                After completing the payment in your UPI app, paste the 12-digit UTR / Reference
+                number from your receipt:
               </Typography>
 
               <TextField
@@ -311,4 +320,3 @@ DirectUPIPaymentModal.propTypes = {
   sellerName: PropTypes.string,
   onSuccess: PropTypes.func,
 };
-

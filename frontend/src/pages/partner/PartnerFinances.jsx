@@ -79,7 +79,9 @@ export default function PartnerFinances() {
         upi_id: upiId.trim(),
         upi_account_name: upiName.trim(),
       });
-      setSellerProfile?.((prev) => (prev ? { ...prev, upi_id: upiId.trim(), upi_account_name: upiName.trim() } : null));
+      setSellerProfile?.((prev) =>
+        prev ? { ...prev, upi_id: upiId.trim(), upi_account_name: upiName.trim() } : null
+      );
       setActionSuccess?.('Direct UPI payment configuration updated successfully! 💳');
       refreshData?.();
     } catch (err) {
@@ -100,7 +102,8 @@ export default function PartnerFinances() {
           Finances, SaaS Pass & Direct P2PM UPI
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Configure direct-to-bank resident payments, monitor free order credits, and review transaction history.
+          Configure direct-to-bank resident payments, monitor free order credits, and review
+          transaction history.
         </Typography>
       </Box>
 
@@ -108,17 +111,27 @@ export default function PartnerFinances() {
       <Grid container spacing={3} mb={4}>
         {/* Earnings Card */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+          <Card
+            sx={{
+              bgcolor: '#191928',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              height: '100%',
+            }}
+          >
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <AccountBalanceWalletIcon sx={{ color: '#2EC4B6' }} />
-                <Typography variant="subtitle1" fontWeight="bold">Total Platform Earnings</Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Total Platform Earnings
+                </Typography>
               </Box>
               <Typography variant="h3" fontWeight="bold" color="#2EC4B6" mt={1}>
                 ₹{balance?.total_earned?.toLocaleString() || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Direct UPI receipts are received immediately in your bank account with 0% platform commission!
+                Direct UPI receipts are received immediately in your bank account with 0% platform
+                commission!
               </Typography>
             </CardContent>
           </Card>
@@ -126,10 +139,19 @@ export default function PartnerFinances() {
 
         {/* Free SaaS Pass Meter */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+          <Card
+            sx={{
+              bgcolor: '#191928',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              height: '100%',
+            }}
+          >
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="subtitle1" fontWeight="bold">SaaS Pass Free Orders</Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  SaaS Pass Free Orders
+                </Typography>
                 <Chip
                   size="small"
                   label={freeRemaining > 0 ? '🟢 Active Pass' : '⚠️ Depleted'}
@@ -153,7 +175,9 @@ export default function PartnerFinances() {
                   height: 8,
                   borderRadius: 4,
                   bgcolor: 'rgba(255,255,255,0.08)',
-                  '& .MuiLinearProgress-bar': { bgcolor: freeRemaining > 10 ? '#2EC4B6' : '#E05A2B' },
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: freeRemaining > 10 ? '#2EC4B6' : '#E05A2B',
+                  },
                 }}
               />
             </CardContent>
@@ -162,15 +186,29 @@ export default function PartnerFinances() {
 
         {/* Maintenance Wallet Card */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', height: '100%' }}>
+          <Card
+            sx={{
+              bgcolor: '#191928',
+              borderRadius: 3,
+              border: '1px solid rgba(255,255,255,0.08)',
+              height: '100%',
+            }}
+          >
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="subtitle1" fontWeight="bold">Maintenance Wallet</Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Maintenance Wallet
+                </Typography>
                 <Button
                   size="small"
                   variant="contained"
                   onClick={() => setOpenTopupDialog?.(true)}
-                  sx={{ bgcolor: '#4caf50', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: '#388e3c' } }}
+                  sx={{
+                    bgcolor: '#4caf50',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    '&:hover': { bgcolor: '#388e3c' },
+                  }}
                 >
                   ⚡ Top Up
                 </Button>
@@ -187,7 +225,14 @@ export default function PartnerFinances() {
       </Grid>
 
       {/* UPI Configuration Form */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)', mb: 4 }}>
+      <Card
+        sx={{
+          bgcolor: '#191928',
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.08)',
+          mb: 4,
+        }}
+      >
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" alignItems="center" gap={1.5} mb={2}>
             <QrCode2Icon sx={{ color: '#E05A2B', fontSize: 28 }} />
@@ -196,7 +241,8 @@ export default function PartnerFinances() {
                 Direct P2PM UPI Settlement Details
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Residents scan your personalized UPI QR during checkout. Funds deposit straight to your bank account.
+                Residents scan your personalized UPI QR during checkout. Funds deposit straight to
+                your bank account.
               </Typography>
             </Box>
           </Box>
@@ -249,7 +295,9 @@ export default function PartnerFinances() {
       </Card>
 
       {/* Transaction & Maintenance Fee Ledger Table */}
-      <Card sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <Card
+        sx={{ bgcolor: '#191928', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <CardContent sx={{ p: 3 }}>
           <Box display="flex" alignItems="center" gap={1} mb={2}>
             <HistoryIcon sx={{ color: '#F6BD60' }} />
@@ -265,14 +313,23 @@ export default function PartnerFinances() {
           ) : ledgerEntries.length === 0 ? (
             <Box textAlign="center" py={5} bgcolor="#1F1F35" borderRadius={2}>
               <Typography variant="body2" color="text.secondary">
-                No ledger transactions recorded yet. Maintenance deductions start after 50 free orders.
+                No ledger transactions recorded yet. Maintenance deductions start after 50 free
+                orders.
               </Typography>
             </Box>
           ) : (
             <TableContainer component={Paper} sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ '& th': { color: 'text.secondary', borderColor: 'rgba(255,255,255,0.08)', fontWeight: 'bold' } }}>
+                  <TableRow
+                    sx={{
+                      '& th': {
+                        color: 'text.secondary',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        fontWeight: 'bold',
+                      },
+                    }}
+                  >
                     <TableCell>Date & Time</TableCell>
                     <TableCell>Description / Event</TableCell>
                     <TableCell>Type</TableCell>
@@ -281,22 +338,38 @@ export default function PartnerFinances() {
                 </TableHead>
                 <TableBody>
                   {ledgerEntries.map((row, idx) => (
-                    <TableRow key={idx} sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}>
-                      <TableCell>{row.created_at ? new Date(row.created_at).toLocaleString() : 'Recent'}</TableCell>
-                      <TableCell>{row.description || `Order #${row.order_id || idx + 1}`}</TableCell>
+                    <TableRow
+                      key={idx}
+                      sx={{ '& td': { borderColor: 'rgba(255,255,255,0.06)', color: '#fff' } }}
+                    >
+                      <TableCell>
+                        {row.created_at ? new Date(row.created_at).toLocaleString() : 'Recent'}
+                      </TableCell>
+                      <TableCell>
+                        {row.description || `Order #${row.order_id || idx + 1}`}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           size="small"
                           label={row.type || 'FEE'}
                           sx={{
-                            bgcolor: row.type === 'CREDIT' ? 'rgba(76,175,80,0.15)' : 'rgba(255,82,82,0.15)',
+                            bgcolor:
+                              row.type === 'CREDIT'
+                                ? 'rgba(76,175,80,0.15)'
+                                : 'rgba(255,82,82,0.15)',
                             color: row.type === 'CREDIT' ? '#4caf50' : '#ff5252',
                             fontSize: '0.7rem',
                             height: 20,
                           }}
                         />
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', color: row.type === 'CREDIT' ? '#4caf50' : '#ff5252' }}>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          color: row.type === 'CREDIT' ? '#4caf50' : '#ff5252',
+                        }}
+                      >
                         {row.type === 'CREDIT' ? `+₹${row.amount}` : `-₹${row.amount}`}
                       </TableCell>
                     </TableRow>

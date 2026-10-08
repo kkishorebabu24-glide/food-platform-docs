@@ -1,0 +1,13 @@
+---
+# Prose docs: long lines and emphasis-as-heading are allowed.
+default: true
+MD013: false
+MD024:
+  siblings_only: true
+MD033: false
+MD036: false
+MD041: false
+# Legacy long-form docs mix heading/hr styles and use "#" badge links.
+MD003: false
+MD035: false
+MD042: false

@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import {
-  Outlet,
-  useLocation,
-  Link,
-} from 'react-router-dom';
+import { Outlet, useLocation, Link } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -35,13 +31,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 
-import {
-  ordersAPI,
-  sellersAPI,
-  menusAPI,
-  paymentsAPI,
-  getErrorMessage,
-} from '../../services/api';
+import { ordersAPI, sellersAPI, menusAPI, paymentsAPI, getErrorMessage } from '../../services/api';
 
 export default function PartnerLayout({ currentUser }) {
   const location = useLocation();
@@ -110,9 +100,7 @@ export default function PartnerLayout({ currentUser }) {
       setBalance(balRes.data || { current_balance: 0, total_earned: 0 });
 
       const rawMenuData = menusRes.data;
-      const fetchedItems = Array.isArray(rawMenuData)
-        ? rawMenuData
-        : (rawMenuData?.items || []);
+      const fetchedItems = Array.isArray(rawMenuData) ? rawMenuData : rawMenuData?.items || [];
       setMenuItems(fetchedItems);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to fetch partner workspace data.'));
@@ -130,7 +118,9 @@ export default function PartnerLayout({ currentUser }) {
     try {
       await sellersAPI.setOpenStatus(nextStatus);
       setSellerProfile((prev) => (prev ? { ...prev, is_open: nextStatus } : null));
-      setActionSuccess(nextStatus ? 'Kitchen is now OPEN for orders! 🍳' : 'Kitchen is now CLOSED. 🔒');
+      setActionSuccess(
+        nextStatus ? 'Kitchen is now OPEN for orders! 🍳' : 'Kitchen is now CLOSED. 🔒'
+      );
     } catch (err) {
       setError(getErrorMessage(err, 'Could not change kitchen status.'));
     }
@@ -154,7 +144,7 @@ export default function PartnerLayout({ currentUser }) {
         is_preorder_only: isPreorder,
         preorder_cutoff_time: isPreorder ? cutoffTime : undefined,
         available_slots: isPreorder ? ['lunch_today', 'dinner_today'] : undefined,
-        max_batch_quantity: isPreorder ? (parseInt(maxBatch, 10) || portionsVal) : portionsVal,
+        max_batch_quantity: isPreorder ? parseInt(maxBatch, 10) || portionsVal : portionsVal,
       };
 
       let targetMenuId = editingMenuId;
@@ -183,7 +173,12 @@ export default function PartnerLayout({ currentUser }) {
       setImagePreviewUrl('');
       fetchDashboardData();
     } catch (err) {
-      setError(getErrorMessage(err, editingMenuId ? 'Failed to update menu item.' : 'Failed to create menu item.'));
+      setError(
+        getErrorMessage(
+          err,
+          editingMenuId ? 'Failed to update menu item.' : 'Failed to create menu item.'
+        )
+      );
     } finally {
       setSubmittingMenu(false);
     }
@@ -218,9 +213,9 @@ export default function PartnerLayout({ currentUser }) {
     setMenuImageUrl(dish.image_url || '');
     setSelectedImageFile(null);
     const resolvedUrl = dish.image_url
-      ? (dish.image_url.startsWith('http') || dish.image_url.startsWith('data:')
-          ? dish.image_url
-          : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`)
+      ? dish.image_url.startsWith('http') || dish.image_url.startsWith('data:')
+        ? dish.image_url
+        : `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${dish.image_url}`
       : '';
     setImagePreviewUrl(resolvedUrl);
     setIsPreorder(Boolean(dish.is_preorder_only));
@@ -261,7 +256,9 @@ export default function PartnerLayout({ currentUser }) {
   else if (currentPath.includes('/partner/gallery')) activeTab = 3;
   else if (currentPath.includes('/partner/finances')) activeTab = 4;
 
-  const activeOrdersCount = orders.filter((o) => o.status !== 'completed' && o.status !== 'cancelled').length;
+  const activeOrdersCount = orders.filter(
+    (o) => o.status !== 'completed' && o.status !== 'cancelled'
+  ).length;
 
   const contextValue = {
     sellerProfile,
@@ -324,7 +321,9 @@ export default function PartnerLayout({ currentUser }) {
               </Typography>
               <Chip
                 size="small"
-                label={sellerProfile?.flat_number ? `Flat #${sellerProfile.flat_number}` : 'Home Chef'}
+                label={
+                  sellerProfile?.flat_number ? `Flat #${sellerProfile.flat_number}` : 'Home Chef'
+                }
                 sx={{ bgcolor: 'rgba(246,189,96,0.15)', color: '#F6BD60', fontWeight: 'bold' }}
               />
               {maintenanceStatus && (
@@ -336,7 +335,10 @@ export default function PartnerLayout({ currentUser }) {
                       : `⚡ Wallet ₹${maintenanceStatus.maintenance_balance?.toFixed(0) || 0}`
                   }
                   sx={{
-                    bgcolor: maintenanceStatus.free_orders_remaining > 0 ? 'rgba(46,196,182,0.15)' : 'rgba(224,90,43,0.15)',
+                    bgcolor:
+                      maintenanceStatus.free_orders_remaining > 0
+                        ? 'rgba(46,196,182,0.15)'
+                        : 'rgba(224,90,43,0.15)',
                     color: maintenanceStatus.free_orders_remaining > 0 ? '#2EC4B6' : '#E05A2B',
                     fontWeight: 'bold',
                   }}
@@ -360,7 +362,11 @@ export default function PartnerLayout({ currentUser }) {
               />
             }
             label={
-              <Typography fontWeight="bold" color={sellerProfile?.is_open ? '#2EC4B6' : '#aaa'} sx={{ fontSize: '0.9rem' }}>
+              <Typography
+                fontWeight="bold"
+                color={sellerProfile?.is_open ? '#2EC4B6' : '#aaa'}
+                sx={{ fontSize: '0.9rem' }}
+              >
                 {sellerProfile?.is_open ? 'KITCHEN OPEN' : 'KITCHEN CLOSED'}
               </Typography>
             }
@@ -384,8 +390,16 @@ export default function PartnerLayout({ currentUser }) {
       </Box>
 
       {/* Global Alerts */}
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
-      {actionSuccess && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>{actionSuccess}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+      {actionSuccess && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setActionSuccess(null)}>
+          {actionSuccess}
+        </Alert>
+      )}
 
       {/* Partner Sub-Navigation Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.08)', mb: 3.5 }}>
@@ -422,7 +436,11 @@ export default function PartnerLayout({ currentUser }) {
           />
           <Tab
             icon={
-              <Badge badgeContent={activeOrdersCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+              <Badge
+                badgeContent={activeOrdersCount}
+                color="error"
+                sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}
+              >
                 <DeliveryDiningIcon fontSize="small" />
               </Badge>
             }
@@ -433,7 +451,11 @@ export default function PartnerLayout({ currentUser }) {
           />
           <Tab
             icon={
-              <Badge badgeContent={menuItems.length} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+              <Badge
+                badgeContent={menuItems.length}
+                color="primary"
+                sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}
+              >
                 <RestaurantMenuIcon fontSize="small" />
               </Badge>
             }
@@ -460,7 +482,9 @@ export default function PartnerLayout({ currentUser }) {
       </Box>
 
       {/* Sub-Page Content Container */}
-      {loading && !sellerProfile && (location.pathname === '/partner' || location.pathname === '/partner/') ? (
+      {loading &&
+      !sellerProfile &&
+      (location.pathname === '/partner' || location.pathname === '/partner/') ? (
         <Box display="flex" justifyContent="center" py={8}>
           <CircularProgress sx={{ color: '#E05A2B' }} />
         </Box>
@@ -474,7 +498,12 @@ export default function PartnerLayout({ currentUser }) {
         onClose={() => setOpenNewMenu(false)}
         PaperProps={{ sx: { bgcolor: '#161622', color: '#fff', width: 500, borderRadius: 3 } }}
       >
-        <DialogTitle fontWeight="bold" display="flex" justifyContent="space-between" alignItems="center">
+        <DialogTitle
+          fontWeight="bold"
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           {editingMenuId ? '✏️ Edit Menu Item' : '✨ Create Dish or Pre-Order Batch'}
           <IconButton size="small" onClick={() => setOpenNewMenu(false)} sx={{ color: '#aaa' }}>
             <CloseIcon fontSize="small" />
@@ -542,7 +571,13 @@ export default function PartnerLayout({ currentUser }) {
           </Box>
 
           {/* Pre-Order Batch Option */}
-          <Box p={2} mb={2} bgcolor="#1F1F35" borderRadius={2} border="1px solid rgba(255,255,255,0.06)">
+          <Box
+            p={2}
+            mb={2}
+            bgcolor="#1F1F35"
+            borderRadius={2}
+            border="1px solid rgba(255,255,255,0.06)"
+          >
             <FormControlLabel
               control={
                 <Switch
@@ -651,14 +686,22 @@ export default function PartnerLayout({ currentUser }) {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenNewMenu(false)} sx={{ color: '#aaa', textTransform: 'none' }}>
+          <Button
+            onClick={() => setOpenNewMenu(false)}
+            sx={{ color: '#aaa', textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveMenuSubmit}
             disabled={submittingMenu || !menuName.trim()}
-            sx={{ bgcolor: '#E05A2B', fontWeight: 'bold', textTransform: 'none', '&:hover': { bgcolor: '#c9481c' } }}
+            sx={{
+              bgcolor: '#E05A2B',
+              fontWeight: 'bold',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#c9481c' },
+            }}
           >
             {submittingMenu ? 'Saving...' : editingMenuId ? 'Save Changes' : 'Create Dish'}
           </Button>
@@ -671,15 +714,16 @@ export default function PartnerLayout({ currentUser }) {
         onClose={() => setOpenTopupDialog(false)}
         PaperProps={{ sx: { bgcolor: '#161622', color: '#fff', width: 440, borderRadius: 3 } }}
       >
-        <DialogTitle fontWeight="bold">
-          ⚡ Top Up Maintenance Wallet
-        </DialogTitle>
+        <DialogTitle fontWeight="bold">⚡ Top Up Maintenance Wallet</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Pay via UPI to society admin handle to top up maintenance credits (₹5 deducted per successfully completed order).
+            Pay via UPI to society admin handle to top up maintenance credits (₹5 deducted per
+            successfully completed order).
           </Typography>
           <Box bgcolor="#1F1F35" p={2} borderRadius={2} mb={2.5} textAlign="center">
-            <Typography variant="caption" color="text.secondary">Admin Society UPI ID</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Admin Society UPI ID
+            </Typography>
             <Typography variant="h6" fontWeight="bold" color="#2EC4B6" mt={0.5}>
               societyadmin@upi
             </Typography>
@@ -706,14 +750,22 @@ export default function PartnerLayout({ currentUser }) {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setOpenTopupDialog(false)} sx={{ color: '#aaa', textTransform: 'none' }}>
+          <Button
+            onClick={() => setOpenTopupDialog(false)}
+            sx={{ color: '#aaa', textTransform: 'none' }}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleTopupSubmit}
             disabled={submittingTopup || !topupUtr.trim()}
-            sx={{ bgcolor: '#4caf50', fontWeight: 'bold', textTransform: 'none', '&:hover': { bgcolor: '#388e3c' } }}
+            sx={{
+              bgcolor: '#4caf50',
+              fontWeight: 'bold',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#388e3c' },
+            }}
           >
             {submittingTopup ? 'Submitting...' : 'Confirm Recharge'}
           </Button>

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """All application settings. Values are read from environment / .env file."""
 
     # ── API ────────────────────────────────────────────────────────────────────
-    API_HOST: str = "0.0.0.0"
+    API_HOST: str = "0.0.0.0"  # nosec B104 - container bind address, override via env
     API_PORT: int = 8000
     API_RELOAD: bool = True
 
@@ -64,7 +64,9 @@ class Settings(BaseSettings):
     PLATFORM_UPI_NAME: str = "Society Food Platform"
     FREE_ORDERS_QUOTA: int = 50
     MAINTENANCE_FEE_PER_ORDER: float = 5.0
-    MAINTENANCE_GRACE_LIMIT: float = -25.0  # Allows up to 5 orders in grace before disabling availability
+    MAINTENANCE_GRACE_LIMIT: float = (
+        -25.0
+    )  # Allows up to 5 orders in grace before disabling availability
 
     # ── Razorpay Payment Gateway (Legacy / Fallback) ───────────────────────────
     RAZORPAY_KEY_ID: str = ""
@@ -91,7 +93,6 @@ class Settings(BaseSettings):
         "case_sensitive": True,
         "extra": "ignore",
     }
-
 
 
 @lru_cache()

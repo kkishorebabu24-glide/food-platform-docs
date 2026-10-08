@@ -4,7 +4,7 @@ This project follows **Conventional Commits** specification for clear, automated
 
 ## Format
 
-```
+```text
 <type>(<scope>): <description>
 
 <body>
@@ -15,6 +15,7 @@ This project follows **Conventional Commits** specification for clear, automated
 ## Type
 
 Must be one of:
+
 - **feat**: A new feature
 - **fix**: A bug fix
 - **docs**: Documentation changes
@@ -27,6 +28,7 @@ Must be one of:
 ## Scope (Recommended)
 
 Indicates what part of the system is affected:
+
 - **auth**: Authentication/OTP login
 - **seller**: Seller-related features
 - **menu**: Menu management
@@ -51,14 +53,14 @@ Indicates what part of the system is affected:
 
 ### Features
 
-```
+```text
 feat(auth): implement OTP login via email
 
 Implement OTP generation and validation for resident login.
 Supports both email and WhatsApp delivery (optional).
 ```
 
-```
+```text
 feat(seller): create menu management API
 
 - Add menu item CRUD operations
@@ -68,7 +70,7 @@ feat(seller): create menu management API
 
 ### Bug Fixes
 
-```
+```text
 fix(order): correct order status display in buyer dashboard
 
 Order status wasn't updating after seller marked as ready.
@@ -79,7 +81,7 @@ Closes #45
 
 ### Improvements
 
-```
+```text
 perf(api): optimize seller menu query with database indexing
 
 Added composite index on (seller_id, date) to reduce query time
@@ -88,7 +90,7 @@ from 500ms to 50ms for average case.
 
 ### Documentation
 
-```
+```text
 docs: add API endpoint examples for menu management
 
 Include sample requests and responses for all menu endpoints.
@@ -96,13 +98,13 @@ Include sample requests and responses for all menu endpoints.
 
 ### Chores
 
-```
+```text
 chore(ci): upgrade Python to 3.11 in GitHub Actions
 ```
 
 ### Multiple Related Changes
 
-```
+```text
 feat(order): implement order status and real-time updates
 
 - Add order status enum (pending, accepted, ready, completed)
@@ -116,6 +118,7 @@ Closes #78
 ## Rules
 
 ✅ DO:
+
 - Start with type(scope)
 - Use imperative mood
 - Reference issues: `Closes #123`
@@ -125,6 +128,7 @@ Closes #78
 - Add body for complex changes
 
 ❌ DON'T:
+
 - Don't capitalize subject
 - Don't add period to subject
 - Don't use vague messages
@@ -134,7 +138,7 @@ Closes #78
 
 For breaking changes, add `!` before colon:
 
-```
+```text
 feat(api)!: change menu API response format
 
 BREAKING CHANGE: Menu items now return as array instead of object.
@@ -154,7 +158,8 @@ pre-commit install --hook-type commit-msg
 ```
 
 If message doesn't follow conventions:
-```
+
+```text
 ✗ Commit message does not follow Conventional Commits
 
 Examples:
@@ -166,6 +171,7 @@ Examples:
 ## Automated Changelog
 
 Commits are grouped automatically into changelog:
+
 - **Features**: All `feat:` commits
 - **Bug Fixes**: All `fix:` commits
 - **Performance**: All `perf:` commits

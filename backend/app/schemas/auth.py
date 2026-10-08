@@ -4,12 +4,26 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
 
-VALID_ROLES = {"resident", "partner", "admin", "buyer", "seller"}
 ROLE_NORMALIZATION_MAP = {"seller": "partner", "buyer": "resident"}
+# Roles a client may *request* (workspace preference). Privileged roles
+# (admin, super_admin) are only ever granted out-of-band and never accepted here.
+SELF_SERVICE_ROLES = {"resident", "partner"}
+VALID_ROLES = SELF_SERVICE_ROLES | set(ROLE_NORMALIZATION_MAP)
+
+
+def normalize_requested_role(v: str | None) -> str | None:
+    """Normalize legacy aliases and reject privileged/unknown roles."""
+    if v is None:
+        return None
+    mapped = ROLE_NORMALIZATION_MAP.get(v.strip().lower(), v.strip().lower())
+    if mapped not in SELF_SERVICE_ROLES:
+        raise ValueError("Role must be one of: resident, partner (or legacy buyer, seller)")
+    return mapped
 
 
 class RegisterRequest(BaseModel):
     """Request body for POST /api/v1/auth/register."""
+
     email: EmailStr
     password: str
     name: str
@@ -25,10 +39,7 @@ class RegisterRequest(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        mapped = ROLE_NORMALIZATION_MAP.get(v, v)
-        if mapped not in {"resident", "partner", "admin"}:
-            raise ValueError("Role must be one of: resident, partner, admin (or legacy buyer, seller)")
-        return mapped
+        return normalize_requested_role(v) or "resident"
 
     @field_validator("name")
     @classmethod
@@ -40,19 +51,26 @@ class RegisterRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     """Request body for POST /api/v1/auth/login."""
+
     email: EmailStr
     password: str
     role: Optional[str] = None
 
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str | None) -> str | None:
+        return normalize_requested_role(v)
 
 
 class RefreshRequest(BaseModel):
     """Request body for POST /api/v1/auth/refresh."""
+
     refresh_token: str
 
 
 class UserInfo(BaseModel):
     """Embedded user data returned in the token response."""
+
     id: int
     email: str
     name: str
@@ -64,6 +82,7 @@ class UserInfo(BaseModel):
 
 class TokenResponse(BaseModel):
     """Response body for a successful login."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -72,12 +91,14 @@ class TokenResponse(BaseModel):
 
 class RefreshResponse(BaseModel):
     """Response for a successful token refresh."""
+
     access_token: str
     token_type: str = "bearer"
 
 
 class OTPRequest(BaseModel):
     """Request body for requesting an OTP."""
+
     email: EmailStr
     role: str = "resident"
     channel: str = "email"  # "email" | "whatsapp"
@@ -86,18 +107,21 @@ class OTPRequest(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        mapped = ROLE_NORMALIZATION_MAP.get(v, v)
-        if mapped not in {"resident", "partner", "admin"}:
-            raise ValueError("Role must be one of: resident, partner, admin (or legacy buyer, seller)")
-        return mapped
+        return normalize_requested_role(v) or "resident"
 
 
 class OTPVerifyRequest(BaseModel):
     """Request body for verifying an OTP and logging in."""
+
     email: EmailStr
     otp: str
     name: str | None = None
     role: str = "resident"
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        return normalize_requested_role(v) or "resident"
 
     @field_validator("otp")
     @classmethod
@@ -110,7 +134,7 @@ class OTPVerifyRequest(BaseModel):
 
 class OTPRequestResponse(BaseModel):
     """Response body after requesting an OTP."""
+
     message: str
     expires_in_minutes: int
     dev_otp: str | None = None
-

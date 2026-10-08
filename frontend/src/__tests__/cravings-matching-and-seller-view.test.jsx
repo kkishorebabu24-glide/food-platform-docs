@@ -31,7 +31,10 @@ describe('Cravings Matching Module & Seller Acceptance View', () => {
         user_flat: '502',
         match_score: 92,
         match_level: 'HIGH',
-        match_reasons: ['Category Match: Active NON-VEG specialist', 'Existing Menu Match: You already cook Dum Biryani'],
+        match_reasons: [
+          'Category Match: Active NON-VEG specialist',
+          'Existing Menu Match: You already cook Dum Biryani',
+        ],
         matching_menu_items: [{ id: 11, name: 'Hyderabadi Dum Biryani', price: 240 }],
       },
     ];
@@ -40,7 +43,9 @@ describe('Cravings Matching Module & Seller Acceptance View', () => {
       data: { suggestions: mockMatchedSuggestions, total: 1 },
     });
     jest.spyOn(apiModule.menusAPI, 'bySeller').mockResolvedValue({
-      data: { items: [{ id: 11, name: 'Hyderabadi Dum Biryani', price: 240, category: 'non-veg' }] },
+      data: {
+        items: [{ id: 11, name: 'Hyderabadi Dum Biryani', price: 240, category: 'non-veg' }],
+      },
     });
 
     render(
@@ -163,6 +168,3 @@ describe('Cravings Matching Module & Seller Acceptance View', () => {
     expect(screen.getByRole('link', { name: /Pre-Order Now 🛒/i })).toBeInTheDocument();
   });
 });
-
-
-

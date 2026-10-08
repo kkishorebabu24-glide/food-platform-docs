@@ -1,6 +1,6 @@
 # Contributing to Society Food Platform
 
-Thank you for your interest in contributing! 
+Thank you for your interest in contributing!
 
 ## Code of Conduct
 
@@ -9,6 +9,7 @@ Be respectful, provide constructive feedback, and be inclusive.
 ## Reporting Issues
 
 ### Bug Report
+
 1. Check [existing issues](https://github.com/yourusername/society-food-platform/issues)
 2. Use [bug_report.md](.github/ISSUE_TEMPLATE/bug_report.md) template
 3. Include:
@@ -18,6 +19,7 @@ Be respectful, provide constructive feedback, and be inclusive.
    - Your role (buyer/seller/admin)
 
 ### Feature Request
+
 1. Check [existing requests](https://github.com/yourusername/society-food-platform/issues?q=label%3Aenhancement)
 2. Use [feature_request.md](.github/ISSUE_TEMPLATE/feature_request.md) template
 3. Include:
@@ -29,12 +31,14 @@ Be respectful, provide constructive feedback, and be inclusive.
 ## Development Setup
 
 ### Prerequisites
+
 - Python 3.10+
 - Node.js 16+
 - PostgreSQL 14+
 - Docker (optional)
 
 ### Backend Setup
+
 ```bash
 cd backend
 python -m venv venv
@@ -46,6 +50,7 @@ uvicorn app.main:app --reload
 ```
 
 ### Frontend Setup
+
 ```bash
 cd frontend
 npm install
@@ -56,6 +61,7 @@ npm start
 ## Git Workflow
 
 ### Creating a Feature
+
 ```bash
 # 1. Create branch from develop
 git checkout -b feature/your-feature develop
@@ -68,14 +74,17 @@ git push origin feature/your-feature
 ```
 
 ### Commit Messages
+
 Follow [COMMIT_CONVENTIONS.md](../COMMIT_CONVENTIONS.md):
-```
+
+```text
 feat(seller): add menu item limit
 fix(order): resolve status display
 docs: update API documentation
 ```
 
 ### PR Checklist
+
 - [ ] Tests added/updated
 - [ ] Linting passes
 - [ ] Documentation updated
@@ -85,6 +94,7 @@ docs: update API documentation
 ## Code Standards
 
 ### Python Backend
+
 ```bash
 # Format
 black backend/
@@ -100,6 +110,7 @@ bandit -r backend/app
 ```
 
 ### React Frontend
+
 ```bash
 # Format
 npm run format
@@ -112,6 +123,7 @@ npm test
 ```
 
 ### Pre-commit Hooks
+
 ```bash
 pip install pre-commit
 pre-commit install
@@ -120,12 +132,14 @@ pre-commit install
 ## Testing
 
 ### Backend
+
 ```bash
 cd backend
 pytest tests/ -v --cov=app
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm test -- --coverage
@@ -140,6 +154,7 @@ npm test -- --coverage
 ## Pull Request Process
 
 1. **Before creating PR:**
+
    ```bash
    git rebase origin/develop
    pytest  # Backend
@@ -182,16 +197,18 @@ See [BRANCHING.md](../BRANCHING.md) for detailed workflow.
 - 📖 [Architecture Guide](../docs/architecture.md)
 - 📚 [Developer Guide](../docs/developer-guide.md)
 - 💬 [GitHub Discussions](https://github.com/yourusername/society-food-platform/discussions)
-- 📧 support@societyfood.local
+- 📧 <support@societyfood.local>
 
 ## Additional Notes
 
 ### Technology Choices
+
 - **Python + FastAPI**: Lightweight, async-first framework
 - **React**: UI library with PWA support
 - **PostgreSQL**: Reliable relational database
 
 ### Quality Standards
+
 - Maintain >80% test coverage
 - Follow PEP8 (Python) and Airbnb style (React)
 - All PRs require CI green lights
